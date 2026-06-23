@@ -23,8 +23,6 @@
     <button class="nx-pal-popup__close" id="nx-pal-close" title="Закрыть">×</button>
 
     <div class="nx-pal-popup__preview" id="nx-pal-preview"></div>
-    <div class="nx-pal-popup__code"    id="nx-pal-code"></div>
-    <div class="nx-pal-popup__name"    id="nx-pal-name"></div>
 
     <!-- Только если пришли с карточки товара -->
     <div class="nx-pal-popup__pick-box" id="nx-pal-pick-wrap" style="display:none">
@@ -296,14 +294,13 @@ body.nx-palitra .t-catalog__parts-text-title {
 
 .nx-pal-popup__preview {
   position: relative;
-  width: 100%; height: 180px;
+  width: 100%;
+  aspect-ratio: 1 / 1;
   border-radius: 12px;
   margin: 0 0 14px;
   background: #e0e0e0 center/cover no-repeat;
   box-shadow: 0 4px 16px rgba(0,0,0,.1);
 }
-.nx-pal-popup__code { font-size: 22px; font-weight: 700; color: #1a1a1a; line-height: 1.2; }
-.nx-pal-popup__name { font-size: 13px; color: #888; margin: 3px 0 14px; min-height: 16px; }
 
 .nx-pal-popup__pick-box {
   background: #F2F7EE;
@@ -967,8 +964,6 @@ body.nx-palitra .t-catalog__parts-text-title {
   /* ══ Попап ══ */
   var popup    = document.getElementById('nx-pal-popup');
   var preview  = document.getElementById('nx-pal-preview');
-  var codeEl   = document.getElementById('nx-pal-code');
-  var nameEl   = document.getElementById('nx-pal-name');
   var pickWrap = document.getElementById('nx-pal-pick-wrap');
   var pickBtn  = document.getElementById('nx-pal-pick');
   var orderBtn = document.getElementById('nx-pal-order');
@@ -1067,9 +1062,6 @@ body.nx-palitra .t-catalog__parts-text-title {
     if (data.name && data.name !== data.code) nm.appendChild(document.createTextNode(data.name));
     sw.appendChild(nm);
     preview.appendChild(sw);
-
-    codeEl.textContent = data.code;
-    nameEl.textContent = (data.name && data.name !== data.code) ? data.name : '';
 
     /* Блок «Выбрать для товара» — только при возврате на карточку */
     var hasBack = !!sessionStorage.getItem('nx_palette_back');
