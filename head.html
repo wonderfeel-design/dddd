@@ -14,6 +14,7 @@
    Прячем сообщение корзины только если это ошибка склада/заказа
    (Order error / NOT FOUND PRODUCTS IN STORE), не трогая валидацию полей. */
 (function () {
+  var _storeErrScheduled = false;
   function hideStoreOrderError() {
     var boxes = document.querySelectorAll('.t-form__errorbox-text, .t-store__error, .js-errorbox-all, .t-form__errorbox');
     for (var i = 0; i < boxes.length; i++) {
@@ -24,8 +25,16 @@
       }
     }
   }
+  function scheduleHideStoreOrderError() {
+    if (_storeErrScheduled) return;
+    _storeErrScheduled = true;
+    setTimeout(function () {
+      _storeErrScheduled = false;
+      hideStoreOrderError();
+    }, 120);
+  }
   if (window.MutationObserver) {
-    new MutationObserver(hideStoreOrderError).observe(document.documentElement, { childList: true, subtree: true });
+    new MutationObserver(scheduleHideStoreOrderError).observe(document.documentElement, { childList: true, subtree: true });
   }
   document.addEventListener('DOMContentLoaded', hideStoreOrderError);
 })();
@@ -54,8 +63,18 @@
     tree.appendChild(wrap);
   }
   function init() {
+    var _paletteScheduled = false;
+    function schedulePaletteRefresh() {
+      if (_paletteScheduled) return;
+      _paletteScheduled = true;
+      setTimeout(function () {
+        _paletteScheduled = false;
+        hidePalette();
+        injectPaletteLink();
+      }, 120);
+    }
     hidePalette(); injectPaletteLink();
-    new MutationObserver(function () { hidePalette(); injectPaletteLink(); })
+    new MutationObserver(schedulePaletteRefresh)
       .observe(document.body, { childList: true, subtree: true });
   }
   document.readyState === 'loading' ? document.addEventListener('DOMContentLoaded', init) : setTimeout(init, 300);
@@ -159,12 +178,22 @@
       injectCategoryBadge(card); injectSize(card); injectDualPrice(card); initHoverPhoto(card); injectDeliveryInfo(card);
     });
   }
+  function scheduleProcessCards(delay) {
+    setTimeout(function () {
+      if (typeof window.requestIdleCallback === 'function') {
+        window.requestIdleCallback(function () { processCards(); }, { timeout: 700 });
+      } else {
+        processCards();
+      }
+    }, delay || 0);
+  }
 
   window._nxProcessCards = processCards;
 
-  if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', processCards); } else { processCards(); }
-  setTimeout(processCards, 800);
-  setTimeout(processCards, 2000);
+  if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', function () { scheduleProcessCards(0); }); }
+  else { scheduleProcessCards(0); }
+  scheduleProcessCards(800);
+  scheduleProcessCards(2000);
 })();
 
 /* ══ 3. Страница товара /tproduct/ ══ */
@@ -548,10 +577,19 @@ if (firstEd && firstEd['Покрытие'] === 'Без покрытия') {
         });
       });
     }
+    var _hideSnippetsScheduled = false;
+    function scheduleHideSnippets() {
+      if (_hideSnippetsScheduled) return;
+      _hideSnippetsScheduled = true;
+      setTimeout(function () {
+        _hideSnippetsScheduled = false;
+        hideSnippets();
+      }, 120);
+    }
 
     /* Первичное скрытие + наблюдатель (Tilda дорисовывает сниппеты асинхронно) */
     hideSnippets();
-    new MutationObserver(hideSnippets).observe(document.body, { childList: true, subtree: true });
+    new MutationObserver(scheduleHideSnippets).observe(document.body, { childList: true, subtree: true });
 
     attachEvents();
     updateColors();
@@ -838,15 +876,18 @@ root.addEventListener('change', function (e) {
     var m = location.pathname.match(/\/tproduct\/(\d+)/);
     if (!m) return;
     var uid = m[1];
+    function revealOnFail() {
+      document.documentElement.classList.remove('nx-tp');
+    }
     var attempts = 0;
     var iv = setInterval(function () {
       attempts++;
       if ((window.tStoreOptionsList && window.tStoreOptionsList.length) || attempts > 30) {
         clearInterval(iv);
         loadProduct(uid).then(function (p) {
-          if (!p) { console.error('nx: product not found'); return; }
+          if (!p) { console.error('nx: product not found'); revealOnFail(); return; }
           renderRoot(p);
-        }).catch(function (err) { console.error('nx: loadProduct error', err); });
+        }).catch(function (err) { console.error('nx: loadProduct error', err); revealOnFail(); });
       }
     }, 100);
   }
@@ -916,6 +957,7 @@ root.addEventListener('change', function (e) {
   function handleCheckoutError(errEl) {
     if (_handled) return;
     _handled = true;
+    try { if (_obs) _obs.disconnect(); } catch (e) {}
 
     errEl.style.cssText = 'display:none!important';
 
@@ -962,6 +1004,7 @@ root.addEventListener('change', function (e) {
 
   /* Слушаем и добавление новых узлов, и изменение атрибутов/стилей существующих */
   var _obs = new MutationObserver(function (mutations) {
+    if (_handled) return;
     for (var i = 0; i < mutations.length; i++) {
       var m = mutations[i];
       if (m.type === 'childList') {

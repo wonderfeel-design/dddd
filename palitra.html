@@ -486,12 +486,19 @@ body.nx-palitra .t-catalog__card__descr {
   }
 
   /* Tilda рендерит каталог с задержкой и при смене категории */
-  new MutationObserver(function () {
-    buildBrandFilter();
-    if (activeBrand !== 'all') applyBrandFilter();
-  }).observe(document.body, { childList: true, subtree: true });
+  var _brandRefreshScheduled = false;
+  function scheduleBrandRefresh() {
+    if (_brandRefreshScheduled) return;
+    _brandRefreshScheduled = true;
+    setTimeout(function () {
+      _brandRefreshScheduled = false;
+      buildBrandFilter();
+      if (activeBrand !== 'all') applyBrandFilter();
+    }, 140);
+  }
+  new MutationObserver(scheduleBrandRefresh).observe(document.body, { childList: true, subtree: true });
 
-  setTimeout(buildBrandFilter, 600);
+  setTimeout(scheduleBrandRefresh, 600);
 
   /* ══ 0c. Ограничение палитр по типу покрытия ══
      При переходе с карточки товара показываем подходящие палитры,
@@ -626,7 +633,16 @@ body.nx-palitra .t-catalog__card__descr {
       }
     }, true);
 
-    new MutationObserver(mark).observe(document.body, { childList: true, subtree: true });
+    var _markScheduled = false;
+    function scheduleMark() {
+      if (_markScheduled) return;
+      _markScheduled = true;
+      setTimeout(function () {
+        _markScheduled = false;
+        mark();
+      }, 140);
+    }
+    new MutationObserver(scheduleMark).observe(document.body, { childList: true, subtree: true });
     setTimeout(mark, 600);
     mark();
   })();
@@ -829,7 +845,16 @@ body.nx-palitra .t-catalog__card__descr {
       if (isPrice) item.style.setProperty('display', 'none', 'important');
     });
   }
+  var _paintScheduled = false;
+  function schedulePaint() {
+    if (_paintScheduled) return;
+    _paintScheduled = true;
+    setTimeout(function () {
+      _paintScheduled = false;
+      paint();
+    }, 120);
+  }
   paint();
-  if (window.MutationObserver) new MutationObserver(paint).observe(document.body, { childList: true, subtree: true });
+  if (window.MutationObserver) new MutationObserver(schedulePaint).observe(document.body, { childList: true, subtree: true });
 })();
 </script>
