@@ -801,6 +801,21 @@ body.nx-palitra .t-catalog__parts-text-title {
       log0c('mark');
     }
 
+    function optionsState(item, toKey) {
+      var out = [];
+      if (!item) return out;
+      item.querySelectorAll('.t-catalog__filter__custom-sel').forEach(function (el) {
+        var v = optionValue(el);
+        out.push({
+          key: toKey ? toKey(v) : v,
+          value: v,
+          active: el.classList.contains('active'),
+          disabled: el.classList.contains('nx-filter-opt--disabled')
+        });
+      });
+      return out;
+    }
+
     /* перехватываем клик в capture-фазе — раньше обработчиков Tilda и пилюль */
     document.addEventListener('click', function (e) {
       var t = e.target;
@@ -850,6 +865,32 @@ body.nx-palitra .t-catalog__parts-text-title {
     }, 700);
     setTimeout(mark, 600);
     mark();
+
+    /* Debug helper для консоли:
+       __nxPalDebug.report()
+       __nxPalDebug.recalc() */
+    window.__nxPalDebug = {
+      recalc: function () { scheduleMark(); return 'scheduled'; },
+      report: function () {
+        var rep = {
+          coating_context: coating || '',
+          active_brand_chip: activeBrand,
+          allowed_brands: getAllowedBrands(),
+          brand_options: optionsState(brandFilterItem(), brandOf),
+          coating_options: optionsState(coatingItem(), function (v) { return brandsFromCoatingValue(v); }),
+          custom_brand_buttons: Array.prototype.slice.call(document.querySelectorAll('.nx-coat-btn')).map(function (b) {
+            return {
+              brand: b.dataset.brand || '',
+              active: b.classList.contains('nx-active'),
+              disabled: b.classList.contains('nx-coat-btn--disabled'),
+              match: b.classList.contains('nx-coat-btn--match')
+            };
+          })
+        };
+        console.log('[nx-pal][debug-report]', rep);
+        return rep;
+      }
+    };
   })();
 
   /* ══ Попап ══ */
