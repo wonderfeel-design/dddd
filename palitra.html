@@ -1,0 +1,828 @@
+<!-- =====================================================
+     ПАЛИТРА — инжект выбора цвета
+     Вставить: /palitra/ → любой Zero Block (нулевые отступы)
+     Самодостаточен: работает и при прямом заходе, и в связке с карточкой
+     ===================================================== -->
+
+<!-- Контекстная панель (показывается только при переходе с карточки товара) -->
+<div id="nx-pal-ctx" style="display:none;">
+  <div class="nx-pal-ctx__inner">
+    <div class="nx-pal-ctx__info">
+      <div class="nx-pal-ctx__label">Выбор цвета для товара</div>
+      <div class="nx-pal-ctx__name" id="nx-ctx-name"></div>
+      <div class="nx-pal-ctx__coating" id="nx-ctx-coating"></div>
+    </div>
+    <span class="nx-pal-ctx__hint">Нажмите на цвет чтобы выбрать ↓</span>
+    <a id="nx-ctx-back" href="#" class="nx-pal-ctx__btn nx-pal-ctx__btn--back">← Вернуться без выбора</a>
+  </div>
+</div>
+
+<div id="nx-pal-popup" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.55);align-items:center;justify-content:center;">
+  <div class="nx-pal-popup__inner">
+
+    <button class="nx-pal-popup__close" id="nx-pal-close" title="Закрыть">×</button>
+
+    <div class="nx-pal-popup__preview" id="nx-pal-preview"></div>
+    <div class="nx-pal-popup__code"    id="nx-pal-code"></div>
+    <div class="nx-pal-popup__name"    id="nx-pal-name"></div>
+
+    <!-- Только если пришли с карточки товара -->
+    <div class="nx-pal-popup__pick-box" id="nx-pal-pick-wrap" style="display:none">
+      <!-- Контекст: название товара + покрытие -->
+      <div class="nx-pal-popup__product-ctx" id="nx-popup-ctx" style="display:none">
+        <div class="nx-pal-popup__product-ctx__label">Товар</div>
+        <div class="nx-pal-popup__product-ctx__name" id="nx-popup-ctx-name"></div>
+        <div class="nx-pal-popup__product-ctx__coat" id="nx-popup-ctx-coat"></div>
+      </div>
+      <div class="nx-pal-popup__pick-label">Добавить цвет к товару</div>
+      <button class="nx-pal-popup__btn nx-pal-popup__btn--pick" id="nx-pal-pick">
+        ✓ Выбрать этот цвет
+      </button>
+    </div>
+
+    <!-- Заказ прямо с палитры — всегда -->
+    <div class="nx-pal-popup__sample-box">
+      <div class="nx-pal-popup__sample-label">Пробный выкрас</div>
+      <div class="nx-pal-popup__sample-price">Бесплатно</div>
+      <button class="nx-pal-popup__btn nx-pal-popup__btn--order" id="nx-pal-order">
+        Заказать пробный выкрас
+      </button>
+      <div class="nx-pal-popup__sample-hint">Менеджер свяжется с вами для подтверждения</div>
+    </div>
+
+  </div>
+</div>
+
+<style>
+/* ══ КОНТЕКСТНАЯ ПАНЕЛЬ ТОВАРА ══ */
+.nx-pal-ctx__inner {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;     /* выравнивание по левому краю сетки */
+  flex-wrap: wrap;                 /* перенос на мобильном */
+  gap: 12px 20px;
+  padding: 14px 20px;
+  background: #F2F7EE;
+  border: 1.5px solid #d0e8c4;
+  border-radius: 12px;
+  /* desktop: bar's top is hidden under the fixed header+nav → clear it */
+  margin: 120px auto 16px;
+  max-width: 1200px;               /* стандартная сетка Tilda (12 колонок) */
+  box-sizing: border-box;
+  font-family: 'GothamPro','Gotham Pro',sans-serif;
+}
+/* mobile: шапка+меню ФИКСИРОВАНЫ и перекрывают — даём отступ как у товара */
+@media (max-width: 980px) {
+  .nx-pal-ctx__inner { margin-top: calc(var(--nx-header-h, 96px) + 80px) !important; }
+}
+.nx-pal-ctx__label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: #888;
+  margin-bottom: 4px;
+}
+.nx-pal-ctx__name {
+  font-size: 15px;
+  font-weight: 700;
+  color: #1a1a1a;
+  line-height: 1.3;
+}
+.nx-pal-ctx__coating {
+  font-size: 13px;
+  color: #4C9E24;
+  font-weight: 600;
+  margin-top: 2px;
+}
+.nx-pal-ctx__btn--back {        /* стиль проекта: .nx-p-btn--outline */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: auto;               /* кнопка — последней в ряду (у правого края) */
+  padding: 12px 24px;
+  background: #fff;
+  border: 1.5px solid var(--nx-green, #4C9E24);
+  border-radius: 4px;
+  color: var(--nx-green, #4C9E24);
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  text-decoration: none;
+  white-space: nowrap;
+  font-family: var(--nx-font, 'GothamPro','Gotham Pro',sans-serif);
+  transition: background .15s, color .15s;
+}
+@media (max-width: 980px) {
+  /* на мобильном кнопка переносится и встаёт слева, без авто-отступа */
+  .nx-pal-ctx__btn--back { margin-left: 0; }
+}
+.nx-pal-ctx__btn--back:hover { background: #4C9E24; color: #fff; }
+.nx-pal-ctx__hint {
+  font-size: 13px;
+  color: #888;
+  font-family: inherit;
+}
+
+/* ══ КОМПАКТНЫЕ КАРТОЧКИ ПАЛИТРЫ ══ */
+body.nx-palitra .nx-delivery-row,
+body.nx-palitra .nx-price-block,
+body.nx-palitra .nx-size-row,
+body.nx-palitra .nx-cat-badge { display: none !important; }
+
+body.nx-palitra .t-store__card__price,
+body.nx-palitra .t-catalog__card__price,
+body.nx-palitra .t-store__card__btns-wrapper,
+body.nx-palitra .t-catalog__card__btns-wrapper { display: none !important; }
+
+body.nx-palitra .t-store__card__wrap_txt-and-btns,
+body.nx-palitra .t-catalog__card__wrap_txt-and-btns { padding: 0 14px 14px !important; }
+
+body.nx-palitra .t-store__card__wrap_txt-and-btns::before,
+body.nx-palitra .t-catalog__card__wrap_txt-and-btns::before { margin-bottom: 10px !important; }
+
+body.nx-palitra .t-store__card__title,
+body.nx-palitra .t-catalog__card__title { margin-bottom: 2px !important; }
+
+.js-catalog-price-wrapper.t-catalog__card__price-wrapper {
+    display: none !important;
+}
+
+body.nx-palitra .t-store__card__descr,
+body.nx-palitra .t-catalog__card__descr {
+    font-size: 12px !important;
+    color: #999 !important;
+    margin: 0 !important;
+}
+.js-catalog-grid-cont {
+    overflow: visible !important;
+    width: 100% !important;
+}
+
+/* ══ ФИЛЬТР ТИП ПОКРЫТИЯ ══ */
+.nx-coat-wrap {
+    padding: 14px 16px 4px;
+    border-top: 1px solid #f0f0f0;
+    margin-top: 8px;
+}
+.nx-coat-title {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: #333;
+    margin-bottom: 10px;
+    font-family: 'GothamPro','Gotham Pro',sans-serif;
+}
+.nx-coat-pills { display: flex; flex-direction: column; gap: 6px; }
+.nx-coat-btn {
+    display: inline-block;
+    padding: 5px 12px;
+    border-radius: 20px;
+    border: 1px solid #ddd;
+    background: #fff;
+    font-family: 'GothamPro','Gotham Pro',sans-serif;
+    font-size: 12px;
+    font-weight: 500;
+    color: #444;
+    cursor: pointer;
+    text-align: left;
+    transition: border-color .15s, color .15s, background .15s;
+    white-space: nowrap;
+}
+.nx-coat-btn:hover { border-color: #4C9E24; color: #4C9E24; }
+.nx-coat-btn.nx-active { background: #4C9E24; border-color: #4C9E24; color: #fff; }
+
+/* ══ Палитра не подходит под выбранный тип покрытия ══ */
+.nx-coat-btn--disabled,
+.nx-pal-link--disabled {
+  opacity: .4;
+  cursor: not-allowed !important;
+}
+.nx-coat-btn--disabled:hover { border-color: #ddd; color: #444; background: #fff; }
+.nx-pal-link--disabled { text-decoration: line-through; }
+.nx-coat-msg {
+  display: none;
+  margin: 10px auto 0;
+  max-width: 1200px;
+  padding: 10px 14px;
+  background: #fff4e5;
+  border: 1px solid #f0c27a;
+  border-radius: 8px;
+  color: #9a5b00;
+  font-size: 13px;
+  line-height: 1.4;
+  font-family: 'GothamPro','Gotham Pro',sans-serif;
+  box-sizing: border-box;
+}
+
+/* ══ ПОПАП ══ */
+.nx-pal-popup__inner {
+  position: relative;
+  background: #fff;
+  border-radius: 20px;
+  padding: 20px 20px 20px;
+  max-width: 340px;
+  width: calc(100% - 32px);
+  text-align: center;
+  box-shadow: 0 24px 64px rgba(0,0,0,.35);
+  font-family: 'GothamPro','Gotham Pro',sans-serif;
+}
+.nx-pal-popup__close {
+  position: absolute;
+  top: 12px; right: 12px;
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  color: #4C9E24;
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-family: inherit;
+  transition: color .15s;
+}
+.nx-pal-popup__close:hover { background: transparent; color: #3d8a1c; }
+
+/* Контекст товара внутри попапа */
+.nx-pal-popup__product-ctx {
+  background: #F2F7EE;
+  border: 1px solid #d0e8c4;
+  border-radius: 10px;
+  padding: 10px 12px;
+  margin-bottom: 10px;
+  text-align: left;
+}
+.nx-pal-popup__product-ctx__label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: #888;
+  margin-bottom: 4px;
+}
+.nx-pal-popup__product-ctx__name {
+  font-size: 12px;
+  font-weight: 700;
+  color: #1a1a1a;
+  line-height: 1.3;
+}
+.nx-pal-popup__product-ctx__coat {
+  font-size: 11px;
+  color: #4C9E24;
+  font-weight: 600;
+  margin-top: 2px;
+}
+
+.nx-pal-popup__preview {
+  width: 100%; height: 180px;
+  border-radius: 12px;
+  margin: 0 0 14px;
+  background: #e0e0e0 center/cover no-repeat;
+  box-shadow: 0 4px 16px rgba(0,0,0,.1);
+}
+.nx-pal-popup__code { font-size: 22px; font-weight: 700; color: #1a1a1a; line-height: 1.2; }
+.nx-pal-popup__name { font-size: 13px; color: #888; margin: 3px 0 14px; min-height: 16px; }
+
+.nx-pal-popup__pick-box {
+  background: #F2F7EE;
+  border: 1px solid #d0e8c4;
+  border-radius: 12px;
+  padding: 12px 14px;
+  margin-bottom: 10px;
+  text-align: left;
+}
+.nx-pal-popup__pick-label {
+  font-size: 11px; color: #888;
+  text-transform: uppercase; letter-spacing: .05em;
+  margin-bottom: 8px;
+}
+.nx-pal-popup__btn--pick {      /* стиль проекта: .nx-p-btn (filled) */
+  width: 100%; padding: 14px;
+  border-radius: 4px; border: none;
+  background: var(--nx-green, #4C9E24); color: #fff;
+  font-size: 13px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .5px;
+  cursor: pointer; font-family: var(--nx-font, 'GothamPro','Gotham Pro',sans-serif);
+  transition: background .15s;
+  box-sizing: border-box;
+}
+.nx-pal-popup__btn--pick:hover { background: var(--nx-green-dk, #3d8a1c); }
+
+.nx-pal-popup__sample-box {
+  background: #F2F7EE;
+  border: 1px solid #d0e8c4;
+  border-radius: 12px;
+  padding: 14px;
+  text-align: left;
+}
+.nx-pal-popup__sample-label { font-size: 11px; color: #888; text-transform: uppercase; letter-spacing: .05em; }
+.nx-pal-popup__sample-price { font-size: 20px; font-weight: 700; color: #4C9E24; margin: 2px 0 10px; }
+.nx-pal-popup__btn--order {     /* стиль проекта: .nx-p-btn--outline */
+  width: 100%; padding: 14px;
+  border-radius: 4px; border: 1.5px solid var(--nx-green, #4C9E24);
+  background: #fff; color: var(--nx-green, #4C9E24);
+  font-size: 13px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: .5px;
+  cursor: pointer; font-family: var(--nx-font, 'GothamPro','Gotham Pro',sans-serif);
+  transition: background .15s, color .15s;
+  box-sizing: border-box;
+}
+.nx-pal-popup__btn--order:hover { background: var(--nx-green-bg, #f2f9ee); }
+.nx-pal-popup__sample-hint { font-size: 11px; color: #999; margin-top: 8px; line-height: 1.4; }
+
+/* ══ ФИЛЬТРЫ: «Тип покрытия» чекбоксами (порядок — JS-перемещением, см. reorderFilters) ══ */
+/* 2 + 4) «Тип покрытия» — компактные чекбоксы вместо крупного селекта */
+.nx-coat-filter .t-catalog__filter__custom-sel {
+  display: flex !important;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 7px 0 !important;
+  margin: 0 !important;
+  cursor: pointer;
+  background: none !important;
+  border: none !important;
+}
+.nx-coat-filter .t-catalog__filter__custom-sel::before {
+  content: '';
+  flex: 0 0 18px;
+  width: 18px; height: 18px;
+  margin-top: 1px;
+  border: 1.5px solid #c5c5c5;
+  border-radius: 4px;
+  background: #fff;
+  box-sizing: border-box;
+  transition: border-color .15s, background-color .15s;
+}
+.nx-coat-filter .t-catalog__filter__custom-sel.active::before {
+  border-color: var(--nx-green, #4C9E24);
+  background-color: var(--nx-green, #4C9E24);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath fill='none' stroke='%23fff' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' d='M2.5 6.5 5 9 9.5 3.5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: 12px;
+}
+.nx-coat-filter .t-catalog__filter__title {
+  font-size: 13px !important;
+  line-height: 1.3 !important;
+  font-weight: 400 !important;
+  color: #444 !important;
+  text-transform: none !important;
+  letter-spacing: 0 !important;
+}
+.nx-coat-filter .t-catalog__filter__custom-sel.active .t-catalog__filter__title {
+  color: #1a1a1a !important;
+  font-weight: 600 !important;
+}
+</style>
+
+<script>
+(function () {
+
+  /* ══ 0. Класс на body для CSS-скопинга ══ */
+  document.body.classList.add('nx-palitra');
+
+  /* ══ 0a. Контекстная панель товара ══ */
+  (function () {
+    var backUrl = '';
+    var productCtx = null;
+    try { backUrl     = sessionStorage.getItem('nx_palette_back') || ''; } catch (e) {}
+    try { productCtx  = JSON.parse(sessionStorage.getItem('nx_palette_product') || 'null'); } catch (e) {}
+    if (!backUrl) return;
+
+    var ctx     = document.getElementById('nx-pal-ctx');
+    var nameEl  = document.getElementById('nx-ctx-name');
+    var coatEl  = document.getElementById('nx-ctx-coating');
+    var backBtn = document.getElementById('nx-ctx-back');
+    if (!ctx) return;
+
+    if (nameEl && productCtx) nameEl.textContent  = productCtx.name || '';
+    if (coatEl && productCtx) coatEl.textContent  = productCtx.coating ? 'Покрытие: ' + productCtx.coating : '';
+    if (backBtn) {
+      backBtn.href = backUrl;
+      backBtn.addEventListener('click', function (e) {
+        e.preventDefault();
+        try { sessionStorage.removeItem('nx_palette_back'); } catch (ex) {}
+        try { sessionStorage.removeItem('nx_palette_product'); } catch (ex) {}
+        window.location.href = backUrl;
+      });
+    }
+    ctx.style.display = '';
+  })();
+
+  /* ══ 0b. Фильтр по бренду палитры ══ */
+  var activeBrand = 'all';
+
+  var BRANDS = [
+    { key: 'all',      label: 'Все' },
+    { key: 'vinha',    label: 'Vinha' },
+    { key: 'valtti',   label: 'Valtti' },
+    { key: 'puutalot', label: 'Puutalot' },
+    { key: 'ral',      label: 'RAL' },
+    { key: 'deco',     label: 'Deco' }
+  ];
+
+  function getCardBrand(card) {
+    var d = card.querySelector('.t-store__card__descr,.t-catalog__card__descr');
+    var ti = card.querySelector('.t-store__card__title,.t-catalog__card__title');
+    var text = (d ? d.textContent : '') + ' ' + (ti ? ti.textContent : '');
+    if (/\bVinha\b/i.test(text))    return 'vinha';
+    if (/\bValtti\b/i.test(text))   return 'valtti';
+    if (/\bPuutalot\b/i.test(text)) return 'puutalot';
+    if (/\bRAL\b/i.test(text))      return 'ral';
+    if (/\bDeco\b/i.test(text))     return 'deco';
+    return 'other';
+  }
+
+  function applyBrandFilter() {
+    document.querySelectorAll(
+      '.t-store__card:not(.t-store__card-preloader),.t-catalog__card:not(.t-catalog__card-preloader)'
+    ).forEach(function (card) {
+      var b = getCardBrand(card);
+      /* Грид НЕ фильтруется по типу покрытия (иначе страница пустеет, когда
+         текущая часть каталога — несовместимый бренд). Совместимость показываем
+         только серением кнопок брендов + предупреждением (см. mark()/showMsg).
+         Грид режется лишь по ЯВНОМУ выбору бренда пользователем. */
+      var show = (activeBrand === 'all') ? true : (b === activeBrand);
+      card.style.display = show ? '' : 'none';
+    });
+  }
+
+  function buildBrandFilter() {
+    if (document.getElementById('nx-coat-wrap')) return;
+    var container = document.querySelector(
+      '.t-catalog__filter-w-parts, .t-catalog__filter-container, .t-catalog__cont-filter'
+    );
+    if (!container) return;
+
+    var wrap = document.createElement('div');
+    wrap.id = 'nx-coat-wrap';
+    wrap.className = 'nx-coat-wrap';
+    var pills = BRANDS.map(function (b) {
+      return '<button class="nx-coat-btn' + (b.key === 'all' ? ' nx-active' : '') +
+             '" data-brand="' + b.key + '">' + b.label + '</button>';
+    }).join('');
+    wrap.innerHTML = '<div class="nx-coat-title">Бренд палитры</div><div class="nx-coat-pills">' + pills + '</div>';
+    container.appendChild(wrap);
+
+    wrap.querySelectorAll('.nx-coat-btn').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        activeBrand = this.dataset.brand;
+        wrap.querySelectorAll('.nx-coat-btn').forEach(function (b) { b.classList.remove('nx-active'); });
+        this.classList.add('nx-active');
+        applyBrandFilter();
+      });
+    });
+  }
+
+  /* Tilda рендерит каталог с задержкой и при смене категории */
+  new MutationObserver(function () {
+    buildBrandFilter();
+    if (activeBrand !== 'all') applyBrandFilter();
+  }).observe(document.body, { childList: true, subtree: true });
+
+  setTimeout(buildBrandFilter, 600);
+
+  /* ══ 0c. Ограничение палитр по типу покрытия ══
+     При переходе с карточки товара показываем подходящие палитры,
+     остальные — выключаем; по клику на выключенную выводим сообщение. */
+  (function () {
+    var pc = null;
+    try { pc = JSON.parse(sessionStorage.getItem('nx_palette_product') || 'null'); } catch (e) {}
+    var coating = (pc && pc.coating ? String(pc.coating) : '').toLowerCase().trim();
+    if (!coating) return;                       /* нет контекста покрытия → без ограничений */
+
+    var OPAQUE = ['ral', 'vinha', 'puutalot', 'deco'];   /* Укрывная */
+    var VALTTI = ['valtti'];                             /* пропитки / лессирующие / лаки / воск */
+    var COATING_BRANDS = {
+      'укрывная':              OPAQUE,
+      'пропитка гидромаслом':  VALTTI,
+      'лессирующая':           VALTTI,
+      'лессирующая premium':   VALTTI,
+      'лак снаружи':           VALTTI,
+      'лак внутри':            VALTTI,
+      'воск внутри':           VALTTI
+    };
+    var allowed = COATING_BRANDS[coating];
+    if (!allowed) return;                       /* незнакомое покрытие → без ограничений */
+    /* Грид по покрытию НЕ предфильтруем и НЕ авто-применяем нативный фильтр —
+       страница всегда показывает все палитры. Совместимость доносим только
+       серением несовместимых кнопок брендов + предупреждением по клику. */
+
+    var MSG = 'Для данного типа покрытия не подходит. Уточняйте у менеджера!';
+    /* нативные кнопки фильтра палитр Tilda (store parts-switch) */
+    var NATIVE_SEL = '[data-storepart-path], .t-catalog__parts-switch-btn';
+
+    function brandOf(text) {
+      text = (text || '').toLowerCase();
+      if (/vinha/.test(text))    return 'vinha';
+      if (/valtti/.test(text))   return 'valtti';
+      if (/puutalot/.test(text)) return 'puutalot';
+      if (/deco/.test(text))     return 'deco';
+      if (/\bral\b/.test(text))  return 'ral';
+      return null;
+    }
+    /* бренд нативной кнопки — по data-storepart-path ("Палитра RAL"), иначе по тексту */
+    function nativeBrand(el) {
+      return brandOf((el.getAttribute && el.getAttribute('data-storepart-path')) || el.textContent);
+    }
+    function blocked(brand) { return brand && brand !== 'all' && allowed.indexOf(brand) === -1; }
+
+    /* === Нативный фильтр «Тип покрытия» (charact:11257411) ===
+       В данных 2 значения: длинная строка (группа Valtti) и «Укрывная». */
+    function coatingItem() {
+      var t = document.querySelector('.js-catalog-filter-item-title[data-filter-name="charact:11257411"]');
+      return t ? t.closest('.t-catalog__filter__item') : null;
+    }
+
+    /* Нативный «Бренд» (charact:11257421) */
+    function brandFilterItem() {
+      var t = document.querySelector('.js-catalog-filter-item-title[data-filter-name="charact:11257421"]');
+      return t ? t.closest('.t-catalog__filter__item') : null;
+    }
+
+    /* tuneFilters: 1) «Тип покрытия» — класс для чекбокс-вида + короткий лейбл;
+       2) переносим «Бренд» ВЫШЕ «Тип покрытия» (физически в DOM, без CSS-order). */
+    function tuneFilters() {
+      var item = coatingItem();
+      if (item) item.classList.add('nx-coat-filter');
+
+      var brand = brandFilterItem();
+      /* если «Бренд» идёт ПОСЛЕ «Тип покрытия» — поднимаем его перед ним */
+      if (item && brand && item.parentNode === brand.parentNode &&
+          (brand.compareDocumentPosition(item) & Node.DOCUMENT_POSITION_PRECEDING)) {
+        brand.parentNode.insertBefore(brand, item);
+      }
+
+      if (item) {
+        var longSel = item.querySelector('.t-catalog__filter__custom-sel[data-filter-value*="Пропитка гидромаслом"]');
+        var ttl = longSel && longSel.querySelector('.t-catalog__filter__title');
+        if (ttl && ttl.textContent.trim().length > 22) ttl.textContent = 'Пропитки, лаки, воск (Valtti)';
+      }
+    }
+
+    /* ВАЖНО: авто-применение нативного фильтра «Тип покрытия»/«Бренд» УБРАНО.
+       Палитры в Tilda не размечены поштучно по этой характеристике, поэтому любой
+       авто-фильтр возвращал 0 товаров → грид и сайдбар схлопывались. Теперь страница
+       всегда показывает ВСЕ палитры; фильтрами управляет пользователь вручную. */
+
+    function showMsg() {
+      var box = document.getElementById('nx-coat-msg');
+      if (!box) {
+        box = document.createElement('div');
+        box.id = 'nx-coat-msg';
+        box.className = 'nx-coat-msg';
+      }
+      box.textContent = '⚠ ' + MSG;
+      /* размещаем под кастомными пилюлями, иначе под нативным деревом фильтров */
+      if (!box.parentNode) {
+        var host = document.getElementById('nx-coat-wrap')
+                || document.querySelector('.t-catalog__parts-switch-wrapper, .t-catalog__parts-tree, .t-catalog__filter-w-parts, .t-catalog__cont-filter');
+        if (host && host.parentNode) {
+          host.parentNode.insertBefore(box, host.nextSibling);
+        } else {
+          document.body.appendChild(box);
+        }
+      }
+      box.style.display = 'block';
+    }
+    function hideMsg() {
+      var box = document.getElementById('nx-coat-msg');
+      if (box) box.style.display = 'none';
+    }
+
+    function mark() {
+      document.querySelectorAll('.nx-coat-btn').forEach(function (b) {
+        b.classList.toggle('nx-coat-btn--disabled', blocked(b.dataset.brand));
+      });
+      document.querySelectorAll(NATIVE_SEL).forEach(function (a) {
+        a.classList.toggle('nx-pal-link--disabled', blocked(nativeBrand(a)));
+      });
+      applyBrandFilter();          /* грид по активному бренду (не по покрытию) */
+      tuneFilters();               /* порядок фильтров + чекбокс-вид «Тип покрытия» */
+    }
+
+    /* перехватываем клик в capture-фазе — раньше обработчиков Tilda и пилюль */
+    document.addEventListener('click', function (e) {
+      var t = e.target;
+      if (!t || !t.closest) return;
+      var pill = t.closest('.nx-coat-btn');
+      var link = t.closest(NATIVE_SEL);
+      if (!pill && !link) return;
+      var brand = pill ? pill.dataset.brand : nativeBrand(link);
+      if (blocked(brand)) {
+        e.preventDefault();
+        e.stopImmediatePropagation();   /* блокируем и переключатель Tilda */
+        showMsg();
+      } else {
+        hideMsg();
+      }
+    }, true);
+
+    new MutationObserver(mark).observe(document.body, { childList: true, subtree: true });
+    setTimeout(mark, 600);
+    mark();
+  })();
+
+  /* ══ Попап ══ */
+  var popup    = document.getElementById('nx-pal-popup');
+  var preview  = document.getElementById('nx-pal-preview');
+  var codeEl   = document.getElementById('nx-pal-code');
+  var nameEl   = document.getElementById('nx-pal-name');
+  var pickWrap = document.getElementById('nx-pal-pick-wrap');
+  var pickBtn  = document.getElementById('nx-pal-pick');
+  var orderBtn = document.getElementById('nx-pal-order');
+  var closeBtn = document.getElementById('nx-pal-close');
+  var _current = null;
+
+  /* ── Парсинг данных карточки ── */
+  function parseHex(text) {
+    var m = text && text.match(/\(?([0-9A-Fa-f]{6})\)?/);
+    return m ? '#' + m[1].toUpperCase() : null;
+  }
+
+  function getBgImg(card) {
+    var bg = card.querySelector('.t-store__card__bgimg,.t-catalog__card__bgimg,[class*="bgimg"]');
+    if (!bg) return '';
+    var m = (bg.style.backgroundImage || '').match(/url\(['"]?([^'")\s]+)['"]?\)/);
+    return m ? m[1] : '';
+  }
+
+  function getCardData(card) {
+    /* Заголовок карточки: "2661x", "Vinha 2661" и т.п. */
+    var titleEl = card.querySelector(
+      '.js-catalog-prod-name, .js-product-name, .t-catalog__card__title, .t-store__card__title'
+    );
+    var titleText = titleEl ? titleEl.textContent.trim() : '';
+
+    /* Описание карточки: "Vinha 2661", "RAL 1013" и т.п. */
+    var descrEl = card.querySelector('.t-catalog__card__descr, .t-store__card__descr');
+    var descrText = descrEl ? descrEl.textContent.trim() : '';
+
+    /* Код: первое число ("Vinha 2661" → "2661", "2683x" → "2683") */
+    var m = (titleText || descrText).match(/(\d+)/);
+    var code = m ? m[1] : (titleText || descrText);
+
+    /* Имя: предпочитаем descr если есть; иначе чистим title */
+    var name;
+    if (descrText && descrText !== titleText) {
+      name = descrText;
+    } else {
+      var cleaned = titleText.replace(code, '').replace(/^[\s\W]+/, '').replace(/[\s\W]+$/, '').trim();
+      name = cleaned.length >= 3 ? cleaned : '';
+    }
+
+    return { code: code, name: name || code, hex: parseHex(titleText + descrText), img: getBgImg(card) };
+  }
+
+  /* ── Попап ── */
+  function openPopup(data) {
+    _current = data;
+
+    if (data.img) {
+      preview.style.backgroundImage = 'url(' + data.img + ')';
+      preview.style.backgroundColor = data.hex || '#e0e0e0';
+    } else {
+      preview.style.backgroundImage = '';
+      preview.style.backgroundColor = data.hex || '#e0e0e0';
+    }
+
+    codeEl.textContent = data.code;
+    nameEl.textContent = (data.name && data.name !== data.code) ? data.name : '';
+
+    /* Блок «Выбрать для товара» — только при возврате на карточку */
+    var hasBack = !!sessionStorage.getItem('nx_palette_back');
+    pickWrap.style.display = hasBack ? '' : 'none';
+
+    /* Заполняем контекст товара внутри попапа */
+    if (hasBack) {
+      var popupCtx      = document.getElementById('nx-popup-ctx');
+      var popupCtxName  = document.getElementById('nx-popup-ctx-name');
+      var popupCtxCoat  = document.getElementById('nx-popup-ctx-coat');
+      var productCtx = null;
+      try { productCtx = JSON.parse(sessionStorage.getItem('nx_palette_product') || 'null'); } catch (e) {}
+      if (popupCtx && productCtx && productCtx.name) {
+        if (popupCtxName) popupCtxName.textContent = productCtx.name;
+        if (popupCtxCoat) popupCtxCoat.textContent = productCtx.coating ? 'Покрытие: ' + productCtx.coating : '';
+        popupCtx.style.display = '';
+      }
+    }
+
+    popup.style.display = 'flex';
+    document.body.style.overflow = 'hidden';
+  }
+
+  function closePopup() {
+    popup.style.display = 'none';
+    document.body.style.overflow = '';
+    _current = null;
+  }
+
+  function showToast(msg) {
+    var t = document.createElement('div');
+    t.style.cssText = 'position:fixed;bottom:28px;left:50%;transform:translateX(-50%);' +
+      'background:#4C9E24;color:#fff;padding:12px 24px;border-radius:10px;' +
+      'font-size:14px;font-weight:600;z-index:10000;box-shadow:0 4px 20px rgba(0,0,0,.25);' +
+      'white-space:nowrap;pointer-events:none;font-family:inherit;';
+    t.textContent = msg;
+    document.body.appendChild(t);
+    setTimeout(function () { if (t.parentNode) t.parentNode.removeChild(t); }, 3000);
+  }
+
+  /* ── Кнопки попапа ── */
+  pickBtn.addEventListener('click', function () {
+    if (!_current) return;
+    try { sessionStorage.setItem('nx_palette_color', JSON.stringify(_current)); } catch (e) {}
+    history.back();
+  });
+
+  orderBtn.addEventListener('click', function () {
+    if (!_current) return;
+    try { sessionStorage.setItem('nx_palette_color', JSON.stringify(_current)); } catch (e) {}
+    var label = [_current.code,
+      (_current.name && _current.name !== _current.code) ? _current.name : ''
+    ].filter(Boolean).join(' — ');
+    try {
+      if (typeof tcart__addProduct === 'function') {
+        /* Выкрас — ручная позиция 0 ₽ без складского uid (иначе NOT FOUND PRODUCTS IN STORE) */
+        var sampleItem = { name: 'Пробный выкрас — ' + label, price: 0, quantity: 1, amount: 0, img: _current.img || '', uid: '306044934692', option: 'Цвет: ' + label };
+        console.log('nx: sample to cart', JSON.stringify(sampleItem));
+        tcart__addProduct(sampleItem);
+      }
+    } catch (e) { console.error('nx: tcart', e); }
+    closePopup();
+    showToast('«' + _current.code + '» добавлен в корзину');
+  });
+
+  closeBtn.addEventListener('click', closePopup);
+  popup.addEventListener('click', function (e) { if (e.target === popup) closePopup(); });
+
+  /* ── Event delegation на document (capture) ──────────────────────────────
+     e.isTrusted — блокирует синтетические клики Tilda при инициализации каталога
+     (именно они вызывали автооткрытие попапа при загрузке страницы).
+  ──────────────────────────────────────────────────────────────────────── */
+  document.addEventListener('click', function (e) {
+    if (!e.isTrusted) return; /* только настоящие клики пользователя */
+    if (location.pathname.indexOf('/palitra') !== 0) return;
+    if (popup.contains(e.target)) return;
+
+    var card = e.target.closest('.t-store__card, .t-catalog__card');
+    if (!card) return;
+
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    openPopup(getCardData(card));
+  }, true); /* capture: перехватываем до навигации Tilda */
+
+})();
+</script>
+
+<script>
+/* ══ Раскраска свотчей фильтра «Цвет» на /palitra ══
+   У значений фильтра (беж, бордо, голубой…) в Tilda не задан оттенок —
+   кружки пустые. Красим их по названию. Оттенки совпадающих цветов взяты
+   из реального фильтра каталога (коды покрытий); голубой/синий/зелёный — подобраны. */
+(function () {
+  var MAP = {
+    'беж': '#F0E3C8', 'белый': '#F3F3EE', 'бордо': '#703848', 'голубой': '#9CC3DB',
+    'желтый': '#DCA658', 'жёлтый': '#DCA658', 'зеленый': '#5A9E4B', 'зелёный': '#5A9E4B',
+    'коричневый': '#805040', 'красный': '#A83C48', 'оранжевый': '#D08848', 'серый': '#9A9898',
+    'синий': '#2F4FA0', 'темно-зеленый': '#2E5A36', 'тёмно-зелёный': '#2E5A36', 'фиолетовый': '#AF76B3'
+  };
+  function name(el) {
+    var inp = el.querySelector('input[data-filter-value]');
+    var v = el.getAttribute('aria-label') || el.getAttribute('data-tooltip') ||
+            (inp && inp.getAttribute('data-filter-value')) || el.textContent || '';
+    return (v + '').trim().toLowerCase();
+  }
+  function paint() {
+    document.querySelectorAll('.t-catalog__filter__checkbox_color').forEach(function (el) {
+      var nm = name(el);
+      var hex = MAP[nm];
+      if (hex) {
+        /* заливка — красим кружок-индикатор, как в каталоге (.checkmark_color) */
+        var dot = el.querySelector('.t-catalog__filter__checkmark_color, .t-catalog__filter__checkmark, .t-checkbox__indicator');
+        if (dot) dot.style.setProperty('background-color', hex, 'important');
+        else el.style.setProperty('background-color', hex, 'important');
+      }
+      /* название оттенка — только в тултипе при наведении (подпись под свотчем НЕ показываем) */
+      if (nm) {
+        el.setAttribute('data-tooltip', nm);
+        el.setAttribute('aria-label', nm);
+        el.setAttribute('title', nm);
+      }
+    });
+    /* скрыть фильтр «Цена» — у палитры цены 0, он бесполезен (0–0) */
+    document.querySelectorAll('.t-catalog__filter__item').forEach(function (item) {
+      var isPrice = !!item.querySelector('.t-catalog__filter__slider, .t-rangeslider, input[type="range"], input[name*="price"], [class*="filter__range"]');
+      if (!isPrice) {
+        var h = item.querySelector('.t-catalog__filter__title-block, [class*="filter__heading"], [class*="filter__title-block"], [class*="filter__opt-title"]');
+        if (h && (h.textContent || '').trim().toLowerCase().indexOf('цена') === 0) isPrice = true;
+      }
+      if (isPrice) item.style.setProperty('display', 'none', 'important');
+    });
+  }
+  paint();
+  if (window.MutationObserver) new MutationObserver(paint).observe(document.body, { childList: true, subtree: true });
+})();
+</script>
