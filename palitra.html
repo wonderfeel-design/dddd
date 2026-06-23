@@ -628,10 +628,48 @@ body.nx-palitra .t-catalog__parts-text-title {
       }
     }
 
-    /* ВАЖНО: авто-применение нативного фильтра «Тип покрытия»/«Бренд» УБРАНО.
-       Палитры в Tilda не размечены поштучно по этой характеристике, поэтому любой
-       авто-фильтр возвращал 0 товаров → грид и сайдбар схлопывались. Теперь страница
-       всегда показывает ВСЕ палитры; фильтрами управляет пользователь вручную. */
+    /* Авто-применение нативных фильтров снова включено:
+       данные по «Тип покрытия»/«Бренд» в Tilda размечены поштучно. */
+    function hasActiveIn(item) {
+      return !!(item && item.querySelector('.t-catalog__filter__custom-sel.active'));
+    }
+    function applyFirstMatch(item, predicate) {
+      if (!item || hasActiveIn(item)) return false;
+      var els = item.querySelectorAll('.t-catalog__filter__custom-sel');
+      for (var i = 0; i < els.length; i++) {
+        var el = els[i];
+        var v = (el.getAttribute('data-filter-value') || '').trim();
+        if (!v) {
+          var ttl = el.querySelector('.t-catalog__filter__title');
+          v = (ttl ? ttl.textContent : el.textContent || '').trim();
+        }
+        if (predicate(v, el)) {
+          el.click();
+          return true;
+        }
+      }
+      return false;
+    }
+    function applyNativeFiltersFromContext() {
+      var coatingVal = String(coating || '').trim();
+      var coatingOk = false;
+      if (coatingVal) {
+        var coatingLower = coatingVal.toLowerCase();
+        coatingOk = applyFirstMatch(coatingItem(), function (v) {
+          var x = String(v || '').toLowerCase().trim();
+          return x === coatingLower || x.indexOf(coatingLower) !== -1 || coatingLower.indexOf(x) !== -1;
+        });
+      }
+
+      var allowedNow = getAllowedBrands();
+      if (allowedNow.length === 1) {
+        var wanted = allowedNow[0];
+        applyFirstMatch(brandFilterItem(), function (v) {
+          return brandOf(v) === wanted;
+        });
+      }
+      return coatingOk;
+    }
 
     function showMsg() {
       var box = document.getElementById('nx-coat-msg');
@@ -700,6 +738,10 @@ body.nx-palitra .t-catalog__parts-text-title {
       }, 140);
     }
     new MutationObserver(scheduleMark).observe(document.body, { childList: true, subtree: true });
+    /* После дорисовки фильтров применяем контекст из карточки (если есть) */
+    setTimeout(function () {
+      if (applyNativeFiltersFromContext()) scheduleMark();
+    }, 700);
     setTimeout(mark, 600);
     mark();
   })();
