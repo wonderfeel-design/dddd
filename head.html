@@ -366,13 +366,31 @@
     var imgs = gallery.map(function (g) { return g.img || g; });
     var firstImg = imgs[0] || '';
     var thumbs = imgs.map(function (src, i) {
+      var loadingMode = i < 2 ? 'eager' : 'lazy';
+      var fp = i === 0 ? 'high' : (i === 1 ? 'auto' : 'low');
       return '<div class="nx-p-thumb' + (i === 0 ? ' nx-p-thumb--active' : '') +
-        '" data-idx="' + i + '"><img src="' + src + '" alt="" loading="lazy"></div>';
+        '" data-idx="' + i + '"><img src="' + src + '" alt="" loading="' + loadingMode + '" fetchpriority="' + fp + '"></div>';
     }).join('');
     return '<div class="nx-p-gallery">' +
       '<div class="nx-p-mainimg"><img id="nx-mi" src="' + firstImg + '" alt="" loading="eager" fetchpriority="high"></div>' +
       '<div class="nx-p-thumbs">' + thumbs + '</div>' +
       '</div>';
+  }
+
+  function ensureMainImagePreload(src) {
+    if (!src) return;
+    var head = document.head || document.getElementsByTagName('head')[0];
+    if (!head) return;
+    var ln = document.getElementById('nx-preload-mainimg');
+    if (!ln) {
+      ln = document.createElement('link');
+      ln.id = 'nx-preload-mainimg';
+      ln.rel = 'preload';
+      ln.as = 'image';
+      ln.fetchPriority = 'high';
+      head.appendChild(ln);
+    }
+    if (ln.href !== src) ln.href = src;
   }
 
   function renderChars(chars) {
@@ -512,6 +530,12 @@ if (firstEd && firstEd['Покрытие'] === 'Без покрытия') {
 
     var ed      = getEd();
     var gallery = typeof p.gallery === 'string' ? JSON.parse(p.gallery) : (p.gallery || []);
+    var firstImg = '';
+    if (gallery && gallery.length) {
+      var g0 = gallery[0];
+      firstImg = (g0 && g0.img) ? g0.img : g0;
+    }
+    ensureMainImagePreload(firstImg);
 
     var html =
       '<div class="nx-p-inner">' +
