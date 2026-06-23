@@ -19,6 +19,7 @@
    (Order error / NOT FOUND PRODUCTS IN STORE), не трогая валидацию полей. */
 (function () {
   var _storeErrScheduled = false;
+  var _storeErrObs = null;
   function hideStoreOrderError() {
     var boxes = document.querySelectorAll('.t-form__errorbox-text, .t-store__error, .js-errorbox-all, .t-form__errorbox');
     for (var i = 0; i < boxes.length; i++) {
@@ -38,7 +39,13 @@
     }, 120);
   }
   if (window.MutationObserver) {
-    new MutationObserver(scheduleHideStoreOrderError).observe(document.documentElement, { childList: true, subtree: true });
+    _storeErrObs = new MutationObserver(scheduleHideStoreOrderError);
+    function startStoreErrObs() {
+      var host = document.body || document.documentElement;
+      _storeErrObs.observe(host, { childList: true, subtree: true });
+    }
+    if (document.body) startStoreErrObs();
+    else document.addEventListener('DOMContentLoaded', startStoreErrObs);
   }
   document.addEventListener('DOMContentLoaded', hideStoreOrderError);
 })();
@@ -616,7 +623,12 @@ if (firstEd && firstEd['Покрытие'] === 'Без покрытия') {
 
     /* Первичное скрытие + наблюдатель (Tilda дорисовывает сниппеты асинхронно) */
     hideSnippets();
-    new MutationObserver(scheduleHideSnippets).observe(document.body, { childList: true, subtree: true });
+    var snippetsObs = new MutationObserver(scheduleHideSnippets);
+    snippetsObs.observe(document.body, { childList: true, subtree: true });
+    /* Держим наблюдение только в фазе первичной дорисовки Tilda */
+    setTimeout(function () {
+      try { snippetsObs.disconnect(); } catch (e) {}
+    }, 8000);
 
     attachEvents();
     updateColors();
