@@ -9,6 +9,80 @@
     opacity: 0 !important;
     pointer-events: none !important;
   }
+  /* Кастомное дерево разделов в левом сайдбаре каталога */
+  .nx-fallback-sidebar-parts {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 18px;
+  }
+  .nx-fallback-group {
+    border: 1px solid #ececec;
+    border-radius: 8px;
+    overflow: hidden;
+    background: #fff;
+  }
+  .nx-fallback-group-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 10px 12px;
+  }
+  .nx-fallback-parent-link {
+    display: block;
+    flex: 1;
+    color: #222;
+    text-decoration: none;
+    font-size: 14px;
+    line-height: 1.3;
+    font-weight: 600;
+  }
+  .nx-fallback-parent-link:hover { color: #4C9E24; }
+  .nx-fallback-parent-toggle {
+    border: none;
+    background: transparent;
+    color: #7a7a7a;
+    font-size: 14px;
+    line-height: 1;
+    cursor: pointer;
+    padding: 2px;
+  }
+  .nx-fallback-group-list {
+    display: none;
+    border-top: 1px solid #f0f0f0;
+    padding: 6px;
+  }
+  .nx-fallback-group.is-open .nx-fallback-group-list { display: block; }
+  .nx-fallback-child-link {
+    display: block;
+    padding: 7px 10px;
+    border-radius: 6px;
+    text-decoration: none;
+    color: #333;
+    font-size: 13px;
+    line-height: 1.3;
+  }
+  .nx-fallback-child-link:hover {
+    background: #f4f8f1;
+    color: #4C9E24;
+  }
+  .nx-fallback-group.is-active {
+    border-color: #4C9E24;
+    background: #f9fdf7;
+  }
+  .nx-fallback-parent-link.nx-active,
+  .nx-fallback-child-link.nx-active {
+    background: #E8F5E2;
+    color: #1f4f0d;
+    font-weight: 700;
+  }
+  .nx-sidebar-sections-custom .t-catalog-parts-above__container,
+  .nx-sidebar-sections-custom .js-sidebar-parts .t-catalog__parts-tree,
+  .nx-sidebar-sections-custom .js-sidebar-parts .t-catalog__parts-switch-wrapper,
+  .nx-sidebar-sections-custom .js-sidebar-parts [data-storepart-path] {
+    display: none !important;
+  }
 </style>
 
 <script>if (location.pathname.indexOf('/tproduct/') !== -1) { document.documentElement.classList.add('nx-tp'); }</script>
@@ -88,6 +162,131 @@
     new MutationObserver(schedulePaletteRefresh)
       .observe(document.body, { childList: true, subtree: true });
   }
+  document.readyState === 'loading' ? document.addEventListener('DOMContentLoaded', init) : setTimeout(init, 300);
+})();
+
+/* ══ 1b. Единый sidebar разделов каталога (без дублей) ══ */
+(function () {
+  'use strict';
+  if (location.pathname.indexOf('/catalog/') !== 0) return;
+
+  function currentUid() {
+    var m = location.pathname.match(/\/catalog\/(\d+)(?:-|$)/);
+    return m ? m[1] : '';
+  }
+
+  function collectMenuSections() {
+    var uid = currentUid();
+    var out = [];
+    document.querySelectorAll('.nx-bottomnav-links a[data-panel][data-cat]').forEach(function (top) {
+      var panel = (top.getAttribute('data-panel') || '').trim();
+      var panelEl = panel ? document.getElementById('cat-' + panel) : null;
+      var children = [];
+      var seenChild = {};
+      if (panelEl) {
+        panelEl.querySelectorAll('a[data-cat][href*="/catalog/"]').forEach(function (a) {
+          var id = (a.getAttribute('data-cat') || '').trim();
+          if (!id || seenChild[id]) return;
+          seenChild[id] = true;
+          children.push({
+            uid: id,
+            title: (a.textContent || '').trim(),
+            href: a.getAttribute('href'),
+            active: id === uid
+          });
+        });
+      }
+      var isTopActive = (top.getAttribute('data-cat') || '').trim() === uid;
+      var hasActiveChild = children.some(function (c) { return !!c.active; });
+      out.push({
+        uid: (top.getAttribute('data-cat') || '').trim(),
+        title: (top.textContent || '').trim(),
+        href: top.getAttribute('href') || '',
+        open: hasActiveChild || isTopActive,
+        active: isTopActive,
+        children: children
+      });
+    });
+    return out;
+  }
+
+  function renderFallback(host, groups) {
+    if (!host) return;
+    var old = host.querySelector('.nx-fallback-sidebar-parts');
+    if (old) old.remove();
+    document.body.classList.remove('nx-sidebar-sections-custom');
+    if (!groups || !groups.length) return;
+
+    var wrap = document.createElement('div');
+    wrap.className = 'nx-fallback-sidebar-parts';
+    groups.forEach(function (g) {
+      var box = document.createElement('div');
+      box.className = 'nx-fallback-group' + (g.open ? ' is-open' : '') + ((g.active || g.open) ? ' is-active' : '');
+
+      var head = document.createElement('div');
+      head.className = 'nx-fallback-group-head';
+
+      var parent = document.createElement('a');
+      parent.className = 'nx-fallback-parent-link' + (g.active ? ' nx-active' : '');
+      parent.href = g.href || (g.uid ? '/catalog/' + g.uid : '#');
+      parent.textContent = g.title || g.uid;
+      head.appendChild(parent);
+
+      if (g.children && g.children.length) {
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'nx-fallback-parent-toggle';
+        btn.textContent = box.classList.contains('is-open') ? '▾' : '▸';
+        btn.addEventListener('click', function (e) {
+          e.preventDefault();
+          box.classList.toggle('is-open');
+          btn.textContent = box.classList.contains('is-open') ? '▾' : '▸';
+        });
+        head.appendChild(btn);
+      }
+      box.appendChild(head);
+
+      if (g.children && g.children.length) {
+        var list = document.createElement('div');
+        list.className = 'nx-fallback-group-list';
+        g.children.forEach(function (c) {
+          var ca = document.createElement('a');
+          ca.className = 'nx-fallback-child-link' + (c.active ? ' nx-active' : '');
+          ca.href = c.href || (c.uid ? '/catalog/' + c.uid : '#');
+          ca.textContent = c.title || c.uid;
+          list.appendChild(ca);
+        });
+        box.appendChild(list);
+      }
+      wrap.appendChild(box);
+    });
+    host.appendChild(wrap);
+    document.body.classList.add('nx-sidebar-sections-custom');
+  }
+
+  function syncSidebarParts() {
+    var host = document.querySelector('.js-sidebar-parts');
+    if (!host) return;
+    renderFallback(host, collectMenuSections());
+  }
+
+  var scheduled = false;
+  function scheduleSync() {
+    if (scheduled) return;
+    scheduled = true;
+    setTimeout(function () {
+      scheduled = false;
+      syncSidebarParts();
+    }, 140);
+  }
+
+  function init() {
+    syncSidebarParts();
+    if (window.MutationObserver) {
+      new MutationObserver(scheduleSync).observe(document.body, { childList: true, subtree: true });
+    }
+  }
+
   document.readyState === 'loading' ? document.addEventListener('DOMContentLoaded', init) : setTimeout(init, 300);
 })();
 
