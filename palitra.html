@@ -699,12 +699,31 @@ body.nx-palitra .t-catalog__parts-text-title {
           if (item) return item;
         }
       }
+      /* Fallback 2: определить фильтр по значениям опций */
+      var items = document.querySelectorAll('.t-catalog__filter__item');
+      for (var k = 0; k < items.length; k++) {
+        var item2 = items[k];
+        var values = [];
+        item2.querySelectorAll('.t-catalog__filter__custom-sel').forEach(function (el) {
+          var v = (el.getAttribute('data-filter-value') || '').trim();
+          if (!v) {
+            var ttl = el.querySelector('.t-catalog__filter__title');
+            v = (ttl ? ttl.textContent : el.textContent || '').trim();
+          }
+          if (v) values.push(v.toLowerCase());
+        });
+        var blob = values.join(' | ');
+        if (!blob) continue;
+        if (opt && opt.kind === 'coating' && /(укрыв|пропит|лессир|лак|воск|покрыт)/i.test(blob)) return item2;
+        if (opt && opt.kind === 'brand' && /(vinha|valtti|puutalot|ral|deco|бренд)/i.test(blob)) return item2;
+      }
       return null;
     }
 
     /* Нативный «Тип покрытия» */
     function coatingItem() {
       return findFilterItem({
+        kind: 'coating',
         names: ['charact:11257411'],
         titleRe: /тип\s*покрыт/i
       });
@@ -713,6 +732,7 @@ body.nx-palitra .t-catalog__parts-text-title {
     /* Нативный «Бренд» */
     function brandFilterItem() {
       return findFilterItem({
+        kind: 'brand',
         names: ['charact:11257421'],
         titleRe: /бренд/i
       });
