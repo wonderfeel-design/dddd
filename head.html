@@ -84,7 +84,8 @@
         injectPaletteLink();
       }, 120);
     }
-    hidePalette(); injectPaletteLink();
+    hidePalette();
+    injectPaletteLink();
     new MutationObserver(schedulePaletteRefresh)
       .observe(document.body, { childList: true, subtree: true });
   }
