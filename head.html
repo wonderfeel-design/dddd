@@ -178,8 +178,41 @@
   function collectMenuSections() {
     var uid = currentUid();
     var out = [];
-    document.querySelectorAll('.nx-bottomnav-links a[data-panel][data-cat]').forEach(function (top) {
-      var panel = (top.getAttribute('data-panel') || '').trim();
+    var tops = [];
+    var seenTop = {};
+    function addTop(panel, topUid, title, href) {
+      if (!panel || seenTop[panel]) return;
+      seenTop[panel] = true;
+      tops.push({ panel: panel, uid: topUid || '', title: title || panel, href: href || '' });
+    }
+
+    document.querySelectorAll('.nx-bottomnav-links a[data-panel]').forEach(function (top) {
+      addTop(
+        (top.getAttribute('data-panel') || '').trim(),
+        (top.getAttribute('data-cat') || '').trim(),
+        (top.textContent || '').trim(),
+        top.getAttribute('href') || ''
+      );
+    });
+    if (!tops.length) {
+      document.querySelectorAll('.nx-megamenu-sidebar li a').forEach(function (a) {
+        var m = (a.getAttribute('onclick') || '').match(/showCat\([^,]+,\s*'([^']+)'\)/);
+        if (!m) return;
+        addTop(m[1], '', (a.textContent || '').trim(), '');
+      });
+    }
+    if (!tops.length) {
+      [
+        { panel: 'interier', uid: '810291631742', title: 'Для интерьера', href: '/catalog/810291631742-dlya-interera' },
+        { panel: 'fasad',    uid: '799009129752', title: 'Для фасада',    href: '/catalog/799009129752-dlya-fasada' },
+        { panel: 'pilo',     uid: '929460929152', title: 'Пиломатериалы', href: '/catalog/929460929152-pilomateriali' },
+        { panel: 'krepezh',  uid: '559088613632', title: 'Крепеж',        href: '/catalog/559088613632-krepezh' },
+        { panel: 'kraski',   uid: '807847057542', title: 'Краски',        href: '/catalog/807847057542-kraski' }
+      ].forEach(function (x) { addTop(x.panel, x.uid, x.title, x.href); });
+    }
+
+    tops.forEach(function (top) {
+      var panel = top.panel;
       var panelEl = panel ? document.getElementById('cat-' + panel) : null;
       var children = [];
       var seenChild = {};
@@ -196,12 +229,12 @@
           });
         });
       }
-      var isTopActive = (top.getAttribute('data-cat') || '').trim() === uid;
+      var isTopActive = !!(top.uid && top.uid === uid);
       var hasActiveChild = children.some(function (c) { return !!c.active; });
       out.push({
-        uid: (top.getAttribute('data-cat') || '').trim(),
-        title: (top.textContent || '').trim(),
-        href: top.getAttribute('href') || '',
+        uid: top.uid || '',
+        title: top.title || '',
+        href: top.href || (top.uid ? '/catalog/' + top.uid : ''),
         open: hasActiveChild || isTopActive,
         active: isTopActive,
         children: children
