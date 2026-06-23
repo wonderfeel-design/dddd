@@ -395,6 +395,14 @@ body.nx-palitra .t-catalog__parts-text-title {
   color: #1a1a1a !important;
   font-weight: 600 !important;
 }
+/* Отключённые опции нативных фильтров (Бренд/Тип покрытия) */
+.t-catalog__filter__custom-sel.nx-filter-opt--disabled {
+  opacity: .45;
+  pointer-events: none;
+}
+.t-catalog__filter__custom-sel.nx-filter-opt--disabled .t-catalog__filter__title {
+  color: #999 !important;
+}
 </style>
 
 <script>
@@ -586,7 +594,57 @@ body.nx-palitra .t-catalog__parts-text-title {
       if (byFilter.length) return byFilter;
       return allowed || [];
     }
+    function intersects(a, b) {
+      for (var i = 0; i < a.length; i++) if (b.indexOf(a[i]) !== -1) return true;
+      return false;
+    }
+    function optionValue(el) {
+      var v = (el && el.getAttribute ? el.getAttribute('data-filter-value') : '') || '';
+      v = v.trim();
+      if (v) return v;
+      var ttl = el && el.querySelector ? el.querySelector('.t-catalog__filter__title') : null;
+      return (ttl ? ttl.textContent : (el && el.textContent) || '').trim();
+    }
+    function selectedBrands() {
+      var out = [];
+      if (activeBrand && activeBrand !== 'all') out.push(activeBrand);
+      var bItem = brandFilterItem();
+      if (bItem) {
+        bItem.querySelectorAll('.t-catalog__filter__custom-sel.active').forEach(function (el) {
+          var br = brandOf(optionValue(el));
+          if (br) out.push(br);
+        });
+      }
+      return uniq(out);
+    }
+    function updateCrossDisable() {
+      var selBrands = selectedBrands();
+      var allowBrands = getAllowedBrands();
+
+      var cItem = coatingItem();
+      if (cItem) {
+        cItem.querySelectorAll('.t-catalog__filter__custom-sel').forEach(function (el) {
+          var isActive = el.classList.contains('active');
+          var b = brandsFromCoatingValue(optionValue(el));
+          var disable = false;
+          if (!isActive && selBrands.length && b.length) disable = !intersects(b, selBrands);
+          el.classList.toggle('nx-filter-opt--disabled', !!disable);
+        });
+      }
+
+      var bItem = brandFilterItem();
+      if (bItem) {
+        bItem.querySelectorAll('.t-catalog__filter__custom-sel').forEach(function (el) {
+          var isActive = el.classList.contains('active');
+          var br = brandOf(optionValue(el));
+          var disable = false;
+          if (!isActive && br && allowBrands.length) disable = allowBrands.indexOf(br) === -1;
+          el.classList.toggle('nx-filter-opt--disabled', !!disable);
+        });
+      }
+    }
     var DEBUG_0C = true;
+    var _lastDebugKey = '';
     function activeFilterValues(item) {
       var out = [];
       if (!item) return out;
@@ -602,14 +660,19 @@ body.nx-palitra .t-catalog__parts-text-title {
     }
     function log0c(reason) {
       if (!DEBUG_0C || !window.console) return;
-      console.log('[nx-pal][0c]', {
+      var payload = {
         reason: reason,
         coating_context: coating || '',
         allowed_brands: getAllowedBrands(),
         active_brand_chip: activeBrand,
         active_brand_native: activeFilterValues(brandFilterItem()),
         active_coating_native: activeFilterValues(coatingItem())
-      });
+      };
+      var key;
+      try { key = JSON.stringify(payload); } catch (e) { key = reason + '|' + (coating || ''); }
+      if (key === _lastDebugKey) return;
+      _lastDebugKey = key;
+      console.log('[nx-pal][0c]', payload);
     }
     function blocked(brand) {
       var cur = getAllowedBrands();
@@ -732,6 +795,7 @@ body.nx-palitra .t-catalog__parts-text-title {
         a.classList.toggle('nx-pal-link--disabled', blocked(br));
         a.classList.toggle('nx-pal-link--match', matched(br));
       });
+      updateCrossDisable();        /* двусторонняя деактивация фильтров */
       applyBrandFilter();          /* грид по активному бренду (не по покрытию) */
       tuneFilters();               /* порядок фильтров + чекбокс-вид «Тип покрытия» */
       log0c('mark');
@@ -743,7 +807,15 @@ body.nx-palitra .t-catalog__parts-text-title {
       if (!t || !t.closest) return;
       var pill = t.closest('.nx-coat-btn');
       var link = t.closest(NATIVE_SEL);
-      if (!pill && !link) return;
+      var disabledNativeOpt = t.closest('.t-catalog__filter__custom-sel.nx-filter-opt--disabled');
+      if (!pill && !link && !disabledNativeOpt) return;
+      if (disabledNativeOpt) {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        showMsg();
+        log0c('blocked-disabled-opt');
+        return;
+      }
       var brand = pill ? pill.dataset.brand : nativeBrand(link);
       if (blocked(brand)) {
         e.preventDefault();
