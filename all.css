@@ -1289,6 +1289,7 @@ html body .nx-megamenu-wrap { padding-left: 20px !important; }
     padding: 16px;
     box-sizing: border-box;
     pointer-events: none;
+    z-index: 3;
 }
 .nx-p-color-swatch__name {
     background: rgba(255,255,255,.88);

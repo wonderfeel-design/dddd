@@ -709,7 +709,12 @@ body.nx-palitra .t-catalog__card__imgwrapper_1-1 {
   function injectCardSwatch(card) {
     if (!card || card.querySelector('.nx-p-color-swatch')) return;
     var wrap = card.querySelector('.t-store__card__imgwrapper, .t-store__card__imgwrapper_1-1, .t-catalog__card__imgwrapper, .t-catalog__card__imgwrapper_1-1');
+    if (!wrap) {
+      var bg = card.querySelector('.t-store__card__bgimg, .t-catalog__card__bgimg, [class*="card__bgimg"]');
+      wrap = bg && bg.parentElement ? bg.parentElement : null;
+    }
     if (!wrap) return;
+    wrap.style.position = wrap.style.position || 'relative';
     var data = getCardData(card);
     if (!data.code) return;
     var sw = document.createElement('div');
@@ -842,6 +847,8 @@ body.nx-palitra .t-catalog__card__imgwrapper_1-1 {
   }, true); /* capture: перехватываем до навигации Tilda */
 
   renderCardSwatches();
+  setTimeout(renderCardSwatches, 500);
+  setTimeout(renderCardSwatches, 1300);
   if (window.MutationObserver) {
     var _swatchScheduled = false;
     function scheduleSwatches() {
