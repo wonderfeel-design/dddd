@@ -152,7 +152,9 @@ body.nx-palitra .t-catalog__card__descr {
     margin: 0 !important;
 }
 body.nx-palitra .t-store__card__imgwrapper,
-body.nx-palitra .t-catalog__card__imgwrapper {
+body.nx-palitra .t-store__card__imgwrapper_1-1,
+body.nx-palitra .t-catalog__card__imgwrapper,
+body.nx-palitra .t-catalog__card__imgwrapper_1-1 {
   position: relative;
   overflow: hidden;
 }
@@ -706,7 +708,7 @@ body.nx-palitra .t-catalog__card__imgwrapper {
 
   function injectCardSwatch(card) {
     if (!card || card.querySelector('.nx-p-color-swatch')) return;
-    var wrap = card.querySelector('.t-store__card__imgwrapper, .t-catalog__card__imgwrapper');
+    var wrap = card.querySelector('.t-store__card__imgwrapper, .t-store__card__imgwrapper_1-1, .t-catalog__card__imgwrapper, .t-catalog__card__imgwrapper_1-1');
     if (!wrap) return;
     var data = getCardData(card);
     if (!data.code) return;
