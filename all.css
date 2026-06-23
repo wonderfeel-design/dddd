@@ -1276,19 +1276,21 @@ html body .nx-megamenu-wrap { padding-left: 20px !important; }
    Механика выбора цвета: карточка ↔ палитра
    ════════════════════════════════════════ */
 
-/* Плашка цвета поверх главного фото */
-#nx-prod-root .nx-p-mainimg { position: relative; overflow: hidden; }
+/* Плашка цвета поверх изображения */
+.nx-p-mainimg { position: relative; overflow: hidden; }
 
-#nx-prod-root .nx-p-color-swatch {
+.nx-p-color-swatch {
    /* display: none;*/
     position: absolute;
     inset: 0;
     border-radius: 8px;
+    display: flex;
     align-items: flex-end;
     padding: 16px;
     box-sizing: border-box;
+    pointer-events: none;
 }
-#nx-prod-root .nx-p-color-swatch__name {
+.nx-p-color-swatch__name {
     background: rgba(255,255,255,.88);
     backdrop-filter: blur(4px);
     border-radius: 6px;
@@ -1297,7 +1299,7 @@ html body .nx-megamenu-wrap { padding-left: 20px !important; }
     font-weight: 600;
     line-height: 1.4;
 }
-#nx-prod-root .nx-p-color-swatch__code {
+.nx-p-color-swatch__code {
     display: block;
     font-size: 11px;
     color: #888;

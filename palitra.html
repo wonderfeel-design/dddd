@@ -151,6 +151,11 @@ body.nx-palitra .t-catalog__card__descr {
     color: #999 !important;
     margin: 0 !important;
 }
+body.nx-palitra .t-store__card__imgwrapper,
+body.nx-palitra .t-catalog__card__imgwrapper {
+  position: relative;
+  overflow: hidden;
+}
 .js-catalog-grid-cont {
     overflow: visible !important;
     width: 100% !important;
@@ -280,6 +285,7 @@ body.nx-palitra .t-catalog__card__descr {
 }
 
 .nx-pal-popup__preview {
+  position: relative;
   width: 100%; height: 180px;
   border-radius: 12px;
   margin: 0 0 14px;
@@ -698,6 +704,30 @@ body.nx-palitra .t-catalog__card__descr {
     return { code: code, name: name || code, hex: parseHex(titleText + descrText), img: getBgImg(card) };
   }
 
+  function injectCardSwatch(card) {
+    if (!card || card.querySelector('.nx-p-color-swatch')) return;
+    var wrap = card.querySelector('.t-store__card__imgwrapper, .t-catalog__card__imgwrapper');
+    if (!wrap) return;
+    var data = getCardData(card);
+    if (!data.code) return;
+    var sw = document.createElement('div');
+    sw.className = 'nx-p-color-swatch';
+    var nm = document.createElement('div');
+    nm.className = 'nx-p-color-swatch__name';
+    var cd = document.createElement('span');
+    cd.className = 'nx-p-color-swatch__code';
+    cd.textContent = data.code;
+    nm.appendChild(cd);
+    if (data.name && data.name !== data.code) nm.appendChild(document.createTextNode(data.name));
+    sw.appendChild(nm);
+    wrap.appendChild(sw);
+  }
+
+  function renderCardSwatches() {
+    document.querySelectorAll('.t-store__card:not(.t-store__card-preloader), .t-catalog__card:not(.t-catalog__card-preloader)')
+      .forEach(injectCardSwatch);
+  }
+
   /* ── Попап ── */
   function openPopup(data) {
     _current = data;
@@ -709,6 +739,18 @@ body.nx-palitra .t-catalog__card__descr {
       preview.style.backgroundImage = '';
       preview.style.backgroundColor = data.hex || '#e0e0e0';
     }
+    preview.innerHTML = '';
+    var sw = document.createElement('div');
+    sw.className = 'nx-p-color-swatch';
+    var nm = document.createElement('div');
+    nm.className = 'nx-p-color-swatch__name';
+    var cd = document.createElement('span');
+    cd.className = 'nx-p-color-swatch__code';
+    cd.textContent = data.code || '';
+    nm.appendChild(cd);
+    if (data.name && data.name !== data.code) nm.appendChild(document.createTextNode(data.name));
+    sw.appendChild(nm);
+    preview.appendChild(sw);
 
     codeEl.textContent = data.code;
     nameEl.textContent = (data.name && data.name !== data.code) ? data.name : '';
@@ -796,6 +838,20 @@ body.nx-palitra .t-catalog__card__descr {
     e.stopImmediatePropagation();
     openPopup(getCardData(card));
   }, true); /* capture: перехватываем до навигации Tilda */
+
+  renderCardSwatches();
+  if (window.MutationObserver) {
+    var _swatchScheduled = false;
+    function scheduleSwatches() {
+      if (_swatchScheduled) return;
+      _swatchScheduled = true;
+      setTimeout(function () {
+        _swatchScheduled = false;
+        renderCardSwatches();
+      }, 140);
+    }
+    new MutationObserver(scheduleSwatches).observe(document.body, { childList: true, subtree: true });
+  }
 
 })();
 </script>
