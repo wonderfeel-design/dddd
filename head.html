@@ -1,3 +1,7 @@
+<link rel="preconnect" href="https://optim.tildacdn.com" crossorigin>
+<link rel="preconnect" href="https://static.tildacdn.com" crossorigin>
+<link rel="preconnect" href="https://static.tildacdn.one" crossorigin>
+
 <style>
   .t-store__prod-snippet__container { display: none !important; }
   /* На страницах /tproduct/ скрываем все Tilda-реки до рендера нашего блока */
@@ -360,12 +364,13 @@
 
   function renderGallery(gallery) {
     var imgs = gallery.map(function (g) { return g.img || g; });
+    var firstImg = imgs[0] || '';
     var thumbs = imgs.map(function (src, i) {
       return '<div class="nx-p-thumb' + (i === 0 ? ' nx-p-thumb--active' : '') +
         '" data-idx="' + i + '"><img src="' + src + '" alt="" loading="lazy"></div>';
     }).join('');
     return '<div class="nx-p-gallery">' +
-      '<div class="nx-p-mainimg"><img id="nx-mi" src="' + imgs[0] + '" alt=""></div>' +
+      '<div class="nx-p-mainimg"><img id="nx-mi" src="' + firstImg + '" alt="" loading="eager" fetchpriority="high"></div>' +
       '<div class="nx-p-thumbs">' + thumbs + '</div>' +
       '</div>';
   }
@@ -879,17 +884,10 @@ root.addEventListener('change', function (e) {
     function revealOnFail() {
       document.documentElement.classList.remove('nx-tp');
     }
-    var attempts = 0;
-    var iv = setInterval(function () {
-      attempts++;
-      if ((window.tStoreOptionsList && window.tStoreOptionsList.length) || attempts > 30) {
-        clearInterval(iv);
-        loadProduct(uid).then(function (p) {
-          if (!p) { console.error('nx: product not found'); revealOnFail(); return; }
-          renderRoot(p);
-        }).catch(function (err) { console.error('nx: loadProduct error', err); revealOnFail(); });
-      }
-    }, 100);
+    loadProduct(uid).then(function (p) {
+      if (!p) { console.error('nx: product not found'); revealOnFail(); return; }
+      renderRoot(p);
+    }).catch(function (err) { console.error('nx: loadProduct error', err); revealOnFail(); });
   }
 
   /* Создать #nx-prod-root как можно раньше — чтобы не было пустоты пока грузится продукт.
