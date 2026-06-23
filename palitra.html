@@ -162,6 +162,14 @@ body.nx-palitra .t-catalog__card__imgwrapper_1-1 {
     overflow: visible !important;
     width: 100% !important;
 }
+/* /palitra: вернуть стандартный регистр в разделах/фильтрах */
+body.nx-palitra .t-catalog__filter__section-title,
+body.nx-palitra .t-catalog__filter__title,
+body.nx-palitra .t-catalog__parts-switch-btn,
+body.nx-palitra .t-catalog__parts-text-title {
+  text-transform: none !important;
+  letter-spacing: 0 !important;
+}
 
 /* ══ ФИЛЬТР ТИП ПОКРЫТИЯ ══ */
 .nx-coat-wrap {
@@ -515,7 +523,6 @@ body.nx-palitra .t-catalog__card__imgwrapper_1-1 {
     var pc = null;
     try { pc = JSON.parse(sessionStorage.getItem('nx_palette_product') || 'null'); } catch (e) {}
     var coating = (pc && pc.coating ? String(pc.coating) : '').toLowerCase().trim();
-    if (!coating) return;                       /* нет контекста покрытия → без ограничений */
 
     var OPAQUE = ['ral', 'vinha', 'puutalot', 'deco'];   /* Укрывная */
     var VALTTI = ['valtti'];                             /* пропитки / лессирующие / лаки / воск */
@@ -529,7 +536,7 @@ body.nx-palitra .t-catalog__card__imgwrapper_1-1 {
       'воск внутри':           VALTTI
     };
     var allowed = COATING_BRANDS[coating];
-    if (!allowed) return;                       /* незнакомое покрытие → без ограничений */
+    if (!allowed) allowed = null;
     /* Грид по покрытию НЕ предфильтруем и НЕ авто-применяем нативный фильтр —
        страница всегда показывает все палитры. Совместимость доносим только
        серением несовместимых кнопок брендов + предупреждением по клику. */
@@ -543,8 +550,50 @@ body.nx-palitra .t-catalog__card__imgwrapper_1-1 {
     function nativeBrand(el) {
       return brandOf((el.getAttribute && el.getAttribute('data-storepart-path')) || el.textContent);
     }
-    function blocked(brand) { return brand && brand !== 'all' && allowed.indexOf(brand) === -1; }
-    function matched(brand) { return brand && brand !== 'all' && allowed.indexOf(brand) !== -1; }
+    function uniq(arr) {
+      var out = [];
+      (arr || []).forEach(function (x) { if (out.indexOf(x) === -1) out.push(x); });
+      return out;
+    }
+    function brandsFromCoatingValue(v) {
+      var t = String(v || '').toLowerCase();
+      var out = [];
+      if (t.indexOf('укрыв') !== -1) out = out.concat(OPAQUE);
+      if (t.indexOf('пропит') !== -1 || t.indexOf('лессир') !== -1 || t.indexOf('лак') !== -1 || t.indexOf('воск') !== -1 || t.indexOf('valtti') !== -1) {
+        out = out.concat(VALTTI);
+      }
+      return uniq(out);
+    }
+    function selectedCoatingBrands() {
+      var item = coatingItem();
+      if (!item) return [];
+      var selectedVals = [];
+      item.querySelectorAll('.t-catalog__filter__custom-sel.active').forEach(function (el) {
+        var v = (el.getAttribute('data-filter-value') || '').trim();
+        if (!v) {
+          var ttl = el.querySelector('.t-catalog__filter__title');
+          v = (ttl ? ttl.textContent : el.textContent || '').trim();
+        }
+        if (v) selectedVals.push(v);
+      });
+      if (!selectedVals.length) return [];
+      var out = [];
+      selectedVals.forEach(function (v) { out = out.concat(brandsFromCoatingValue(v)); });
+      return uniq(out);
+    }
+    function getAllowedBrands() {
+      var byFilter = selectedCoatingBrands();
+      if (byFilter.length) return byFilter;
+      return allowed || [];
+    }
+    function blocked(brand) {
+      var cur = getAllowedBrands();
+      return !!(brand && brand !== 'all' && cur.length && cur.indexOf(brand) === -1);
+    }
+    function matched(brand) {
+      var cur = getAllowedBrands();
+      return !!(brand && brand !== 'all' && cur.length && cur.indexOf(brand) !== -1);
+    }
 
     /* === Нативный фильтр «Тип покрытия» (charact:11257411) ===
        В данных 2 значения: длинная строка (группа Valtti) и «Укрывная». */
