@@ -825,6 +825,7 @@ body.nx-palitra .t-catalog__parts-text-title {
       } else {
         hideMsg();
         log0c('allowed-click');
+        setTimeout(scheduleMark, 20);
       }
     }, true);
 
@@ -837,7 +838,12 @@ body.nx-palitra .t-catalog__parts-text-title {
         mark();
       }, 140);
     }
-    new MutationObserver(scheduleMark).observe(document.body, { childList: true, subtree: true });
+    new MutationObserver(scheduleMark).observe(document.body, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ['class', 'style', 'aria-checked', 'checked']
+    });
     /* После дорисовки фильтров применяем контекст из карточки (если есть) */
     setTimeout(function () {
       if (applyNativeFiltersFromContext()) scheduleMark();
