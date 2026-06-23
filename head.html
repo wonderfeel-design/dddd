@@ -366,10 +366,8 @@
     var imgs = gallery.map(function (g) { return g.img || g; });
     var firstImg = imgs[0] || '';
     var thumbs = imgs.map(function (src, i) {
-      var loadingMode = i < 2 ? 'eager' : 'lazy';
-      var fp = i === 0 ? 'high' : (i === 1 ? 'auto' : 'low');
       return '<div class="nx-p-thumb' + (i === 0 ? ' nx-p-thumb--active' : '') +
-        '" data-idx="' + i + '"><img src="' + src + '" alt="" loading="' + loadingMode + '" fetchpriority="' + fp + '"></div>';
+        '" data-idx="' + i + '"><img src="' + src + '" alt="" loading="lazy" fetchpriority="low"></div>';
     }).join('');
     return '<div class="nx-p-gallery">' +
       '<div class="nx-p-mainimg"><img id="nx-mi" src="' + firstImg + '" alt="" loading="eager" fetchpriority="high"></div>' +
