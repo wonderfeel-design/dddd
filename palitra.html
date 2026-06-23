@@ -683,17 +683,39 @@ body.nx-palitra .t-catalog__parts-text-title {
       return !!(brand && brand !== 'all' && cur.length && cur.indexOf(brand) !== -1);
     }
 
-    /* === Нативный фильтр «Тип покрытия» (charact:11257411) ===
-       В данных 2 значения: длинная строка (группа Valtti) и «Укрывная». */
-    function coatingItem() {
-      var t = document.querySelector('.js-catalog-filter-item-title[data-filter-name="charact:11257411"]');
-      return t ? t.closest('.t-catalog__filter__item') : null;
+    function findFilterItem(opt) {
+      var byName = (opt && opt.names) || [];
+      for (var i = 0; i < byName.length; i++) {
+        var t = document.querySelector('.js-catalog-filter-item-title[data-filter-name="' + byName[i] + '"]');
+        if (t) return t.closest('.t-catalog__filter__item');
+      }
+      var re = opt && opt.titleRe;
+      if (!re) return null;
+      var titles = document.querySelectorAll('.js-catalog-filter-item-title, .t-catalog__filter-item-title, .t-catalog__filter__title-block');
+      for (var j = 0; j < titles.length; j++) {
+        var txt = (titles[j].textContent || '').trim().toLowerCase();
+        if (re.test(txt)) {
+          var item = titles[j].closest('.t-catalog__filter__item');
+          if (item) return item;
+        }
+      }
+      return null;
     }
 
-    /* Нативный «Бренд» (charact:11257421) */
+    /* Нативный «Тип покрытия» */
+    function coatingItem() {
+      return findFilterItem({
+        names: ['charact:11257411'],
+        titleRe: /тип\s*покрыт/i
+      });
+    }
+
+    /* Нативный «Бренд» */
     function brandFilterItem() {
-      var t = document.querySelector('.js-catalog-filter-item-title[data-filter-name="charact:11257421"]');
-      return t ? t.closest('.t-catalog__filter__item') : null;
+      return findFilterItem({
+        names: ['charact:11257421'],
+        titleRe: /бренд/i
+      });
     }
 
     /* tuneFilters: 1) «Тип покрытия» — класс для чекбокс-вида + короткий лейбл;
