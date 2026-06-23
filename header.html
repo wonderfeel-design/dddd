@@ -1,0 +1,462 @@
+<!-- =====================================================
+     МЕНЮ для Тильды | Дизайн: АРТ ДОСКА
+     ===================================================== -->
+
+<style>
+  /* ── Reset ─────────────────────────────────────────── */
+  .nx-menu * { box-sizing: border-box; margin: 0; padding: 0; }
+  html body .nx-menu a,
+  html body .nx-menu a:link,
+  html body .nx-menu a:visited,
+  html body .nx-menu a:hover,
+  html body .nx-menu a:active {
+    text-decoration: none !important;
+    color: inherit !important;
+  }
+  .nx-menu ul { list-style: none; padding-left: 0; }
+  #allrecords ul { padding-left: 0; margin-left: 0; }
+  html { scroll-padding-top: 55px; }
+
+  /* ── Base layout ─────────────────────────────────── */
+  html body .nx-menu {
+    font-family: 'Gotham Pro', sans-serif;
+    position: relative;
+    z-index: 1000;
+    width: 100%;
+  }
+  html body .nx-menu.nx-sticky {
+    position: fixed !important;
+    top: var(--nx-header-h, 80px);
+    left: 0; right: 0; width: 100%;
+  }
+
+  /* ── Нижняя тёмная навигация ─────────────────────── */
+  .nx-bottomnav {
+    background: #1A1B25;
+    height: 40px;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    padding: 0 0 0 50px;
+    position: relative;
+    z-index: 999;
+    overflow: visible;
+  }
+  .nx-bottomnav-inner { display: flex; align-items: center; height: 100%; width: 100%; }
+
+  .nx-catalog-btn {
+    background: #4C9E24;
+    color: #fff !important;
+    font-size: 12px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.5px;
+    padding: 0 20px; height: 100%;
+    display: flex; align-items: center;
+    cursor: pointer; white-space: nowrap;
+    border: none; transition: background 0.2s;
+  }
+  .nx-catalog-btn:hover { background: #3d8a1c; }
+
+  .nx-bottomnav-links { display: flex; align-items: center; height: 100%; }
+  html body .nx-menu .nx-bottomnav-links a {
+    color: #fff !important; font-size: 12px;
+    text-transform: uppercase; letter-spacing: 0.5px;
+    padding: 0 24px; height: 100%;
+    display: flex; align-items: center;
+    white-space: nowrap; transition: opacity 0.2s;
+  }
+  html body .nx-menu .nx-bottomnav-links a:hover { opacity: 0.75; }
+
+  /* ── Мегаменю ───────────────────────────────────── */
+  .nx-megamenu {
+    display: none;
+    position: absolute;
+    top: 40px; left: 0; right: 0;
+    background: #fff;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+    z-index: 998;
+    /* Скролл внутри мегаменю */
+    max-height: calc(100vh - 120px);
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+  }
+  .nx-megamenu.open { display: block; }
+
+  .nx-megamenu-wrap {
+    display: flex; width: 100%;
+    padding: 0 0 0 50px;
+    align-items: stretch;
+  }
+
+  /* Сайдбар */
+  .nx-megamenu-sidebar { width: 188px; flex-shrink: 0; background: #E5F5E2; padding: 0; }
+  .nx-megamenu-sidebar ul { padding: 0; list-style: none; }
+  html body .nx-menu .nx-megamenu-sidebar li { overflow: hidden; }
+  html body .nx-menu .nx-megamenu-sidebar li a {
+    display: flex; align-items: center; justify-content: space-between;
+    width: 100%; box-sizing: border-box;
+    font-size: 12px; font-weight: 400;
+    color: #252525 !important;
+    text-transform: uppercase; letter-spacing: 0;
+    padding: 20px 16px 20px 20px;
+    transition: background 0.15s, color 0.15s;
+  }
+  html body .nx-menu .nx-megamenu-sidebar li a::after {
+    content: ''; flex-shrink: 0;
+    width: 5px; height: 5px;
+    border-right: 1.5px solid #252525; border-top: 1.5px solid #252525;
+    transform: rotate(45deg); margin-left: 8px;
+    opacity: 0.4; transition: opacity 0.15s, border-color 0.15s;
+  }
+  html body .nx-menu .nx-megamenu-sidebar li a:hover { background: #C5E1C0; }
+  html body .nx-menu .nx-megamenu-sidebar li a:hover::after { opacity: 0.7; }
+  html body .nx-menu .nx-megamenu-sidebar li.active a {
+    background: #C5E1C0; color: #4C9E24 !important; font-weight: 700 !important;
+  }
+  html body .nx-menu .nx-megamenu-sidebar li.active a::after {
+    border-color: #4C9E24; opacity: 1;
+  }
+
+  /* Контент-панели */
+  .nx-megamenu-content { display: none; padding: 0 0 0 30px; }
+  .nx-megamenu-content.active { display: flex; }
+
+  .nx-megamenu-col { flex: 1; padding: 0 24px; min-width: 130px; }
+  html body .nx-menu .nx-megamenu-col h4 {
+    font-size: 12px; color: #252525 !important;
+    text-transform: uppercase; letter-spacing: 0.3px;
+    padding: 24px 0 14px; margin-bottom: 14px;
+  }
+  html body .nx-menu .nx-megamenu-col ul {
+    display: flex; flex-direction: column; gap: 0; padding-bottom: 24px;
+  }
+  html body .nx-menu .nx-megamenu-col ul li a {
+    font-family: 'Gotham Pro', sans-serif;
+    font-size: 12px; font-weight: 200;
+    color: #252525 !important;
+    display: block;
+    /* line-height: 1.4; */
+    padding: 8px 0; letter-spacing: 0;
+    transition: color 0.15s;
+  }
+  html body .nx-menu .nx-megamenu-col ul li a:hover { color: #4C9E24 !important; }
+
+  /* ── Адаптив ─────────────────────────────────────── */
+  @media (max-width: 900px) {
+    .nx-bottomnav { padding: 0 0 0 20px; overflow-x: auto; overflow-y: visible; }
+    .nx-bottomnav-links a { padding: 0 14px; font-size: 11px; }
+    .nx-megamenu-wrap { flex-direction: column; padding: 0; }
+    .nx-megamenu-sidebar { width: 100%; }
+    .nx-megamenu-content { flex-direction: column; padding: 0; }
+    .nx-megamenu-col { border-bottom: 1px solid #e8e8e8; padding: 12px 20px; }
+    html body .nx-menu.nx-sticky { top: var(--nx-header-h, 0px); }
+  }
+</style>
+
+<div class="nx-menu">
+  <nav class="nx-bottomnav">
+    <div class="nx-bottomnav-inner">
+      <button class="nx-catalog-btn" type="button" onclick="toggleMegamenu()">КАТАЛОГ</button>
+      <div class="nx-bottomnav-links">
+        <a href="/catalog" data-cat="810291631742" data-panel="interier">Для интерьера</a>
+        <a href="/catalog" data-cat="799009129752" data-panel="fasad">Для фасада</a>
+        <a href="/catalog" data-cat="929460929152" data-panel="pilo">Пиломатериалы</a>
+        <a href="/catalog" data-cat="559088613632" data-panel="krepezh">Крепеж</a>
+        <a href="/catalog" data-cat="807847057542" data-panel="kraski">Краски</a>
+      </div>
+    </div>
+  </nav>
+
+  <div class="nx-megamenu" id="nx-megamenu">
+    <div class="nx-megamenu-wrap">
+
+      <div class="nx-megamenu-sidebar">
+        <ul>
+          <li class="active"><a href="#" onclick="showCat(event,'interier')">Для интерьера</a></li>
+          <li><a href="#" onclick="showCat(event,'fasad')">Для фасада</a></li>
+          <li><a href="#" onclick="showCat(event,'pilo')">Пиломатериалы</a></li>
+          <li><a href="#" onclick="showCat(event,'krepezh')">Крепеж</a></li>
+          <li><a href="#" onclick="showCat(event,'kraski')">Краски</a></li>
+        </ul>
+      </div>
+
+      <!-- Для интерьера -->
+      <div class="nx-megamenu-content active" id="cat-interier">
+        <div class="nx-megamenu-col">
+          <h4>Потолок</h4>
+          <ul>
+            <li><a href="/catalog" data-cat="752465215952">Вагонка</a></li>
+            <li><a href="/catalog" data-cat="586794862262">Имитация бруса</a></li>
+            <li><a href="/catalog" data-cat="997756288252">Шпонированная доска</a></li>
+            <li><a href="/catalog" data-cat="596951118782">Доска потолочная</a></li>
+            <li><a href="/catalog" data-cat="228699182612">Планкен</a></li>
+          </ul>
+        </div>
+        <div class="nx-megamenu-col">
+          <h4>Стены</h4>
+          <ul>
+            <li><a href="/catalog" data-cat="727322905002">Вагонка</a></li>
+            <li><a href="/catalog" data-cat="979626884442">Имитация бруса</a></li>
+            <li><a href="/catalog" data-cat="512449107972">Шпонированная доска</a></li>
+            <li><a href="/catalog" data-cat="319239141522">Доска стеновая</a></li>
+            <li><a href="/catalog" data-cat="598653134492">Стеновые панели</a></li>
+            <li><a href="/catalog" data-cat="565136830622">Слэбы</a></li>
+          </ul>
+        </div>
+        <div class="nx-megamenu-col">
+          <h4>Пол</h4>
+          <ul>
+            <li><a href="/catalog" data-cat="872722103702">Террасная доска</a></li>
+            <li><a href="/catalog" data-cat="374112886602">Палубная доска</a></li>
+            <li><a href="/catalog" data-cat="549701901002">Слэбы напольные</a></li>
+            <li><a href="/catalog" data-cat="382387938172">Доска пола</a></li>
+          </ul>
+        </div>
+        <div class="nx-megamenu-col">
+          <h4>Окна / Двери</h4>
+          <ul>
+            <li><a href="/catalog" data-cat="563319022162">Вагонка</a></li>
+            <li><a href="/catalog" data-cat="477014464882">Имитация бруса</a></li>
+            <li><a href="/catalog" data-cat="631180345282">Шпонированная доска</a></li>
+            <li><a href="/catalog" data-cat="811096281772">Слэбы</a></li>
+            <li><a href="/catalog" data-cat="564436745372">Доска</a></li>
+            <li><a href="/catalog" data-cat="911008845352">Стеновые панели</a></li>
+          </ul>
+        </div>
+        <div class="nx-megamenu-col">
+          <h4>Декор</h4>
+          <ul>
+            <li><a href="/catalog" data-cat="922401543332">Декоративные панели</a></li>
+            <li><a href="/catalog" data-cat="529584857882">Молдинги</a></li>
+            <li><a href="/catalog" data-cat="449922635632">Плинтусы</a></li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Для фасада -->
+      <div class="nx-megamenu-content" id="cat-fasad">
+        <div class="nx-megamenu-col">
+          <h4>Фасадные панели</h4>
+          <ul>
+            <li><a href="/catalog" data-cat="546702251802">Фасадная доска</a></li>
+            <li><a href="/catalog" data-cat="165489477212">Блок-хаус</a></li>
+            <li><a href="/catalog" data-cat="533189585232">Имитация бруса</a></li>
+            <li><a href="/catalog" data-cat="613544423522">Вагонка</a></li>
+          </ul>
+        </div>
+        <div class="nx-megamenu-col">
+          <h4>Террасные доски</h4>
+          <ul>
+            <li><a href="/catalog" data-cat="311305480882">Палубная доска</a></li>
+            <li><a href="/catalog" data-cat="297627384262">Слэбы</a></li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Пиломатериалы -->
+      <div class="nx-megamenu-content" id="cat-pilo">
+        <div class="nx-megamenu-col">
+          <h4>Пиломатериалы</h4>
+          <ul>
+            <li><a href="/catalog" data-cat="528547846822">Брус</a></li>
+            <li><a href="/catalog" data-cat="140001465242">Доска обрезная</a></li>
+            <li><a href="/catalog" data-cat="757858842962">Доска необрезная</a></li>
+            <li><a href="/catalog" data-cat="682086185842">Рейка</a></li>
+            <li><a href="/catalog" data-cat="484308463392">Шпунтованная доска</a></li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Крепеж -->
+      <div class="nx-megamenu-content" id="cat-krepezh">
+        <div class="nx-megamenu-col">
+          <h4>Крепеж</h4>
+          <ul>
+            <li><a href="/catalog" data-cat="819626010462">Саморезы</a></li>
+            <li><a href="/catalog" data-cat="254591601132">Скобы</a></li>
+            <li><a href="/catalog" data-cat="677218539812">Гвозди</a></li>
+            <li><a href="/catalog" data-cat="958351966462">Клипсы</a></li>
+          </ul>
+        </div>
+      </div>
+
+      <!-- Краски -->
+      <div class="nx-megamenu-content" id="cat-kraski">
+        <div class="nx-megamenu-col">
+          <h4>Краски и лаки</h4>
+          <ul>
+            <li><a href="/catalog" data-cat="775950412632">Масло для дерева</a></li>
+            <li><a href="/catalog" data-cat="443883645832">Лаки</a></li>
+            <li><a href="/catalog" data-cat="424637688572">Антисептики</a></li>
+            <li><a href="/catalog" data-cat="478948993422">Краски фасадные</a></li>
+            <li><a href="/catalog" data-cat="980859624572">Краски для интерьера</a></li>
+          </ul>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  var menu     = document.querySelector('.nx-menu');
+  var megamenu = document.getElementById('nx-megamenu');
+  var isOpen   = false;
+  var closeTimer = null;
+
+  /* ── Активировать панель ────────────────────────── */
+  function activatePanel(panelId) {
+    document.querySelectorAll('.nx-megamenu-sidebar li').forEach(function (li) { li.classList.remove('active'); });
+    document.querySelectorAll('.nx-megamenu-content').forEach(function (c)  { c.classList.remove('active'); });
+    document.querySelectorAll('.nx-megamenu-sidebar li a').forEach(function (a) {
+      if ((a.getAttribute('onclick') || '').indexOf("'" + panelId + "'") !== -1)
+        a.parentElement.classList.add('active');
+    });
+    var panel = document.getElementById('cat-' + panelId);
+    if (panel) panel.classList.add('active');
+  }
+
+  /* ── КАТАЛОГ: открыть / закрыть ─────────────────── */
+  window.toggleMegamenu = function () {
+    isOpen = !isOpen;
+    megamenu.classList.toggle('open', isOpen);
+    if (isOpen) activatePanel('interier');
+  };
+
+  /* ── Сайдбар: переключить панель ────────────────── */
+  window.showCat = function (e, panelId) {
+    e.preventDefault();
+    e.stopPropagation();
+    activatePanel(panelId);
+  };
+
+  /* ── Hover / клик нижней навигации → дропдаун ──── */
+  document.querySelectorAll('.nx-bottomnav-links a[data-panel]').forEach(function (link) {
+    /* Hover: открыть мегаменю с нужной панелью */
+    link.addEventListener('mouseenter', function () {
+      clearTimeout(closeTimer);
+      isOpen = true;
+      megamenu.classList.add('open');
+      activatePanel(link.getAttribute('data-panel'));
+    });
+    /* Клик: открыть мегаменю, НЕ переходить по ссылке */
+    link.addEventListener('click', function (e) {
+      e.preventDefault();
+      clearTimeout(closeTimer);
+      isOpen = true;
+      megamenu.classList.add('open');
+      activatePanel(link.getAttribute('data-panel'));
+    });
+  });
+
+  /* ── Закрыть при уходе мыши из .nx-menu ─────────── */
+  menu.addEventListener('mouseleave', function () {
+    clearTimeout(closeTimer);
+    closeTimer = setTimeout(function () {
+      isOpen = false;
+      megamenu.classList.remove('open');
+    }, 150);
+  });
+  menu.addEventListener('mouseenter', function () { clearTimeout(closeTimer); });
+
+  /* ── Ссылки каталога: sessionStorage → /catalog ─── */
+  document.addEventListener('click', function (e) {
+    var catLink = e.target.closest('a[data-cat]');
+    /* Ссылки нижней навигации (data-panel) обрабатываются выше через preventDefault */
+    if (catLink && catLink.getAttribute('href') === '/catalog' && !catLink.hasAttribute('data-panel')) {
+      try { sessionStorage.setItem('nx-cat', catLink.getAttribute('data-cat')); } catch (err) {}
+      isOpen = false;
+      megamenu.classList.remove('open');
+      return; /* НЕ preventDefault → браузер идёт на /catalog */
+    }
+    if (isOpen && !e.target.closest('.nx-menu')) {
+      isOpen = false;
+      megamenu.classList.remove('open');
+    }
+  });
+
+  /* ── Sticky (архитектура из старой версии) ──────────
+     Спейсер создаётся через JS с display:none.
+     getBoundingClientRect() на display:none = {top:0}
+     → menuOffsetTop всегда ≈ scrollY
+     → shouldStick всегда TRUE
+     → меню ВСЕГДА фиксированное (correct behavior)
+     top задаётся через --nx-header-h (CSS var)         */
+  (function initSticky() {
+    if (!menu) return;
+
+    /* Определить высоту фиксированного хедера Tilda */
+    function getHeaderH() {
+      var h = 0;
+      /* 1. Tilda-специфичные классы */
+      ['.tmenu-mobile_positionfixed', '.t-menu-base_positionfixed'].forEach(function (sel) {
+        var el = document.querySelector(sel);
+        if (el && window.getComputedStyle(el).position === 'fixed' && el.offsetHeight > 0)
+          h = Math.max(h, el.offsetHeight);
+      });
+      if (h > 0) return h;
+      /* 2. Любой .t-rec c position:fixed */
+      document.querySelectorAll('.t-rec').forEach(function (rec) {
+        var st = window.getComputedStyle(rec);
+        if (st.position === 'fixed' && parseFloat(st.top) <= 0 && rec.offsetHeight > 0)
+          h = Math.max(h, rec.offsetHeight);
+      });
+      if (h > 0) return h;
+      /* 3. Любой fixed-элемент у верха viewport (кроме нашего меню) */
+      try {
+        var els = (document.getElementById('allrecords') || document.body).querySelectorAll('*');
+        for (var i = 0; i < els.length; i++) {
+          var el = els[i];
+          if (el === menu || menu.contains(el)) continue;
+          var st = window.getComputedStyle(el);
+          if (st.position !== 'fixed' || el.offsetHeight < 6 || el.offsetHeight > 250) continue;
+          var rect = el.getBoundingClientRect();
+          if (rect.top >= -5 && rect.top <= 5) h = Math.max(h, el.offsetHeight);
+        }
+      } catch (err) {}
+      return h || 80; /* fallback */
+    }
+
+    /* Спейсер: display:none пока не sticky, display:block когда sticky */
+    var spacer = document.createElement('div');
+    spacer.style.cssText = 'display:none;height:' + menu.offsetHeight + 'px;';
+    menu.parentNode.insertBefore(spacer, menu);
+
+    function applySticky() {
+      var hdrH = getHeaderH();
+      document.documentElement.style.setProperty('--nx-header-h', hdrH + 'px');
+
+      /* display:none → getBoundingClientRect().top = 0 → menuOffsetTop = scrollY
+         → shouldStick = scrollY > scrollY - hdrH → всегда TRUE              */
+      var menuOffsetTop = spacer.getBoundingClientRect().top + window.scrollY;
+      var shouldStick   = window.scrollY >= menuOffsetTop - hdrH;
+
+      if (shouldStick && !menu.classList.contains('nx-sticky')) {
+        menu.classList.add('nx-sticky');
+        spacer.style.display = 'block';
+      } else if (!shouldStick && menu.classList.contains('nx-sticky')) {
+        menu.classList.remove('nx-sticky');
+        spacer.style.display = 'none';
+      }
+    }
+
+    window.addEventListener('scroll', applySticky, { passive: true });
+
+    var resizeTimer = null;
+    window.addEventListener('resize', function () {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(function () {
+        spacer.style.height = menu.offsetHeight + 'px';
+        applySticky();
+      }, 150);
+    });
+
+    applySticky();
+    setTimeout(applySticky, 300);
+    setTimeout(applySticky, 800);
+  })();
+
+})();
+</script>
+

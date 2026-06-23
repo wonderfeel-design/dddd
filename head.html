@@ -1,0 +1,1121 @@
+<style>
+  .t-store__prod-snippet__container { display: none !important; }
+  /* На страницах /tproduct/ скрываем все Tilda-реки до рендера нашего блока */
+  html.nx-tp #allrecords > [id^="rec"]:not(#nx-prod-root) {
+    opacity: 0 !important;
+    pointer-events: none !important;
+  }
+</style>
+
+<script>if (location.pathname.indexOf('/tproduct/') !== -1) { document.documentElement.classList.add('nx-tp'); }</script>
+
+<script>
+/* ══ Скрытие ошибки заказа склада ══
+   Прячем сообщение корзины только если это ошибка склада/заказа
+   (Order error / NOT FOUND PRODUCTS IN STORE), не трогая валидацию полей. */
+(function () {
+  function hideStoreOrderError() {
+    var boxes = document.querySelectorAll('.t-form__errorbox-text, .t-store__error, .js-errorbox-all, .t-form__errorbox');
+    for (var i = 0; i < boxes.length; i++) {
+      var t = (boxes[i].textContent || '').toLowerCase();
+      if (t.indexOf('order error') !== -1 || t.indexOf('not found') !== -1 ||
+          t.indexOf('booking') !== -1 || t.indexOf('склад') !== -1) {
+        boxes[i].style.setProperty('display', 'none', 'important');
+      }
+    }
+  }
+  if (window.MutationObserver) {
+    new MutationObserver(hideStoreOrderError).observe(document.documentElement, { childList: true, subtree: true });
+  }
+  document.addEventListener('DOMContentLoaded', hideStoreOrderError);
+})();
+</script>
+
+<script>
+/* ══ 0. Фильтр каталога из мегаменю ══
+   После перехода на /catalog head.html читает nx-cat из sessionStorage
+   и кликает нативный фильтр Tilda в сайдбаре — их собственный элемент,
+   никакого редиректа, блокировка не срабатывает. */
+(function () {
+  if (location.pathname.indexOf('/catalog') !== 0) return;
+  var catId;
+  try { catId = sessionStorage.getItem('nx-cat'); } catch (e) {}
+  if (!catId) return;
+  try { sessionStorage.removeItem('nx-cat'); } catch (e) {}
+
+  function tryClick() {
+    /* Ищем ссылку сайдбара Tilda, содержащую нужный ID категории в href */
+    var links = document.querySelectorAll(
+      '.t-catalog__parts-tree a, .t-catalog__parts-tree-item a, ' +
+      '.t-catalog__filter a, [class*="partnav"] a'
+    );
+    for (var i = 0; i < links.length; i++) {
+      if ((links[i].getAttribute('href') || '').indexOf(catId) !== -1) {
+        links[i].click();
+        return true;
+      }
+    }
+    /* Fallback: элемент с data-атрибутом содержащим ID */
+    var byData = document.querySelector('[data-partnavval="' + catId + '"]');
+    if (byData) { byData.click(); return true; }
+    return false;
+  }
+
+  /* Пробуем сразу и повторяем пока Tilda не отрисует сайдбар */
+  if (!tryClick()) {
+    var n = 0;
+    var iv = setInterval(function () {
+      if (tryClick() || ++n > 40) clearInterval(iv);
+    }, 150);
+  }
+})();
+
+/* ══ 1. Скрытие «Палитры» + ссылка ══ */
+(function () {
+  'use strict';
+  if (location.pathname.indexOf('/catalog') !== 0 && location.pathname !== '/') return;
+  function hidePalette() {
+    document.querySelectorAll('.t-catalog__parts-text-title').forEach(function (el) {
+      if (el.textContent.trim().toLowerCase().indexOf('палитра') !== -1) {
+        var item = el.closest('.t-catalog__parts-tree-item');
+        if (item) item.style.setProperty('display', 'none', 'important');
+      }
+    });
+  }
+  function injectPaletteLink() {
+    if (document.querySelector('.nx-palette-link-wrap')) return;
+    var tree = document.querySelector('.t-catalog__parts-tree');
+    if (!tree) return;
+    var wrap = document.createElement('div');
+    wrap.className = 'nx-palette-link-wrap';
+    wrap.innerHTML = '<a href="/palitra" class="nx-palette-link">🎨 Все цвета палитры</a>';
+    tree.appendChild(wrap);
+  }
+  function init() {
+    hidePalette(); injectPaletteLink();
+    new MutationObserver(function () { hidePalette(); injectPaletteLink(); })
+      .observe(document.body, { childList: true, subtree: true });
+  }
+  document.readyState === 'loading' ? document.addEventListener('DOMContentLoaded', init) : setTimeout(init, 300);
+})();
+
+/* ══ 2. Карточки — унифицированное обогащение (все страницы) ══ */
+(function () {
+  function qs(card) {
+    var args = Array.prototype.slice.call(arguments, 1);
+    for (var i = 0; i < args.length; i++) { var el = card.querySelector(args[i]); if (el) return el; }
+    return null;
+  }
+  function parsePrice(n) { return parseFloat(String(n || 0).replace(/\s/g, '').replace(',', '.')) || 0; }
+
+  function injectCategoryBadge(card) {
+    if (card.querySelector('.nx-cat-badge')) return;
+    var title = qs(card, '.t-catalog__card__title', '.t-store__card__title', '[class*="card__title"]');
+    if (!title) return;
+    var text = title.textContent;
+    var cat = /вагонк/i.test(text)   ? 'Вагонка'
+            : /блок.хаус/i.test(text) ? 'Блок-хаус'
+            : /имитац/i.test(text)    ? 'Имитация бруса'
+            : /планк/i.test(text)     ? 'Планкен'
+            : /термо/i.test(text)     ? 'Термодерево' : '';
+    if (!cat) return;
+    var badge = document.createElement('div');
+    badge.className = 'nx-cat-badge';
+    badge.textContent = cat;
+    var wrapper = qs(card, '.t-catalog__card__imgwrapper', '.t-store__card__imgwrapper', '[class*="imgwrapper"]');
+    if (wrapper) wrapper.appendChild(badge);
+  }
+
+  function injectSize(card) {
+    if (card.querySelector('.nx-size-row')) return;
+    var title = qs(card, '.t-catalog__card__title', '.t-store__card__title', '[class*="card__title"]');
+    if (!title) return;
+    var m = title.textContent.match(/(\d+)[хx×](\d+)[хx×](\d+)/i);
+    if (!m) return;
+    var sizeRow = document.createElement('div');
+    sizeRow.className = 'nx-size-row';
+    sizeRow.innerHTML = '<strong>Размер:</strong> ' + m[1] + '×' + m[2] + '×' + m[3];
+    title.parentNode.insertBefore(sizeRow, title.nextSibling);
+  }
+
+  function injectDualPrice(card) {
+    if (card.querySelector('.nx-price-block')) return;
+    var priceEl = qs(card, '.t-catalog__card__price-value', '.t-store__card__price-value', '[class*="price-value"]');
+    if (!priceEl) return;
+    var priceEach = parsePrice(priceEl.textContent);
+    if (!priceEach) return;
+    var sqmSelect = card.querySelector('[data-edition-option-id="Цена за кв метр"] select');
+    var priceSqm  = sqmSelect ? parsePrice(sqmSelect.value) : parsePrice(card.getAttribute('data-price-sqm'));
+    var oldPriceEl = qs(card,
+      '.t-catalog__card__price_old .t-catalog__card__price-value',
+      '.t-store__card__price_old .t-store__card__price-value'
+    );
+    var oldPrice = oldPriceEl ? parsePrice(oldPriceEl.textContent) : 0;
+    var oldRowHtml = '';
+    if (oldPrice > priceEach) {
+      var pct = Math.round((1 - priceEach / oldPrice) * 100);
+      oldRowHtml = '<div class="nx-price-old-row"><span class="nx-price-extra__old">' + oldPrice.toLocaleString('ru') + ' ₽</span><span class="nx-price-extra__badge">-' + pct + '%</span></div>';
+    }
+    var nativePrice = qs(card, '.t-catalog__card__price-wrapper', '.t-store__card__price-wrapper', '.t-store__card__price', '.t-catalog__card__price');
+    if (nativePrice) nativePrice.style.display = 'none';
+    var block = document.createElement('div');
+    block.className = 'nx-price-block';
+    block.innerHTML = '<div class="nx-price-row"><div class="nx-price-col"><span class="nx-price-label">Цена за шт.:</span><span class="nx-price-val-main">' + priceEach.toLocaleString('ru') + ' ₽</span></div>' +
+      (priceSqm ? '<div class="nx-price-col"><span class="nx-price-label">Цена за кв.м.:</span><span class="nx-price-val-main">' + priceSqm.toLocaleString('ru') + ' ₽</span></div>' : '') +
+      '</div>' + oldRowHtml;
+    var textWrap = qs(card, '.t-catalog__card__textwrapper', '.t-store__card__textwrapper', '[class*="textwrapper"]');
+    if (textWrap) textWrap.appendChild(block);
+  }
+
+  function initHoverPhoto(card) {
+    if (card.dataset.nxHover) return;
+    card.dataset.nxHover = '1';
+    var imgs = card.querySelectorAll('.t-catalog__card__bgimg, .t-store__card__bgimg, [class*="card__bgimg"]');
+    if (imgs.length < 2) return;
+    var main = imgs[0], hover = imgs[1];
+    hover.style.opacity = '0'; hover.style.transition = 'opacity 0.2s';
+    card.addEventListener('mouseenter', function () { main.style.opacity = '0'; hover.style.opacity = '1'; });
+    card.addEventListener('mouseleave', function () { main.style.opacity = '1'; hover.style.opacity = '0'; });
+  }
+
+  function injectDeliveryInfo(card) {
+    if (location.pathname.indexOf('/palitra') === 0) return;
+    if (card.querySelector('.nx-delivery-row')) return;
+    var wrap = qs(card, '.t-catalog__card__wrap_txt-and-btns', '.t-store__card__wrap_txt-and-btns');
+    if (!wrap) return;
+    var row = document.createElement('div');
+    row.className = 'nx-delivery-row';
+    row.innerHTML =
+      '<div class="nx-delivery-item">Есть самовывоз сегодня</div>' +
+      '<div class="nx-delivery-item">Доставка сегодня или завтра</div>';
+    wrap.appendChild(row);
+  }
+
+  function processCards() {
+    document.querySelectorAll('.t-catalog__card:not([data-nx-enriched]), .t-store__card:not([data-nx-enriched])').forEach(function (card) {
+      card.setAttribute('data-nx-enriched', '1');
+      injectCategoryBadge(card); injectSize(card); injectDualPrice(card); initHoverPhoto(card); injectDeliveryInfo(card);
+    });
+  }
+
+  window._nxProcessCards = processCards;
+
+  if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', processCards); } else { processCards(); }
+  setTimeout(processCards, 800);
+  setTimeout(processCards, 2000);
+})();
+
+/* ══ 3. Страница товара /tproduct/ ══ */
+(function () {
+  if (location.pathname.indexOf('/tproduct/') === -1) return;
+
+  var STORE_UID   = '650833272852';
+
+  /*var CATALOG_REC = '2062271593';*/
+  var CATALOG_REC = '2362174763';
+
+  var _p            = null;
+  var _editions     = [];
+  var _selected     = {};
+  var _qty          = 1;
+  var _boardLen     = 6;
+  var _paletteColor = null;
+
+  function parsePrice(n) { return parseFloat(String(n || 0).replace(/\s/g, '').replace(',', '.')) || 0; }
+  function fmt(n) { return parsePrice(n).toLocaleString('ru'); }
+
+  function showToast(msg) {
+    var t = document.createElement('div');
+    t.style.cssText = 'position:fixed;bottom:28px;left:50%;transform:translateX(-50%);' +
+      'background:#4C9E24;color:#fff;padding:12px 24px;border-radius:10px;' +
+      'font-size:14px;font-weight:600;z-index:10000;box-shadow:0 4px 20px rgba(0,0,0,.25);' +
+      'white-space:nowrap;pointer-events:none;font-family:GothamPro,sans-serif;';
+    t.textContent = msg;
+    document.body.appendChild(t);
+    setTimeout(function () { if (t.parentNode) t.parentNode.removeChild(t); }, 3000);
+  }
+
+  function getColorMap() {
+    var map = {};
+    try {
+      var opts = window.tStoreOptionsList || [];
+      var colorOpt = opts.find(function (o) { return o.title === 'Цвет'; });
+      if (colorOpt) (colorOpt.values || []).forEach(function (v) { map[String(v.value)] = v.color || ''; });
+    } catch (e) {}
+    return map;
+  }
+
+  function loadProduct(uid) {
+    return fetch('https://store.tildaapi.one/api/getproductslist/?storepartuid=' + STORE_UID + '&recid=' + CATALOG_REC)
+      .then(function (r) { return r.text(); })
+      .then(function (txt) {
+        if (!txt || txt.indexOf('ERROR') === 0) {
+          console.warn('nx: store API error:', (txt || '').slice(0, 80));
+          return null;
+        }
+        var d;
+        try { d = JSON.parse(txt); } catch (e) { console.warn('nx: store API non-JSON response'); return null; }
+        return (d.products || []).find(function (x) { return String(x.uid) === String(uid); }) || null;
+      });
+  }
+
+  var PROP_TO_ED = {
+    'Ширина (мм)': 'pack_y',
+    'Длина':       'pack_x'
+  };
+
+  var COATING_MAP = {};
+  var _noColorCoatings = {};
+
+  function matchBase(e) {
+    var edCoating = COATING_MAP[_selected['Тип покрытия'] || ''];
+    var noCovering = edCoating ? !!_noColorCoatings[edCoating] : false;
+    if (!_paletteColor && !noCovering && _selected['Цвет'] && e['Цвет'] !== undefined && e['Цвет'] !== _selected['Цвет']) return false;
+    if (_selected['Ширина (мм)'] && e.pack_y && String(e.pack_y) !== _selected['Ширина (мм)']) return false;
+    if (_selected['Длина'] && e.pack_x && String(e.pack_x) !== _selected['Длина']) return false;
+    return true;
+  }
+
+  function getEd() {
+    var selectedCoating = _selected['Тип покрытия'] || '';
+    var edCoating = COATING_MAP[selectedCoating];
+
+    if (edCoating) {
+      var exact = _editions.find(function (e) {
+        return matchBase(e) && e['Покрытие'] === edCoating;
+      });
+      if (exact) return exact;
+    }
+
+    var candidates = _editions.filter(matchBase);
+    return candidates.find(function (e) { return e['Покрытие'] === 'Без покрытия'; })
+      || candidates[0]
+      || _editions[0] || null;
+  }
+
+  function getCoatingDelta() {
+    var selectedCoating = _selected['Тип покрытия'] || '';
+    if (!selectedCoating || COATING_MAP[selectedCoating] !== undefined) return 0;
+    var coatingProp = (_p && _p.properties || []).find(function (prop) { return prop.title === 'Тип покрытия'; });
+    if (!coatingProp) return 0;
+    var line = coatingProp.values.split('\n').find(function (v) { return v.split('=')[0].trim() === selectedCoating; }) || '';
+    var m = line.match(/=\+?(\d+)/);
+    return m ? parseFloat(m[1]) : 0;
+  }
+
+  function renderPrices(ed) {
+    var price    = parsePrice(ed ? ed.price : (_p ? _p.price : 0)) + getCoatingDelta();
+    var priceOld = parsePrice(ed ? ed.priceold : (_p ? _p.priceold : 0));
+    var priceSqm = parsePrice(ed ? ed['Цена за кв метр'] : 0);
+    var discHtml = '';
+    if (priceOld > price) {
+      var pct = Math.round((1 - price / priceOld) * 100);
+      discHtml = '<div class="nx-p-price-old-row"><span class="nx-p-price-old">' + fmt(priceOld) + ' ₽</span><span class="nx-p-badge">-' + pct + '%</span></div>';
+    }
+    return '<div class="nx-p-price-col"><span class="nx-p-price-lbl">Цена за шт.:</span><span class="nx-p-price">' + fmt(price) + ' ₽</span>' + discHtml + '</div>' +
+      '<div class="nx-p-prices-spacer"></div>' +
+      (priceSqm ? '<div class="nx-p-price-col"><span class="nx-p-price-lbl">Цена за кв.м.:</span><span class="nx-p-price--sqm">' + fmt(priceSqm) + ' ₽</span></div>' : '<div></div>');
+  }
+
+  function renderColorSwatches(editions, colorMap) {
+    var seen = {};
+    var swatches = editions.filter(function (e) {
+      var c = String(e['Цвет']); if (!c || seen[c]) return false; seen[c] = true; return true;
+    }).map(function (e) {
+      var colorVal = String(e['Цвет']);
+      var hex = colorMap[colorVal] || '';
+      var active = _selected['Цвет'] === colorVal ? ' nx-p-color-btn--active' : '';
+      var innerStyle = e.img
+        ? ' style="background-image:url(' + e.img + ');background-size:cover;background-position:center;"'
+        : (hex ? ' style="background:' + hex + '"' : '');
+      return '<button class="nx-p-color-btn' + active + '" data-color="' + colorVal + '" title="' + colorVal + '"><div class="nx-p-color-inner"' + innerStyle + '></div></button>';
+    }).join('');
+    return '<div class="nx-p-opt-lbl">Цвет:</div>' +
+      '<div class="nx-p-color-circles">' + swatches +
+      '<a href="/palitra" class="nx-p-palette-btn" id="nx-palette-btn">Палитра цветов</a></div>';
+  }
+
+  function renderSelects(properties, editions) {
+    var selects = [];
+
+    (properties || []).forEach(function (opt) {
+      var vals = opt.values.split('\n').map(function (v) { return v.split('=')[0].trim(); });
+      var options = vals.map(function (v) {
+        return '<option value="' + v + '"' + (_selected[opt.title] === v ? ' selected' : '') + '>' + v + '</option>';
+      }).join('');
+      selects.push(
+        '<div class="nx-p-select-wrap" data-prop="' + opt.title + '">' +
+          '<span class="nx-p-opt-lbl">' + opt.title + ':</span>' +
+          '<select class="nx-p-select" data-prop="' + opt.title + '">' + options + '</select>' +
+        '</div>'
+      );
+    });
+
+    var lengths = [];
+    var seenLen = {};
+    (editions || []).forEach(function (e) {
+      var l = String(parseFloat(e.pack_x));
+      if (l && l !== 'NaN' && !seenLen[l]) { seenLen[l] = true; lengths.push(l); }
+    });
+    if (lengths.length) {
+      var lenOptions = lengths.map(function (l) {
+        var n = parseFloat(l);
+        var display = n >= 1000 ? (n / 1000) + ' м' : l + ' мм';
+        return '<option value="' + l + '"' + (_selected['Длина'] === l ? ' selected' : '') + '>' + display + '</option>';
+      }).join('');
+      selects.splice(1, 0,
+        '<div class="nx-p-select-wrap">' +
+          '<span class="nx-p-opt-lbl">Длина:</span>' +
+          '<select class="nx-p-select" data-prop="Длина">' + lenOptions + '</select>' +
+        '</div>'
+      );
+    }
+
+    return '<div class="nx-p-selects">' + selects.join('') + '</div>';
+  }
+
+  function renderGallery(gallery) {
+    var imgs = gallery.map(function (g) { return g.img || g; });
+    var thumbs = imgs.map(function (src, i) {
+      return '<div class="nx-p-thumb' + (i === 0 ? ' nx-p-thumb--active' : '') +
+        '" data-idx="' + i + '"><img src="' + src + '" alt="" loading="lazy"></div>';
+    }).join('');
+    return '<div class="nx-p-gallery">' +
+      '<div class="nx-p-mainimg"><img id="nx-mi" src="' + imgs[0] + '" alt=""></div>' +
+      '<div class="nx-p-thumbs">' + thumbs + '</div>' +
+      '</div>';
+  }
+
+  function renderChars(chars) {
+    if (!chars || !chars.length) return '';
+    return '<div class="nx-p-chars"><div class="nx-p-chars-ttl">Характеристики</div><div class="nx-p-chars-list">' +
+      chars.map(function (c) { return '<div class="nx-p-chars-item"><strong>' + c.title + ':</strong> ' + c.value + '</div>'; }).join('') +
+      '</div></div>';
+  }
+
+function addToCart() {
+  if (!_p) return;
+  var ed = getEd();
+
+  // Установить цвет ДО формирования optParts
+  if (ed && ed['Покрытие'] === 'Без покрытия') {
+    _selected['Цвет'] = 'без';
+  }
+
+  var price = parsePrice(ed ? ed.price : _p.price) + getCoatingDelta();
+  var img = (_paletteColor && _paletteColor.img) ? _paletteColor.img
+            : (ed && ed.img) ? ed.img : '';
+
+var paletteLabel = _paletteColor
+  ? (_paletteColor.code + (_paletteColor.name && _paletteColor.name !== _paletteColor.code ? ' ' + _paletteColor.name : ''))
+  : '';
+
+// opts — отображение в корзине и CRM
+var optParts = [];
+if (_paletteColor) {
+  optParts.push('Цвет: ' + paletteLabel);
+} else if (ed && ed['Цвет'] && ed['Цвет'] !== 'undefined' && ed['Цвет'] !== 'без') {
+  optParts.push('Цвет: ' + ed['Цвет']);
+}
+if (_selected['Ширина (мм)']) {
+  optParts.push('Ширина: ' + _selected['Ширина (мм)'] + ' мм');
+}
+if (ed && ed['Покрытие']) {
+  optParts.push('Покрытие: ' + ed['Покрытие']);
+}
+if (ed && ed['Цена за кв метр'] && parseFloat(String(ed['Цена за кв метр']).replace(/\s/g,'')) > 0) {
+  optParts.push('Цена за кв метр: ' + ed['Цена за кв метр']);
+}
+var opts = optParts.join(', ');
+
+/* propOpts — ТОЧНЫЕ опции издания Tilda. Ключи и значения ДОЛЖНЫ совпадать с
+   вариацией в магазине (опции там: «Цвет» и «Покрытие»), иначе склад не найдёт
+   издание → «нет в наличии». Берём значения из подобранного издания ed.
+   Палитровый цвет тут НЕ используем: для палитры бронируем базовое издание
+   (его реальный цвет), а палитровый цвет показываем только в названии (opts). */
+/* ВАЖНО: option должна содержать ВСЕ измерения вариации (Цвет, Покрытие,
+   Цена за кв метр) ТОЧНО как в издании — иначе Tilda: «не указана опция».
+   Менять/убирать поля нельзя. Чистоту отображения решаем отдельно (в корзине). */
+var propParts = [];
+if (ed) {
+  var optDims = (_p && _p.json_options) || [];
+  if (typeof optDims === 'string') { try { optDims = JSON.parse(optDims); } catch (e) { optDims = []; } }
+  var keys = (optDims && optDims.length)
+    ? optDims.map(function (o) { return o && o.title; })
+    : ['Цвет', 'Покрытие', 'Цена за кв метр'];
+  keys.forEach(function (k) {
+    if (k && ed[k] !== undefined && ed[k] !== '' && String(ed[k]) !== 'undefined') {
+      propParts.push(k + ': ' + ed[k]);
+    }
+  });
+}
+var propOpts = propParts.join(', ');
+
+var item = {
+  /* Палитровый цвет — отдельной заметной подписью в названии (не в скобках),
+     т.к. в складскую option он не идёт (там измерения реальной вариации).
+     Для палитры: «Товар · Цвет из палитры: 2661 Vinha 2661».
+     Для обычной вариации цвет/покрытие видны в option ниже. */
+  name:     _p.title + (_paletteColor ? ' · Цвет из палитры: ' + paletteLabel : ''),
+  option:   propOpts,
+  price:    price,
+  quantity: _qty,
+  amount:   price * _qty,
+  img:      img,
+  /* uid ВАРИАЦИИ (ed.uid) — Tilda резервирует остаток именно издания (проверено:
+     остаток изданий реально списывается). uid товара даёт «нет в наличии» (у товара
+     остаток пустой). «Не указана опция» при ed.uid — от старой позиции в корзине. */
+  uid:      String(ed && ed.uid ? ed.uid : _p.uid),
+  sku:      (ed && ed.sku) || (_p.sku) || ''
+};
+  console.log('nx: item to cart', JSON.stringify(item));
+  var added = false;
+  try {
+    if (typeof tcart__addProduct === 'function') {
+      tcart__addProduct(item); added = true;
+    } else if (window.tcart && window.tcart.products) {
+      window.tcart.products.push(item);
+      if (typeof tcart__saveLocalObj === 'function') tcart__saveLocalObj();
+      added = true;
+    }
+  } catch (e) { console.error('nx: addToCart error', e); }
+  if (added) showToast('Добавлено в корзину: ' + _p.title);
+}
+
+  function showPaletteTooltip(btn) {
+    if (document.getElementById('nx-pal-tip')) return;
+    var tip = document.createElement('div');
+    tip.id = 'nx-pal-tip';
+    tip.className = 'nx-pal-tip';
+    tip.textContent = 'Выберите другой тип покрытия';
+    btn.appendChild(tip);
+    setTimeout(function () { if (tip.parentNode) tip.parentNode.removeChild(tip); }, 2500);
+  }
+
+  function renderRoot(p) {
+    _p        = p;
+    _editions = p.editions || [];
+    _boardLen = _editions.length ? (parseFloat(_editions[0].pack_x) / 1000 || 6) : 6;
+
+    COATING_MAP = {};
+    _noColorCoatings = {};
+    _editions.forEach(function (e) {
+      if (e['Покрытие']) COATING_MAP[e['Покрытие']] = e['Покрытие'];
+      if (e['Цвет'] === 'без') _noColorCoatings[e['Покрытие']] = true;
+    });
+
+    var colorMap = getColorMap();
+    if (p.properties) {
+      p.properties.forEach(function (prop) { _selected[prop.title] = prop.values.split('\n')[0].split('=')[0].trim(); });
+    }
+    if (_editions.length) { _selected['Длина'] = String(parseFloat(_editions[0].pack_x)); }
+    
+// Инициализация цвета — ПОСЛЕ properties
+var firstNonPainting = _editions.find(function(e) { 
+  return e['Покрытие'] === (_selected['Тип покрытия'] || ''); 
+});
+var firstEd = firstNonPainting || (_editions.length ? _editions[0] : null);
+_selected['Цвет'] = (firstEd && firstEd['Цвет'] !== undefined) ? String(firstEd['Цвет']) : '';
+if (firstEd && firstEd['Покрытие'] === 'Без покрытия') {
+  _selected['Цвет'] = 'без';
+}
+
+
+    var ed      = getEd();
+    var gallery = typeof p.gallery === 'string' ? JSON.parse(p.gallery) : (p.gallery || []);
+
+    var html =
+      '<div class="nx-p-inner">' +
+        '<nav class="nx-p-bc"><a href="/">Главная</a><span class="nx-p-bc__sep">›</span>' +
+          '<a href="/catalog">Каталог</a><span class="nx-p-bc__sep">›</span>' +
+          '<span class="nx-p-bc__cur">' + p.title + '</span></nav>' +
+        /* Мобайл: заголовок над галереей */
+        '<h1 class="nx-p-title nx-p-title--mob">' + p.title + '</h1>' +
+        '<div class="nx-p-layout">' +
+          '<div class="nx-p-left">' +
+            '<h1 class="nx-p-title nx-p-title--dsk">' + p.title + '</h1>' +
+            renderGallery(gallery) + renderChars(p.characteristics) + '</div>' +
+          '<div class="nx-p-right">' +
+            (p.descr ? '<div class="nx-p-descr">' + p.descr + '</div>' : '') +
+
+            /* 1+2. Цены и счётчики — единый grid, колонки выровнены */
+            '<div class="nx-p-pricing">' +
+              '<div id="nx-prices" class="nx-p-prices-grid">' + renderPrices(ed) + '</div>' +
+              '<div class="nx-p-buy-row">' +
+                '<div class="nx-p-qty-wrap"><span class="nx-p-qty-lbl">Единицы товара:</span>' +
+                  '<div class="nx-p-qty" id="nx-qty-units">' +
+                    '<button data-d="-1">−</button><input type="number" id="nx-inp-units" value="1" min="1"><button data-d="1">+</button>' +
+                  '</div></div>' +
+                '<div class="nx-p-qty-link">🔗</div>' +
+                '<div class="nx-p-qty-wrap"><span class="nx-p-qty-lbl">Погонные метры:</span>' +
+                  '<div class="nx-p-qty" id="nx-qty-meters">' +
+                    '<button data-d="-1">−</button><input type="number" id="nx-inp-meters" value="' + _boardLen + '" min="' + _boardLen + '" step="' + _boardLen + '"><button data-d="1">+</button>' +
+                  '</div></div>' +
+              '</div>' +
+            '</div>' +
+
+            /* 3. Кнопка Купить */
+            '<button class="nx-p-btn" id="nx-btn-buy">Купить</button>' +
+
+            /* 4. Селекты: Ширина, Длина, Тип покрытия */
+            renderSelects(p.properties, _editions) +
+
+            /* 5. Цвет */
+            '<div class="nx-p-opts" id="nx-colors">' + renderColorSwatches(_editions, colorMap) + '</div>' +
+
+            /* 6. Уведомление */
+            '<div class="nx-p-notice"><span class="nx-p-notice__icon">i</span>' +
+              '<span><strong>Внимание:</strong> Можем выкрасить доску в любой, необходимый цвет.</span></div>' +
+
+            /* 7. Кнопка выкраса */
+            '<button id="nx-btn-sample" class="nx-p-btn nx-p-btn--outline">🖌 Заказать пробный выкрас</button>' +
+          '</div>' +
+        '</div>' +
+      '</div>';
+
+    var root = document.getElementById('nx-prod-root');
+    if (!root) {
+      root = document.createElement('div');
+      root.id = 'nx-prod-root';
+      var allrec = document.getElementById('allrecords');
+      if (allrec && allrec.children.length > 1) allrec.insertBefore(root, allrec.children[1]);
+      else document.body.appendChild(root);
+    }
+    root.innerHTML = html;
+
+    /* Скрыть нативный Tilda-блок */
+    var SNIPPET_SELS2 = [
+      '.t-store__prod-snippet__container', '.t-store__prod-snippet',
+      '.t-catalog__prod-snippet__container', '.t-catalog__prod-snippet'
+    ];
+
+    /* Первичное скрытие */
+    SNIPPET_SELS2.forEach(function (sel) {
+      document.querySelectorAll(sel).forEach(function (el) {
+        el.style.cssText = 'display:none!important';
+        var rec = el.closest('[id^="rec"]');
+        if (rec && rec.id !== 'rec2362047083') rec.style.cssText = 'display:none!important';
+      });
+    });
+
+    /* Наблюдатель — скрывает сниппеты Tilda, но НЕ трогает rec2362047083 (популярные) */
+    new MutationObserver(function () {
+      SNIPPET_SELS2.forEach(function (sel) {
+        document.querySelectorAll(sel).forEach(function (el) {
+          if (el.style.display !== 'none') {
+            el.style.cssText = 'display:none!important';
+            var rec = el.closest('[id^="rec"]');
+            if (rec && rec !== document.getElementById('nx-prod-root') && rec.id !== 'rec2362047083') {
+              rec.style.cssText = 'display:none!important';
+            }
+          }
+        });
+      });
+    }).observe(document.body, { childList: true, subtree: true });
+
+    attachEvents();
+    updateColors();
+    injectPopularBlock();
+    /* Снять CSS-скрытие Tilda-реков — наш контент уже отрендерен */
+    document.documentElement.classList.remove('nx-tp');
+  }
+
+  function updatePricesAndImage() {
+    var ed = getEd();
+    if (!_paletteColor && ed && ed.img) { var mi = document.getElementById('nx-mi'); if (mi) mi.src = ed.img; }
+    var pricesEl = document.getElementById('nx-prices');
+    if (pricesEl) pricesEl.innerHTML = renderPrices(ed);
+    updateColors();
+  }
+
+  function applyColorFromPalette(c) {
+    _paletteColor = c;
+    var gallery  = document.querySelector('.nx-p-mainimg');
+    var mainImg  = document.getElementById('nx-mi');
+    if (gallery) {
+      var swatch = document.getElementById('nx-color-swatch');
+      if (!swatch) {
+        swatch = document.createElement('div');
+        swatch.id = 'nx-color-swatch';
+        swatch.className = 'nx-p-color-swatch';
+        gallery.appendChild(swatch);
+      }
+      swatch.style.background = c.hex ? c.hex
+        : c.img ? 'center/cover url(' + c.img + ')' : '#e0e0e0';
+      swatch.style.display = 'flex';
+      swatch.innerHTML = '<div class="nx-p-color-swatch__name">' +
+        '<span class="nx-p-color-swatch__code">' + (c.code || '') + '</span>' +
+        (c.name && c.name !== c.code ? c.name : '') + '</div>';
+    }
+    if (mainImg) mainImg.style.display = 'none';
+    if ((_selected['Тип покрытия'] || '') === 'Без покрытия') {
+      var coatingProp = (_p && _p.properties || []).find(function (pr) { return pr.title === 'Тип покрытия'; });
+      if (coatingProp) {
+        var vals = coatingProp.values.split('\n').map(function (v) { return v.split('=')[0].trim(); });
+        var painted = vals.find(function (v) { return v !== 'Без покрытия'; });
+        if (painted) {
+          _selected['Тип покрытия'] = painted;
+          var sel = document.querySelector('.nx-p-select[data-prop="Тип покрытия"]');
+          if (sel) sel.value = painted;
+        }
+      }
+    }
+    _selected['Цвет'] = c.code || '';
+    updatePricesAndImage();
+  }
+
+  function showColorTag(c) {
+    var old = document.getElementById('nx-color-tag');
+    if (old) old.remove();
+    var tag = document.createElement('div');
+    tag.id = 'nx-color-tag';
+    tag.className = 'nx-color-tag';
+    var dotStyle = c.hex ? 'background:' + c.hex
+      : c.img ? 'background:center/cover url(' + c.img + ')' : 'background:#ccc';
+    tag.innerHTML =
+      '<span class="nx-color-tag__dot" style="' + dotStyle + '"></span>' +
+      '<span class="nx-color-tag__code">' + (c.code || '') + '</span>' +
+      (c.name && c.name !== c.code ? '<span class="nx-color-tag__name"> — ' + c.name + '</span>' : '') +
+      '<button class="nx-color-tag__clear" title="Сбросить цвет">×</button>';
+    var colors = document.getElementById('nx-colors');
+    if (colors && colors.parentNode) colors.parentNode.insertBefore(tag, colors.nextSibling);
+    tag.querySelector('.nx-color-tag__clear').addEventListener('click', function () {
+      sessionStorage.removeItem('nx_palette_color');
+      _paletteColor = null;
+      tag.remove();
+      var sw = document.getElementById('nx-color-swatch');
+      if (sw) sw.style.display = 'none';
+      var mi = document.getElementById('nx-mi');
+      if (mi) mi.style.display = '';
+      updatePricesAndImage();
+    });
+  }
+
+  function restoreColorFromPalette() {
+    var raw = sessionStorage.getItem('nx_palette_color');
+    if (!raw) return;
+    try {
+      var c = JSON.parse(raw);
+      if (!c || !c.code) return;
+      applyColorFromPalette(c);
+      showColorTag(c);
+    } catch (e) {}
+  }
+
+  function updateColors() {
+    var colorsEl = document.getElementById('nx-colors');
+    if (!colorsEl) return;
+
+    var selectedCoating = _selected['Тип покрытия'] || '';
+    var edCoating = COATING_MAP[selectedCoating];
+    var noCovering = edCoating ? !!_noColorCoatings[edCoating] : false;
+
+    var palBtn2 = document.getElementById('nx-palette-btn');
+    if (noCovering) {
+      colorsEl.querySelectorAll('.nx-p-color-btn').forEach(function (b) {
+        b.style.opacity = '0.3'; b.style.pointerEvents = 'none';
+      });
+      if (palBtn2) palBtn2.dataset.nxLocked = '1';
+      return;
+    }
+
+    colorsEl.style.opacity = '';
+    colorsEl.style.pointerEvents = '';
+
+    var filtered;
+    if (edCoating) {
+      filtered = _editions.filter(function (e) { return e['Покрытие'] === edCoating; });
+    } else {
+      filtered = _editions.filter(function (e) { return e['Покрытие'] !== 'Без покрытия'; });
+    }
+    if (!filtered.length) filtered = _editions;
+
+    var available = filtered.map(function (e) { return String(e['Цвет']); });
+    if (!_paletteColor && _selected['Цвет'] && available.indexOf(_selected['Цвет']) === -1) {
+      _selected['Цвет'] = available[0] || '';
+    }
+
+    colorsEl.innerHTML = renderColorSwatches(filtered, getColorMap());
+  }
+
+  function attachEvents() {
+    var root = document.getElementById('nx-prod-root');
+    if (!root) return;
+
+    root.addEventListener('click', function (e) {
+      var palBtn = e.target.closest('#nx-palette-btn');
+      if (!palBtn) return;
+      if (palBtn.dataset.nxLocked === '1') {
+        e.preventDefault();
+        showPaletteTooltip(palBtn);
+      } else {
+        try {
+          sessionStorage.setItem('nx_palette_back', location.href);
+          sessionStorage.setItem('nx_palette_product', JSON.stringify({
+            name:    _p ? _p.title : '',
+            coating: _selected['Тип покрытия'] || ''
+          }));
+        } catch (ex) {}
+      }
+    });
+
+    root.addEventListener('click', function (e) {
+      var thumb = e.target.closest('.nx-p-thumb');
+      if (!thumb) return;
+      root.querySelectorAll('.nx-p-thumb').forEach(function (t) { t.classList.remove('nx-p-thumb--active'); });
+      thumb.classList.add('nx-p-thumb--active');
+      var mi = document.getElementById('nx-mi');
+      if (mi) mi.src = thumb.querySelector('img').src;
+    });
+
+    root.addEventListener('click', function (e) {
+      var btn = e.target.closest('.nx-p-color-btn');
+      if (!btn) return;
+      if (_paletteColor) {
+        _paletteColor = null;
+        sessionStorage.removeItem('nx_palette_color');
+        var sw = document.getElementById('nx-color-swatch'); if (sw) sw.style.display = 'none';
+        var mi = document.getElementById('nx-mi'); if (mi) mi.style.display = '';
+        var ct = document.getElementById('nx-color-tag'); if (ct) ct.remove();
+      }
+      root.querySelectorAll('.nx-p-color-btn').forEach(function (b) { b.classList.remove('nx-p-color-btn--active'); });
+      btn.classList.add('nx-p-color-btn--active');
+      _selected['Цвет'] = btn.dataset.color;
+      _selected['Цвет'] = btn.dataset.color;
+
+// Найти edition с этим цветом и обновить покрытие
+var matchedEd = _editions.find(function(e) { 
+  return String(e['Цвет']) === btn.dataset.color; 
+});
+if (matchedEd && matchedEd['Покрытие']) {
+  _selected['Тип покрытия'] = matchedEd['Покрытие'];
+  var coatingSel = document.querySelector('.nx-p-select[data-prop="Тип покрытия"]');
+  if (coatingSel) coatingSel.value = matchedEd['Покрытие'];
+}
+      updatePricesAndImage();
+    });
+
+root.addEventListener('change', function (e) {
+  var sel = e.target.closest('.nx-p-select');
+  if (!sel) return;
+  _selected[sel.dataset.prop] = sel.value;
+  if (sel.dataset.prop === 'Тип покрытия' && sel.value === 'Без покрытия') {
+    _paletteColor = null;
+    sessionStorage.removeItem('nx_palette_color');
+    var sw = document.getElementById('nx-color-swatch');
+    if (sw) sw.style.display = 'none';
+    var mi = document.getElementById('nx-mi');
+    if (mi) mi.style.display = '';
+    var ct = document.getElementById('nx-color-tag');
+    if (ct) ct.remove();
+    _selected['Цвет'] = 'без';
+  }
+  updatePricesAndImage();
+});
+    
+
+    var buyBtn = document.getElementById('nx-btn-buy');
+    if (buyBtn) buyBtn.addEventListener('click', addToCart);
+
+    var sampleBtn = document.getElementById('nx-btn-sample');
+    if (sampleBtn) {
+      sampleBtn.addEventListener('click', function () {
+        /* Приоритет — цвет, выбранный на странице (свотч → _paletteColor),
+           затем цвет из палитры (sessionStorage). Так кнопка работает без перехода в палитру. */
+        var c = (_paletteColor && _paletteColor.code) ? _paletteColor : null;
+        if (!c) {
+          var raw = sessionStorage.getItem('nx_palette_color');
+          try { c = raw ? JSON.parse(raw) : null; } catch (e) {}
+        }
+        if (!c || !c.code) {
+          var palBtn = document.getElementById('nx-palette-btn');
+          if (palBtn) {
+            palBtn.style.animation = 'nx-pulse 0.4s ease 3';
+            setTimeout(function () { palBtn.style.animation = ''; }, 1200);
+          }
+          return;
+        }
+        var colorName = [c.code, (c.name && c.name !== c.code) ? c.name : ''].filter(Boolean).join(' — ');
+        try {
+          if (typeof tcart__addProduct === 'function') {
+            /* Выкрас — ручная позиция 0 ₽ без складского uid (иначе NOT FOUND PRODUCTS IN STORE) */
+            var sampleItem = { name: 'Пробный выкрас — ' + colorName, price: 0, quantity: 1, amount: 0, img: c.img || '', uid: '306044934692', option: 'Цвет: ' + colorName };
+            console.log('nx: sample to cart', JSON.stringify(sampleItem));
+            tcart__addProduct(sampleItem);
+          }
+        } catch (e) { console.error('nx: sample error', e); }
+      });
+    }
+
+    var inpUnits = document.getElementById('nx-inp-units');
+    var inpMeters = document.getElementById('nx-inp-meters');
+    var qtyUnits = document.getElementById('nx-qty-units');
+    var qtyMeters = document.getElementById('nx-qty-meters');
+
+    if (qtyUnits) {
+      qtyUnits.addEventListener('click', function (e) {
+        var btn = e.target.closest('button'); if (!btn) return;
+        _qty = Math.max(1, _qty + parseInt(btn.dataset.d));
+        inpUnits.value = _qty; inpMeters.value = (_qty * _boardLen).toFixed(0);
+      });
+      inpUnits.addEventListener('input', function () {
+        _qty = Math.max(1, parseInt(this.value) || 1);
+        inpMeters.value = (_qty * _boardLen).toFixed(0);
+      });
+    }
+    if (qtyMeters) {
+      qtyMeters.addEventListener('click', function (e) {
+        var btn = e.target.closest('button'); if (!btn) return;
+        var m = Math.max(_boardLen, parseFloat(inpMeters.value) + parseInt(btn.dataset.d) * _boardLen);
+        inpMeters.value = m.toFixed(0); _qty = Math.round(m / _boardLen); inpUnits.value = _qty;
+      });
+      inpMeters.addEventListener('input', function () {
+        var m = parseFloat(this.value) || _boardLen;
+        _qty = Math.round(m / _boardLen); inpUnits.value = _qty;
+      });
+    }
+
+    setTimeout(restoreColorFromPalette, 150);
+  }
+
+  function injectPopularBlock() {
+    var nxRoot = document.getElementById('nx-prod-root');
+    if (!nxRoot || !nxRoot.parentNode) return;
+
+    function activate(rec) {
+      var snippet = rec.querySelector('.t-store__prod-snippet__container');
+      if (snippet) snippet.style.cssText = 'display:none!important';
+      rec.style.cssText = '';
+      nxRoot.parentNode.insertBefore(rec, nxRoot.nextSibling);
+      setTimeout(function () {
+        if (typeof window._nxProcessCards === 'function') window._nxProcessCards();
+      }, 400);
+    }
+
+    var existing = document.getElementById('rec2362047083');
+    if (existing) { activate(existing); return; }
+
+    var n = 0;
+    var iv = setInterval(function () {
+      var rec = document.getElementById('rec2362047083');
+      if (rec) { clearInterval(iv); activate(rec); return; }
+      if (++n > 50) clearInterval(iv);
+    }, 100);
+  }
+
+  function boot() {
+    var m = location.pathname.match(/\/tproduct\/(\d+)/);
+    if (!m) return;
+    var uid = m[1];
+    var attempts = 0;
+    var iv = setInterval(function () {
+      attempts++;
+      if ((window.tStoreOptionsList && window.tStoreOptionsList.length) || attempts > 30) {
+        clearInterval(iv);
+        loadProduct(uid).then(function (p) {
+          if (!p) { console.error('nx: product not found'); return; }
+          renderRoot(p);
+        }).catch(function (err) { console.error('nx: loadProduct error', err); });
+      }
+    }, 100);
+  }
+
+  /* Создать #nx-prod-root как можно раньше — чтобы не было пустоты пока грузится продукт */
+  function createRootEarly() {
+    if (document.getElementById('nx-prod-root')) return;
+    var root = document.createElement('div');
+    root.id = 'nx-prod-root';
+    var allrec = document.getElementById('allrecords');
+    if (allrec && allrec.children.length > 0) {
+      allrec.insertBefore(root, allrec.children[1] || null);
+    } else if (document.body) {
+      document.body.appendChild(root);
+    }
+  }
+
+  /* Запускаем сразу на DOMContentLoaded — не ждём window.load */
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function () {
+      createRootEarly();
+      setTimeout(boot, 50);
+    });
+  } else {
+    createRootEarly();
+    setTimeout(boot, 50);
+  }
+  /* Fallback: window.load на случай если DOMContentLoaded уже прошёл */
+  window.addEventListener('load', function () {
+    if (!document.querySelector('#nx-prod-root .nx-p-inner')) setTimeout(boot, 100);
+  });
+
+  window.addEventListener('pageshow', function (e) {
+    if (e.persisted) setTimeout(restoreColorFromPalette, 200);
+  });
+})();
+
+/* ══ 4. Мобильное меню + deeplinks ══ */
+(function () {
+  function initMobileMenu() {
+    var btn = document.querySelector('.t-menu__link-item[href="#catalog"]');
+    if (!btn) return;
+    btn.addEventListener('click', function (e) {
+      var t = document.querySelector('#catalog, [data-catalog]');
+      if (t) { e.preventDefault(); t.scrollIntoView({ behavior: 'smooth' }); }
+    });
+  }
+  function initDeeplinks() {
+    var hash = location.hash;
+    if (!hash || hash.length < 2) return;
+    document.querySelectorAll('.nx-filter-chip[data-filter]').forEach(function (chip) {
+      if (chip.dataset.filter === hash.slice(1)) chip.click();
+    });
+  }
+  window.addEventListener('load', function () { setTimeout(function () { initMobileMenu(); initDeeplinks(); }, 500); });
+})();
+
+/* ══ 5. Перехват ошибки оформления → «Заявка отправлена» ══ */
+(function () {
+  'use strict';
+  var _handled = false;
+  var ERR_TEXT = 'Не удается оформить заказ';
+
+  function handleCheckoutError(errEl) {
+    if (_handled) return;
+    _handled = true;
+
+    errEl.style.cssText = 'display:none!important';
+
+    if (document.getElementById('nx-cart-ok')) return;
+    var wrap = errEl.closest('[class*="t-cart"]') || errEl.parentElement;
+    var ok = document.createElement('div');
+    ok.id = 'nx-cart-ok';
+    ok.style.cssText = 'padding:28px 20px;text-align:center;font-family:GothamPro,sans-serif;';
+    ok.innerHTML =
+      '<div style="color:#4C9E24;font-size:44px;line-height:1;margin-bottom:12px;">✓</div>' +
+      '<div style="font-size:18px;font-weight:700;color:#1a1a1a;margin-bottom:8px;">Заявка отправлена!</div>' +
+      '<div style="font-size:13px;color:#888;line-height:1.6;">Менеджер свяжется с вами<br>в ближайшее время</div>';
+    wrap.insertBefore(ok, wrap.firstChild);
+
+    setTimeout(function () {
+      /* Очистить корзину в localStorage и перезагрузить страницу —
+         это закроет попап и вернёт клиента на карточку товара */
+      try { localStorage.removeItem('tcart'); } catch (e) {}
+      try {
+        if (window.tcart) window.tcart.products = [];
+        if (typeof tcart__saveLocalObj === 'function') tcart__saveLocalObj();
+      } catch (e) {}
+      window.location.href = window.location.href;
+    }, 3500);
+  }
+
+  function checkNode(el) {
+    if (!el || el.nodeType !== 1) return;
+    /* Сам элемент */
+    if ((el.textContent || '').indexOf(ERR_TEXT) !== -1) {
+      /* Ищем листовой/ближайший видимый узел с ошибкой */
+      var target = el;
+      if (el.querySelectorAll) {
+        var children = el.querySelectorAll('*');
+        for (var k = 0; k < children.length; k++) {
+          if ((children[k].textContent || '').indexOf(ERR_TEXT) !== -1) {
+            target = children[k]; break;
+          }
+        }
+      }
+      handleCheckoutError(target);
+    }
+  }
+
+  /* Слушаем и добавление новых узлов, и изменение атрибутов/стилей существующих */
+  var _obs = new MutationObserver(function (mutations) {
+    for (var i = 0; i < mutations.length; i++) {
+      var m = mutations[i];
+      if (m.type === 'childList') {
+        for (var j = 0; j < m.addedNodes.length; j++) checkNode(m.addedNodes[j]);
+      } else if (m.type === 'attributes') {
+        var t = m.target;
+        if (t && t.nodeType === 1 && (t.textContent || '').indexOf(ERR_TEXT) !== -1) {
+          var st = window.getComputedStyle(t);
+          if (st.display !== 'none' && st.visibility !== 'hidden') handleCheckoutError(t);
+        }
+      }
+    }
+  });
+
+  /* document.body может ещё не существовать в момент запуска скрипта из <head> */
+  function startObs() {
+    if (document.body) {
+      _obs.observe(document.body, {
+        childList: true, subtree: true,
+        attributes: true, attributeFilter: ['style', 'class']
+      });
+    } else {
+      document.addEventListener('DOMContentLoaded', function () {
+        _obs.observe(document.body, {
+          childList: true, subtree: true,
+          attributes: true, attributeFilter: ['style', 'class']
+        });
+      });
+    }
+  }
+  startObs();
+})();
+
+</script>
+
+
+<script>
+/* ═══════════════════════════════════════════════════
+   COMMON — Блок «Популярные товары»
+   Все страницы сайта
+══════════════════════════════════════════════════ */
+(function () {
+  'use strict';
+
+  var REC_ID = '2362047083';
+
+  function scrollGrid(dir) {
+    var grid = document.querySelector('#rec' + REC_ID + ' .js-store-grid-cont');
+    if (!grid) return;
+    var card = grid.querySelector('.t-store__card');
+    var step = card ? (card.offsetWidth + 20) : 285;
+    grid.scrollBy({ left: dir * step, behavior: 'smooth' });
+  }
+
+  function injectHeader() {
+    var rec = document.getElementById('rec' + REC_ID);
+    if (!rec || rec.querySelector('.nx-popular-toprow')) return;
+    var titleEl = rec.querySelector('.t-section__title');
+    if (!titleEl) return;
+
+    var topRow = document.createElement('div');
+    topRow.className = 'nx-popular-toprow';
+    titleEl.parentNode.insertBefore(topRow, titleEl);
+    topRow.appendChild(titleEl);
+
+    var right = document.createElement('div');
+    right.className = 'nx-popular-right';
+    right.innerHTML =
+      '<a href="/catalog" class="nx-catalog-link">Перейти в каталог</a>' +
+      '<div class="nx-popular-arrows">' +
+        '<button class="nx-arrow-btn nx-arrow-prev">‹</button>' +
+        '<button class="nx-arrow-btn nx-arrow-next">›</button>' +
+      '</div>';
+    topRow.appendChild(right);
+
+    right.querySelector('.nx-arrow-prev').onclick = function () { scrollGrid(-1); };
+    right.querySelector('.nx-arrow-next').onclick = function () { scrollGrid(1); };
+  }
+
+  function init() {
+    if (!document.getElementById('rec' + REC_ID)) return;
+    injectHeader();
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', init);
+  } else {
+    setTimeout(init, 500);
+  }
+})();
+</script>

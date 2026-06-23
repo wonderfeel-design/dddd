@@ -1,0 +1,1387 @@
+/* ================================================
+   АРТ ДОСКА — Custom CSS
+   Версия: очищенная
+   ================================================ */
+
+/* ── ДИЗАЙН-ТОКЕНЫ ── */
+:root {
+    --nx-green:        #4C9E24;
+    --nx-green-dk:     #3d8a1c;
+    --nx-green-bg:     #E8F5E2;
+    --nx-dark:         #1A1B25;
+    --nx-text:         #252525;
+    --nx-muted:        #444444;
+    --nx-border:       #EBEBEB;
+    --nx-font:         'GothamPro', 'Gotham Pro', sans-serif;
+    --nx-grid-padding:  max(20px, calc((100vw - 1200px) / 2));
+    --nx-muted-light:   #999;
+    --nx-muted-mid:     #aaa;
+}
+
+/* ── ФОН + СКРОЛЛ ── */
+html, body { overflow-x: clip; }
+/* ── Высота страницы без grid на body ── */
+html {
+    min-height: 100%;
+}
+#allrecords {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+}
+#t-footer {
+    margin-top: auto;
+    width: 100%;
+    position: relative !important;
+}
+
+#allrecords > div:last-child {
+    flex: 1;
+}
+
+/* ── Убрать белое пространство после футера ── */
+#allrecords > div:empty {
+    display: none !important;
+    flex: 0 !important;
+}
+/* ── Фон на всех страницах включая /tproduct/ ── */
+html body,
+html #allrecords {
+    background: linear-gradient(180deg,
+        #ffffff 0%,
+        #ebf5e2 18%,
+        #ebf5e2 100%
+    ) !important;
+    background-attachment: fixed !important;
+}
+
+/* Отключить дефолтный белый фон Tilda на странице товара */
+.t-store__prod-page,
+.t-store__prod-page #allrecords,
+.t-store__prod-snippet__container {
+    background: transparent !important;
+}
+
+/* ================================================
+   1. КАРТОЧКИ ТОВАРА — общие стили
+   ================================================ */
+
+.t-catalog__card:not(.t-catalog__card-preloader),
+.t-store__card:not(.t-store__card-preloader) {
+    background: #ffffff !important;
+    border-radius: 8px !important;
+    border: 1px solid var(--nx-border) !important;
+    box-shadow: 0 2px 12px rgba(0,0,0,.05) !important;
+    overflow: hidden;
+    transition: box-shadow .2s, transform .15s;
+}
+.t-catalog__card:not(.t-catalog__card-preloader):hover,
+.t-store__card:not(.t-store__card-preloader):hover {
+    box-shadow: 0 6px 24px rgba(0,0,0,.10) !important;
+    transform: translateY(-2px);
+}
+
+.t-catalog__card__imgwrapper,
+.t-store__card__imgwrapper {
+    background: #F7F7F7 !important;
+}
+
+.t-catalog__card__wrap_txt-and-btns,
+.t-store__card__wrap_txt-and-btns {
+    padding: 0 20px 20px !important;
+}
+/* Figma: 3 раздельных бара (1-й зелёный, 2-й и 3-й серые) */
+.t-catalog__card__wrap_txt-and-btns::before,
+.t-store__card__wrap_txt-and-btns::before {
+    content: '';
+    display: block;
+    height: 3px;
+    background:
+        linear-gradient(var(--nx-green) 0 0) left  /32% 100% no-repeat,
+        linear-gradient(#E8E8E8        0 0) center /32% 100% no-repeat,
+        linear-gradient(#E8E8E8        0 0) right  /32% 100% no-repeat;
+    border-radius: 2px;
+    margin-bottom: 14px;
+}
+
+html body .t-catalog__card__title,
+html body .t-store__card__title {
+    font-family: var(--nx-font) !important;
+    font-size: 14px !important;
+    font-weight: 700 !important;
+    color: var(--nx-text) !important;
+    line-height: 1.35 !important;
+    margin-bottom: 5px !important;
+}
+
+html body .t-catalog__card__sku,
+html body .t-store__card__sku { display: none !important; }
+/*, html body .t-catalog__card__descr,
+html body .t-store__card__descr */
+
+html body .t-catalog__card__price-value,
+html body .t-catalog__card__price-currency,
+html body .t-store__card__price-value,
+html body .t-store__card__price-currency {
+    font-family: var(--nx-font) !important;
+    font-size: 18px !important;
+    font-weight: 700 !important;
+    color: var(--nx-text) !important;
+}
+
+html body .t-catalog__card__price_old .t-catalog__card__price-value,
+html body .t-catalog__card__price_old .t-catalog__card__price-currency,
+html body .t-store__card__price_old .t-store__card__price-value,
+html body .t-store__card__price_old .t-store__card__price-currency {
+    font-size: 14px !important;
+    font-weight: 400 !important;
+    color: #AAAAAA !important;
+    text-decoration: line-through !important;
+}
+
+/* CSS-fallback: скрыть нативную цену Tilda после JS-обогащения */
+.t-store__card[data-nx-enriched] .t-store__card__price,
+.t-catalog__card[data-nx-enriched] .t-catalog__card__price { display: none !important; }
+
+html body .t-catalog__card .t-catalog__card__sold-out-msg,
+html body .t-catalog__card .js-catalog-prod-sold-out,
+html body .t-store__card .t-store__card__sold-out-msg,
+html body .t-store__card .js-store-prod-sold-out { display: none !important; }
+
+.t-catalog__card__discount-label,
+.t-store__card__discount,
+[class*="discount-label"] {
+    background: var(--nx-green-bg) !important;
+    color: var(--nx-green) !important;
+    border-radius: 20px !important;
+    padding: 2px 9px !important;
+    font-size: 11px !important;
+    font-weight: 700 !important;
+    border: none !important;
+}
+
+/* Кнопки — та же 2-колоночная сетка, что и цены → выровнены по вертикали */
+html body .t-catalog__card__btns-wrapper,
+html body .t-store__card__btns-wrapper {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    align-items: center !important;
+    gap: 8px !important;
+    margin-top: 14px !important;
+}
+/* кнопки растягиваются на свою колонку */
+html body .t-catalog__card__btns-wrapper > .t-btnflex,
+html body .t-store__card__btns-wrapper > .t-btnflex {
+    width: 100% !important;
+}
+/* если кнопка одна (только «Купить») — на всю ширину карточки */
+html body .t-catalog__card__btns-wrapper > *:only-child,
+html body .t-store__card__btns-wrapper > *:only-child {
+    grid-column: 1 / -1 !important;
+}
+
+/* Кнопка «Купить» */
+html body .t-btnflex.t-btnflex_type_button.t-catalog__card__btn,
+html body .t-btnflex.t-btnflex_type_button.t-store__card__btn {
+    background-color: var(--nx-green) !important;
+    border-color: var(--nx-green) !important;
+    color: #ffffff !important;
+    border-radius: 4px !important;
+    font-family: var(--nx-font) !important;
+    font-size: 12px !important;
+    font-weight: 700 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.5px !important;
+    padding: 10px 16px !important;
+    transition: background-color .2s !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 7px !important;
+}
+html body .t-btnflex.t-btnflex_type_button.t-catalog__card__btn:hover,
+html body .t-btnflex.t-btnflex_type_button.t-store__card__btn:hover {
+    background-color: var(--nx-green-dk) !important;
+    border-color: var(--nx-green-dk) !important;
+    color: #fff !important;
+}
+html body .t-btnflex.t-btnflex_type_button.t-catalog__card__btn::before,
+html body .t-btnflex.t-btnflex_type_button.t-store__card__btn::before {
+    content: '';
+    display: inline-block;
+    flex-shrink: 0;
+    width: 16px;
+    height: 16px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='9' cy='21' r='1'/%3E%3Ccircle cx='20' cy='21' r='1'/%3E%3Cpath d='M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-size: contain;
+}
+.t-btnflex_type_button .t-btnflex__icon { display: none !important; }
+
+/* Кнопка «Подробнее» */
+html body .t-btnflex.t-btnflex_type_button2.t-catalog__card__btn,
+html body .t-btnflex.t-btnflex_type_button2.t-store__card__btn,
+html body .t-catalog__card__btn-addinfo {
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    color: var(--nx-green) !important;
+    font-family: var(--nx-font) !important;
+    font-size: 12px !important;
+    font-weight: 500 !important;
+    text-decoration: none !important;
+    padding: 10px 4px !important;
+}
+html body .t-btnflex.t-btnflex_type_button2.t-catalog__card__btn:hover,
+html body .t-btnflex.t-btnflex_type_button2.t-store__card__btn:hover,
+html body .t-catalog__card__btn-addinfo:hover {
+    color: var(--nx-green-dk) !important;
+    text-decoration: underline !important;
+}
+
+
+.t-catalog__card__mark-wrapper {
+    position: absolute !important;
+    top: 12px !important;
+    left: 12px !important;
+    display: flex !important;
+    flex-direction: row; /* Align labels horizontally */
+    flex-wrap: wrap;    /* Wrap if they get too long */
+    gap: 8px;           /* Space between the labels */
+    width: auto !important;
+    height: auto !important;
+}
+
+.t-catalog__card__mark, .nx-cat-badge {
+    position: static !important;
+    display: inline-block !important;
+    width: auto !important;
+    height: auto !important;
+    padding: 4px 10px !important;
+    border-radius: 30px !important;
+    background: var(--nx-green-bg) !important;
+    color: var(--nx-dark) !important;
+    font-family: var(--nx-font) !important;
+    font-size: 11px !important;
+    font-weight: 500 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.5px !important;
+}
+/* Бейдж категории (JS-инъекция в imgwrapper) — позиционируем как в Figma */
+.t-catalog__card__imgwrapper > .nx-cat-badge,
+.t-store__card__imgwrapper > .nx-cat-badge {
+    position: absolute !important;
+    top: 12px !important;
+    left: 12px !important;
+    z-index: 2 !important;
+}
+/* ── Размер карточки (JS-инъекция) ── */
+.nx-size-row {
+    font-family: var(--nx-font);
+    font-size: 13px;
+    color: var(--nx-text);
+    margin: 2px 0 10px;
+    line-height: 1.4;
+}
+.nx-size-row strong { font-weight: 700; }
+
+/* ── Двойная цена на карточке каталога ── */
+.nx-price-block { margin: 4px 0 8px; }
+/* Figma: 2 колонки цены в одной сетке с кнопками — выровнены по вертикали */
+.nx-price-row { display: grid; grid-template-columns: 1fr 1fr; align-items: end; gap: 8px; margin-bottom: 4px; }
+
+.nx-price-col { display: flex; flex-direction: column; gap: 2px; }
+.nx-price-val-main { font-size: 20px; font-weight: 700; color: #111; line-height: 1.1; font-family: var(--nx-font);}
+.nx-price-old-row { display: flex; align-items: center; gap: 8px; margin-top: 2px; }
+
+.nx-price-label {
+    font-family: var(--nx-font);
+    font-size: 11px;
+    color: var(--nx-muted-light);
+    margin-bottom: 2px;
+    display: block;
+}
+.nx-price-extra__old {
+    font-family: var(--nx-font);
+    font-size: 13px;
+    color: var(--nx-muted-mid);
+    text-decoration: line-through;
+}
+.nx-price-extra__badge {
+    background: var(--nx-green-bg);
+    color: var(--nx-green);
+    font-family: var(--nx-font);
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 20px;
+}
+
+/* ── Доставка (JS-инъекция) ── */
+.nx-delivery-row {
+    margin-top: 12px;
+    padding-top: 10px;
+    border-top: 1px solid var(--nx-border);
+    min-height: 54px;
+    box-sizing: border-box;
+}
+.nx-delivery-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--nx-font);
+    font-size: 12px;
+    color: var(--nx-muted);
+    line-height: 1.5;
+    margin-bottom: 4px;
+}
+.nx-delivery-item::before {
+    content: '';
+    display: inline-block;
+    flex-shrink: 0;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--nx-green);
+}
+.nx-delivery-sold-out {
+    font-family: var(--nx-font);
+    font-size: 12px;
+    color: #E05252;
+}
+
+/* ── Опции товара ── */
+html body .t-product__option-item_active .t-product__option-checkmark,
+html body .t-product__option-checkmark_select.active {
+    border-color: var(--nx-green) !important;
+    background: var(--nx-green) !important;
+    color: #fff !important;
+}
+html body .t-product__option-item_active .t-product__option-title {
+    color: var(--nx-green) !important;
+}
+
+/* ================================================
+   2. КАТАЛОГ #rec2362174763
+   ================================================ */
+
+/* Нативный блок товара — скрываем сразу */
+.t-store__prod-snippet__container { display: none !important; }
+
+/* Скрытие категории «Палитра» (родитель + 5 подпалитр) */
+.t-catalog__parts-tree-item[data-part-uid="152547959142"],
+.t-catalog__parts-tree-item[data-part-uid="179624093472"],
+.t-catalog__parts-tree-item[data-part-uid="236627535922"],
+.t-catalog__parts-tree-item[data-part-uid="726570418172"],
+.t-catalog__parts-tree-item[data-part-uid="189744702942"],
+.t-catalog__parts-tree-item[data-part-uid="819691203232"] { display: none !important; }
+
+/* Скрытие пункта «Все» в сайдбаре разделов */
+.t-catalog__parts-tree-item:first-child,
+.t-catalog__parts-tree-item[data-part-uid=""] { display: none !important; }
+
+/* Мобильная: панель «Найдено: N + чипсы фильтров» во всю ширину СВЕРХУ,
+   а не узкой колонкой (она лежит внутри грида .t-catalog__mobile-two-columns) */
+@media screen and (max-width: 640px) {
+  .t-catalog__filter__chosen-bar {
+    grid-column: 1 / -1 !important;   /* если грид — на всю ширину */
+    flex: 0 0 100% !important;        /* если флекс — на всю ширину */
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    order: -1 !important;             /* поднять над товарами */
+    margin: 0 0 12px !important;
+    display: flex !important;
+    flex-wrap: wrap !important;
+    align-items: center !important;
+    gap: 8px !important;
+  }
+}
+
+/* Свотчи фильтра «Цвет» (каталог + палитра) — как кружки на карточке товара:
+   крупный круг с белой рамкой и серым кольцом, зелёное кольцо при выборе */
+.t-catalog__filter__checkmark_color {
+  width: 34px !important;
+  height: 34px !important;
+  border-radius: 50% !important;
+  border: 4px solid #fff !important;
+  box-shadow: 0 0 0 2px #e8e8e8 !important;
+  background-clip: padding-box !important;
+  background-size: cover !important;
+  background-position: center !important;
+  transition: box-shadow .15s, transform .15s !important;
+}
+.t-catalog__filter__checkbox_color:hover .t-catalog__filter__checkmark_color {
+  transform: scale(1.08) !important;
+  box-shadow: 0 0 0 2px #ccc !important;
+}
+.t-catalog__filter__checkbox_color input:checked + .t-catalog__filter__checkmark_color,
+.t-catalog__filter__checkbox_color input:checked ~ .t-catalog__filter__checkmark_color {
+  box-shadow: 0 0 0 2.5px var(--nx-green) !important;
+}
+
+/* Ссылка на палитру */
+.nx-palette-link-wrap { padding: 8px 16px 16px; }
+.nx-palette-link {
+    font-size: 14px;
+    color: var(--nx-green);
+    text-decoration: none;
+    display: inline-block;
+}
+.nx-palette-link:hover { text-decoration: underline; }
+
+#rec2362174763 {
+    padding-top: 90px !important;   /* было «85» без px — невалидно, игнорировалось */
+    padding-bottom: 60px !important;
+}
+
+/* Палитра (rec2362172923): у блока padding-top=0 → заголовок «ПАЛИТРЫ ЦВЕТОВ»
+   и хлебные крошки уезжали под фикс. шапку+меню (низ меню ≈126px).
+   Даём такой же верхний отступ, как у каталога. */
+#rec2362172923 {
+    padding-top: 90px !important;
+    padding-bottom: 45px !important;
+}
+
+#rec2362174763 .t-catalog__breadcrumbs { padding-left: var(--nx-grid-padding) !important; }
+/* Заголовок каталога «Все товары» */
+#rec2362174763 .t-section__container {
+    padding-left: var(--nx-grid-padding) !important;
+    padding-right: var(--nx-grid-padding) !important;
+    box-sizing: border-box !important;
+    max-width: 100% !important;
+    width: 100% !important;
+}
+
+
+/* Табы категорий */
+#rec2362174763 .t-catalog-parts-above__container {
+    padding-left: var(--nx-grid-padding) !important;
+    padding-right: var(--nx-grid-padding) !important;
+    box-sizing: border-box !important;
+}
+
+/* Строка поиска и сортировки */
+#rec2362174763 .t-catalog__filter__search-and-sort {
+    padding-left: var(--nx-grid-padding) !important;
+    padding-right: var(--nx-grid-padding) !important;
+    box-sizing: border-box !important;
+}
+
+/* Контейнер sidebar + карточки */
+#rec2362174763 .t-catalog__cont-w-filter {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    box-sizing: border-box !important;
+}
+
+#rec2362174763 .t-catalog__cont-wrapper {
+    padding-left: var(--nx-grid-padding) !important;
+    padding-right: var(--nx-grid-padding) !important;
+    box-sizing: border-box !important;
+    width: 100% !important;
+}
+
+/* Сайдбар */
+#rec2362174763 .t-catalog__sidebar {
+    width: 260px !important;
+    min-width: 260px !important;
+    flex-shrink: 0 !important;
+}
+
+/* Список карточек */
+#rec2362174763 .t-catalog__card-list {
+    padding: 0 !important;
+    gap: 20px !important;
+    column-gap: 20px !important;
+    align-items: flex-start;
+}
+
+/* 3 колонки */
+#rec2362174763 .t-catalog__stretch-col {
+    width: calc(33.333% - 14px) !important;
+    max-width: calc(33.333% - 14px) !important;
+    min-width: 0 !important;
+    flex: 0 0 calc(33.333% - 14px) !important;
+}
+
+/* Фильтры */
+.t-catalog__filter-cont,
+.js-catalog-filter-cont { background: #ffffff !important; }
+
+.t-catalog__filter__section-title,
+.t-catalog__filter__title {
+    font-family: var(--nx-font) !important;
+    color: var(--nx-text) !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.5px !important;
+    margin-bottom: 10px !important;
+}
+
+.t-catalog__filter__label,
+.t-catalog__filter-item label,
+.t-catalog__filter-tree-label {
+    font-family: var(--nx-font) !important;
+    font-size: 13px !important;
+    font-weight: 400 !important;
+    color: var(--nx-muted) !important;
+    cursor: pointer;
+}
+
+/* Слайдер цены */
+.irs--flat .irs-bar,
+.irs--flat .irs-handle > i:first-child { background-color: var(--nx-green) !important; }
+.irs--flat .irs-handle:hover > i:first-child,
+.irs--flat .irs-handle.state_hover > i:first-child { background-color: var(--nx-green-dk) !important; }
+.irs--flat .irs-from,
+.irs--flat .irs-to,
+.irs--flat .irs-single { background-color: var(--nx-green) !important; }
+.irs--flat .irs-from::before,
+.irs--flat .irs-to::before,
+.irs--flat .irs-single::before { border-top-color: var(--nx-green) !important; }
+
+/* Табы */
+.t-catalog__filter-tabs-item {
+    border: 1px solid #D5D5D5 !important;
+    border-radius: 8px !important;
+    padding: 6px 16px !important;
+    font-family: var(--nx-font) !important;
+    font-size: 12px !important;
+    color: #555555 !important;
+    background: transparent !important;
+    cursor: pointer;
+    transition: border-color .2s, color .2s;
+    margin-right: 6px !important;
+    display: inline-block;
+}
+.t-catalog__filter-tabs-item:hover,
+.t-catalog__filter-tabs-item_active {
+    border-color: var(--nx-green) !important;
+    color: var(--nx-green) !important;
+}
+.t-catalog__filter-tabs-item_active { font-weight: 700 !important; }
+
+/* Поиск и сортировка */
+.t-catalog__filter__sort select,
+.t-catalog__filter__sort-btn,
+.t-catalog__filter__search input,
+[class*="catalog__filter__search"] input {
+    font-family: var(--nx-font) !important;
+    font-size: 12px !important;
+    color: var(--nx-text) !important;
+    border: 1px solid #E0E0E0 !important;
+    border-radius: 4px !important;
+}
+.t-catalog__filter__search input,
+[class*="catalog__filter__search"] input {
+    background: #F5F5F5 !important;
+    padding: 7px 12px !important;
+}
+[class*="catalog__filter__search"] input::placeholder { color: #BBBBBB !important; }
+
+/* Пагинация */
+.t-pagination__page {
+    font-family: var(--nx-font) !important;
+    font-size: 12px !important;
+    color: var(--nx-muted) !important;
+    border: 1px solid #E0E0E0 !important;
+    border-radius: 4px !important;
+    background: #fff !important;
+    transition: background .15s, color .15s;
+}
+.t-pagination__page:hover { border-color: var(--nx-green) !important; color: var(--nx-green) !important; }
+.t-pagination__page_active { background: var(--nx-green) !important; border-color: var(--nx-green) !important; color: #ffffff !important; }
+.t-pagination__arrow { color: var(--nx-green) !important; }
+
+
+/* ================================================
+   3. КАТЕГОРИИ #rec2362047073
+   ================================================ */
+
+#rec2362047073 .t-section__container {
+    max-width: 100% !important;
+    width: 100% !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+    padding-left: var(--nx-grid-padding) !important;
+    padding-right: var(--nx-grid-padding) !important;
+    box-sizing: border-box !important;
+}
+#rec2362047073 .t-col_12 { margin: 0 !important; padding: 0 !important; }
+#rec2362047073 .t-card__container { overflow: visible !important; padding: 0 !important; }
+#rec2362047073 .t688__columns {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    gap: 20px !important;
+    width: 100% !important;
+    overflow-x: auto !important;
+    padding: 0 0 4px !important;
+    margin: 0 !important;
+    scrollbar-width: none !important;
+}
+#rec2362047073 .t688__columns::-webkit-scrollbar { display: none !important; }
+#rec2362047073 .t-card__col { flex: 1 1 0 !important; min-width: 0 !important; max-width: none !important; margin: 0 !important; padding: 0 !important; }
+
+@media (max-width: 960px) {
+    #rec2362047073 .t-card__col { flex: 0 0 200px !important; width: 200px !important; }
+}
+
+/* ================================================
+   4. ПОПУЛЯРНЫЕ ТОВАРЫ #rec2362047083
+   ================================================ */
+
+#rec2362047083 { padding: 20px 0 60px !important; }
+#rec2362047083 .t-section__container {
+    max-width: 100% !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding-left: var(--nx-grid-padding) !important;
+    padding-right: var(--nx-grid-padding) !important;
+    box-sizing: border-box !important;
+}
+#rec2362047083 .t-col_12 { margin: 0 !important; padding: 0 !important; width: 100% !important; box-sizing: border-box !important; }
+#rec2362047083 .nx-popular-toprow { margin-bottom: 16px !important; }
+#rec2362047083 .nx-popular-toprow .t-section__title { margin: 0 !important; }
+
+.nx-popular-toprow { display: flex !important; align-items: center !important; justify-content: space-between !important; }
+.nx-popular-right { display: flex !important; align-items: center !important; gap: 16px !important; flex-shrink: 0 !important; }
+.nx-catalog-link {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 6px !important;
+    font-family: var(--nx-font) !important;
+    font-size: 14px !important;
+    font-weight: 500 !important;
+    color: var(--nx-green) !important;
+    text-decoration: none !important;
+    transition: opacity .2s !important;
+}
+.nx-catalog-link:hover { opacity: .75 !important; }
+.nx-catalog-link svg { width: 14px; height: 14px; flex-shrink: 0; }
+.nx-popular-arrows { display: flex !important; align-items: center !important; gap: 8px !important; }
+.nx-arrow-btn,
+.t-carousel__btn {
+    width: 40px !important;
+    height: 40px !important;
+    border-radius: 50% !important;
+    background: #ffffff !important;
+    border: 1px solid #E0E0E0 !important;
+    color: var(--nx-dark) !important;
+    cursor: pointer !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    transition: background .2s, border-color .2s !important;
+    padding: 0 !important;
+}
+.nx-arrow-btn:hover,
+.t-carousel__btn:hover { background: #f5f5f5 !important; border-color: var(--nx-green) !important; }
+.nx-arrow-btn svg,
+.t-carousel__btn svg { width: 18px !important; height: 18px !important; display: block; flex-shrink: 0; }
+
+#rec2362047083 .js-store-grid-cont {
+    overflow-x: auto !important;
+    overflow-y: visible !important;
+    scroll-behavior: smooth !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    scrollbar-width: none !important;
+}
+#rec2362047083 .js-store-grid-cont::-webkit-scrollbar { display: none !important; }
+#rec2362047083 .t-store__card-list {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    gap: 20px !important;
+    width: max-content !important;
+    align-items: stretch !important;
+}
+#rec2362047083 .t-store__card {
+    flex: 0 0 285px !important;
+    width: 285px !important;
+    margin: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    height: auto !important;
+}
+#rec2362047083 .t-store__card__wrap_txt-and-btns {
+    padding: 0 20px 20px !important;
+    flex: 1 1 auto !important;
+    display: flex !important;
+    flex-direction: column !important;
+    height: auto !important;
+}
+#rec2362047083 .t-store__card__textwrapper { flex: 1 1 auto !important; padding: 0 !important; }
+#rec2362047083 .t-store__card__btns-wrapper { flex-shrink: 0 !important; padding: 0 !important; margin-top: auto !important; }
+#rec2362047083 .t-store__card__sku,
+#rec2362047083 .t-store__card__descr { display: none !important; }
+
+/* Show badge in popular products */
+#rec2362047083 .t-catalog__card__mark-wrapper,
+#rec2362047083 .nx-cat-badge { display: inline-flex !important; }
+
+/* Скрыть кнопку «Загрузить ещё» — не нужна при горизонтальном скролле */
+#rec2362047083 .t-store__btn-more-wrap,
+#rec2362047083 .t-store__btn-more,
+#rec2362047083 [class*="btn-more"] { display: none !important; }
+
+@media (max-width: 1199px) {
+    #rec2362047083 .t-store__card { flex: 0 0 calc((100vw - 40px) / 3) !important; width: calc((100vw - 40px) / 3) !important; }
+}
+@media (max-width: 960px) {
+    #rec2362047083 .t-store__card { flex: 0 0 calc((100vw - 20px) / 2) !important; width: calc((100vw - 20px) / 2) !important; }
+}
+@media (max-width: 640px) {
+    #rec2362047083 .t-store__card { flex: 0 0 calc(100vw - 40px) !important; width: calc(100vw - 40px) !important; }
+    #rec2362047083 .nx-popular-arrows { display: none !important; }
+}
+
+/* ================================================
+   5. СТРАНИЦА ТОВАРА #nx-prod-root
+   ================================================ */
+
+
+#nx-prod-root * { box-sizing: border-box;}
+
+#nx-prod-root h1, #nx-prod-root h2, #nx-prod-root h3 { margin: 0; padding: 0; }
+ #nx-prod-root body {
+    background: linear-gradient(180deg,
+        #ffffff 0%,
+        #ebf5e2 18%,
+        #ebf5e2 100%
+    ) !important;
+}
+#nx-prod-root {
+    width: 100%;
+    overflow: hidden;
+    padding: 120px 0 80px;
+    font-family: var(--nx-font);
+    color: #222;
+ /*  top: 55px; /Matches the height of your header */
+}
+/* Мобильная: шапка + меню выше, поэтому контент товара заезжал под меню —
+   отступ = высота фикс-шапки (--nx-header-h) + меню(~56) + запас(24) */
+@media (max-width: 640px) {
+  #nx-prod-root { padding-top: calc(var(--nx-header-h, 96px) + 80px) !important; }
+}
+#nx-prod-root .nx-p-inner { max-width: 1200px; margin: 0 auto; padding: 0 20px; }
+
+/* Хлебные крошки */
+#nx-prod-root .nx-p-bc { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; font-size: 13px; color: #888; margin-bottom: 24px; }
+#nx-prod-root .nx-p-bc a { color: #888; text-decoration: none; }
+#nx-prod-root .nx-p-bc a:hover { color: var(--nx-green); }
+#nx-prod-root .nx-p-bc__sep { color: #bbb; }
+#nx-prod-root .nx-p-bc__cur { color: #222; font-weight: 500; }
+
+/* Layout */
+#nx-prod-root .nx-p-layout { display: flex; gap: 48px; align-items: flex-start; }
+#nx-prod-root .nx-p-left  { flex: 0 0 420px; max-width: 420px; }
+#nx-prod-root .nx-p-right { flex: 1; min-width: 0; width: 100% !important; }
+
+/* Галерея */
+#nx-prod-root .nx-p-gallery { display: flex; gap: 12px; align-items: flex-start; }
+#nx-prod-root .nx-p-thumbs  {
+    display: flex; flex-direction: column; gap: 8px; flex: 0 0 78px;
+    order: -1;               /* миниатюры — слева от главного фото */
+    max-height: 340px;       /* вертикальный скролл при большом числе фото */
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: #ddd transparent;
+}
+#nx-prod-root .nx-p-thumb {
+    width: 72px; height: 72px;
+    border: 2px solid transparent;
+    border-radius: 6px;
+    overflow: hidden;
+    cursor: pointer;
+    background: #f5f5f5;
+    transition: border-color .15s;
+    flex-shrink: 0;
+}
+#nx-prod-root .nx-p-thumb img { width: 100%; height: 100%; object-fit: cover; }
+#nx-prod-root .nx-p-thumb--active { border-color: var(--nx-green); }
+#nx-prod-root .nx-p-mainimg { flex: 1; aspect-ratio: 1/1; border-radius: 8px; overflow: hidden; background: #f5f5f5; }
+#nx-prod-root .nx-p-mainimg img { width: 100%; height: 100%; object-fit: cover; transition: opacity .2s; }
+
+/* Текст */
+#nx-prod-root .nx-p-title { font-size: 26px; font-weight: 800; text-transform: uppercase; letter-spacing: .5px; line-height: 1.2; color: #111; margin-bottom: 12px; }
+/* Заголовок: мобайл — над галереей, десктоп — в правой колонке */
+#nx-prod-root .nx-p-title--mob { display: none; }
+#nx-prod-root .nx-p-title--dsk { display: block; }
+#nx-prod-root .nx-p-descr { font-size: 14px; line-height: 1.6; color: #444; margin-bottom: 20px; }
+
+/* Цены + счётчики — единый grid (2 строки), колонки определяются один раз
+   и наследуются обеими строками через subgrid → колонки выровнены вертикально */
+#nx-prod-root .nx-p-pricing {
+    display: grid;
+    grid-template-columns: minmax(0, 149px) 40px minmax(0, 149px);
+    justify-content: start;
+    width: 100% !important;
+    row-gap: 16px;
+    margin-bottom: 24px;
+}
+#nx-prod-root .nx-p-prices-grid,
+#nx-prod-root .nx-p-buy-row {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: subgrid;
+}
+#nx-prod-root .nx-p-prices-grid { align-items: flex-start; }
+#nx-prod-root .nx-p-buy-row     { align-items: flex-end; }
+
+#nx-prod-root .nx-p-prices-grid .nx-p-price-col { display: flex; flex-direction: column; gap: 2px; }
+#nx-prod-root .nx-p-prices-grid .nx-p-price-lbl { font-size: 11px; color: #999; text-transform: uppercase; letter-spacing: 0.4px; }
+#nx-prod-root .nx-p-prices-grid .nx-p-price,
+#nx-prod-root .nx-p-prices-grid .nx-p-price--sqm { font-size: 24px; font-weight: 800; color: #111; }
+#nx-prod-root .nx-p-price-old-row { display: flex; align-items: center; gap: 8px; margin-top: 4px; }
+#nx-prod-root .nx-p-price-old-row .nx-p-price-old { font-size: 15px; color: #bbb; text-decoration: line-through; }
+#nx-prod-root .nx-p-price-old-row .nx-p-badge { font-size: 12px; font-weight: 700; background: var(--nx-green-bg); color: var(--nx-green); padding: 3px 10px; border-radius: 20px; }
+
+#nx-prod-root .nx-p-qty-wrap { display: flex; flex-direction: column; gap: 4px; }
+#nx-prod-root .nx-p-qty-lbl { font-size: 12px; color: #888; white-space: nowrap; }
+#nx-prod-root .nx-p-qty-link { display: flex; justify-content: center; align-items: center; padding-bottom: 12px; color: #bbb; font-size: 18px; }
+#nx-prod-root .nx-p-qty { display: flex; align-items: center; width: 100%; border: 1.5px solid #ddd; border-radius: 8px; overflow: hidden; height: 50px; }
+#nx-prod-root .nx-p-qty button { flex: 0 0 40px; height: 100%; border: none; background: #F1F1FF; font-size: 18px; cursor: pointer; color: #444; transition: background .1s; }
+#nx-prod-root .nx-p-qty button:hover { background: #f5f5f5; }
+#nx-prod-root .nx-p-qty input { flex: 1; width: auto; min-width: 0; height: 100%; border: none; text-align: center; font-size: 16px; font-weight: 600; background: #F1F1FF; outline: none; }
+
+/* Кнопка */
+#nx-prod-root .nx-p-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background: var(--nx-green);
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 14px 28px;
+    cursor: pointer;
+    transition: background .15s;
+    white-space: nowrap;
+    font-family: var(--nx-font);
+    min-width: 160px;
+}
+/* Иконка корзины — та же что в карточках каталога */
+#nx-prod-root .nx-p-btn::before {
+    content: '';
+    display: inline-block;
+    flex-shrink: 0;
+    width: 18px;
+    height: 18px;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='9' cy='21' r='1'/%3E%3Ccircle cx='20' cy='21' r='1'/%3E%3Cpath d='M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-size: contain;
+}
+#nx-btn-sample {
+  transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease; background-image: none !important;
+}
+#nx-prod-root .nx-p-btn:hover { background: var(--nx-green-dk); color: #fff;}
+
+/* Селекты */
+#nx-prod-root .nx-p-selects { display: flex; flex-wrap: wrap; gap: 16px; margin: 16px 0; align-items: flex-end; }
+#nx-prod-root .nx-p-select-wrap { display: flex; flex-direction: column; gap: 6px; flex: 1; min-width: 120px; max-width: 200px; }
+#nx-prod-root .nx-p-select {
+    width: 100%;
+    padding: 10px 32px 10px 14px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    background: #f5f5f5;
+    font-size: 14px;
+    color: #222;
+    font-family: var(--nx-font);
+    appearance: none;
+    -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%234c9e24' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    cursor: pointer;
+    box-sizing: border-box;
+}
+#nx-prod-root .nx-p-select:focus { outline: 2px solid var(--nx-green); outline-offset: -1px; }
+
+/* Опции */
+#nx-prod-root .nx-p-opts { display: flex; flex-direction: column; gap: 16px; margin-bottom: 24px; }
+#nx-prod-root .nx-p-opt-lbl { font-size: 11px; font-weight: 700; letter-spacing: .6px; text-transform: uppercase; color: #888; margin-bottom: 6px; display: block; }
+
+/* Свотчи цвета */
+#nx-prod-root .nx-p-color-circles { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+#nx-prod-root .nx-p-color-btn {
+    width: 50px; height: 50px;
+    border-radius: 50%;
+    border: 2px solid #e8e8e8;
+    background: #fff;
+    padding: 0;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: border-color .15s, transform .1s;
+}
+#nx-prod-root .nx-p-color-btn:hover { transform: scale(1.08); border-color: #ccc; }
+#nx-prod-root .nx-p-color-btn--active { border-color: var(--nx-green) !important; border-width: 2.5px; }
+#nx-prod-root .nx-p-color-inner { width: 36px; height: 36px; border-radius: 50%; border: 1px solid rgba(0,0,0,.09); background: #f0f0f0; }
+
+/* Кнопка палитры */
+#nx-prod-root .nx-p-palette-btn {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 50px;
+    padding: 0 22px;
+    border: 1.5px solid var(--nx-green);
+    border-radius: 25px;
+    background: transparent;
+    color: var(--nx-green);
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background .15s;
+    font-family: var(--nx-font);
+}
+#nx-prod-root .nx-p-palette-btn:hover { background: var(--nx-green-bg); }
+
+.nx-pal-tip {
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: #333;
+    color: #fff;
+    font-size: 12px;
+    font-weight: 500;
+    padding: 6px 14px;
+    border-radius: 6px;
+    white-space: nowrap;
+    pointer-events: none;
+    z-index: 100;
+}
+.nx-pal-tip::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border: 5px solid transparent;
+    border-top-color: #333;
+}
+
+/* Уведомление */
+#nx-prod-root .nx-p-notice { display: flex; align-items: flex-start; gap: 8px; margin-top: 14px; font-size: 14px; color: #333; line-height: 1.5; }
+#nx-prod-root .nx-p-notice__icon { flex-shrink: 0; width: 20px; height: 20px; border-radius: 50%; background: var(--nx-green); color: #fff; font-size: 12px; font-weight: 700; font-style: italic; display: inline-flex; align-items: center; justify-content: center; margin-top: 1px; }
+
+/* Характеристики */
+#nx-prod-root .nx-p-chars { margin-top: 20px; padding-top: 20px; border-top: 1.5px solid #eee; }
+#nx-prod-root .nx-p-chars-ttl { font-size: 11px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase; color: #888; margin-bottom: 12px; }
+#nx-prod-root .nx-p-chars-list { display: flex; flex-direction: column; gap: 8px; }
+#nx-prod-root .nx-p-chars-item { font-size: 13px; line-height: 1.4; color: #444; }
+#nx-prod-root .nx-p-chars-item strong { font-weight: 700; color: #222; }
+
+
+/* Популярные товары */
+#nx-prod-root .nx-p-pop { margin-top: 56px; }
+#nx-prod-root .nx-p-pop__hdr { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; flex-wrap: wrap; gap: 8px; }
+#nx-prod-root .nx-p-pop__ttl { font-size: 20px; font-weight: 800; text-transform: uppercase; letter-spacing: .5px; color: #111; }
+#nx-prod-root .nx-p-pop__lnk { font-size: 13px; color: var(--nx-green); text-decoration: none; }
+#nx-prod-root .nx-p-pop__grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; }
+
+#nx-prod-root .nx-pop2 {
+    background: #fff;
+    border-radius: 8px;
+    border: 1px solid var(--nx-border);
+    box-shadow: 0 2px 12px rgba(0,0,0,.05);
+    overflow: hidden;
+    text-decoration: none;
+    color: var(--nx-text);
+    display: flex;
+    flex-direction: column;
+    transition: box-shadow .2s, transform .15s;
+    position: relative;
+}
+#nx-prod-root .nx-pop2:hover { box-shadow: 0 6px 24px rgba(0,0,0,.10); transform: translateY(-2px); }
+#nx-prod-root .nx-pop2__img { aspect-ratio: 1/1; background: #F7F7F7; background-size: cover; background-position: center; flex-shrink: 0; position: relative; overflow: hidden; }
+#nx-prod-root .nx-pop2__body { padding: 0 20px 20px; display: flex; flex-direction: column; flex: 1; }
+#nx-prod-root .nx-pop2__body::before { content: ""; display: block; height: 3px; background: linear-gradient(var(--nx-green) 0 0) left/32% 100% no-repeat, linear-gradient(#E8E8E8 0 0) center/32% 100% no-repeat, linear-gradient(#E8E8E8 0 0) right/32% 100% no-repeat; border-radius: 2px; margin-bottom: 12px; }
+#nx-prod-root .nx-pop2__title { font-size: 14px; font-weight: 700; line-height: 1.35; color: var(--nx-text); margin-bottom: 4px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+#nx-prod-root .nx-pop2__size { font-size: 13px; color: var(--nx-text); line-height: 1.4; margin-bottom: 10px; }
+#nx-prod-root .nx-pop2__price { font-size: 18px; font-weight: 700; color: var(--nx-text); margin-top: auto; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+#nx-prod-root .nx-pop2__old { font-size: 13px; font-weight: 400; color: #bbb; text-decoration: line-through; }
+#nx-prod-root .nx-pop2__disc { font-size: 12px; font-weight: 700; background: var(--nx-green-bg); color: var(--nx-green); padding: 2px 8px; border-radius: 20px; }
+
+/* ================================================
+   6. МЕНЮ И НАВИГАЦИЯ
+   ================================================ */
+body[class*="__body_menushowed"] #nx-megamenu,
+body[class*="__body_menushowed"] .nx-bottomnav { display: none !important; }
+
+html body .nx-header { padding-left: var(--nx-grid-padding) !important; padding-right: var(--nx-grid-padding) !important; }
+html body .nx-megamenu { left: max(0px, calc((100vw - 1200px) / 2)) !important; right: max(0px, calc((100vw - 1200px) / 2)) !important; width: auto !important; }
+html body .nx-bottomnav { padding-left: var(--nx-grid-padding) !important; padding-right: var(--nx-grid-padding) !important; }
+html body .nx-megamenu-wrap { padding-left: 20px !important; }
+
+@media (min-width: 1201px) {
+    html body .nx-megamenu-wrap { padding-left: 0 !important; }
+}
+@media (max-width: 768px) {
+    html body .nx-bottomnav { padding-left: 20px !important; padding-right: 0 !important; }
+}
+
+.nx-megamenu a, .nx-bottomnav a { transition: color 0.15s !important; }
+.nx-megamenu a:hover { color: var(--nx-green) !important; }
+
+/* ================================================
+   7. БЛОГ #rec2362047143 + #rec2362047153
+   ================================================ */
+
+#rec2362047143 { padding-top: 50px !important; padding-bottom: 0 !important; }
+#rec2362047143 .t-container_100 { padding: 0 !important; max-width: 100% !important; width: 100% !important; box-sizing: border-box !important; }
+#rec2362047143 .t-col_12 { margin: 0 !important; padding: 0 !important; }
+#rec2362047143 .t-width { padding: 0 !important; width: 100% !important; max-width: 100% !important; margin: 0 !important; box-sizing: border-box !important; }
+#rec2362047143 .nx-popular-toprow { width: 100% !important; padding-left: var(--nx-grid-padding) !important; padding-right: var(--nx-grid-padding) !important; box-sizing: border-box !important; }
+#rec2362047143 .nx-popular-toprow .t-section__title { margin: 0 !important; flex: 1 !important; font-family: var(--nx-font) !important; font-size: 28px !important; font-weight: 700 !important; color: var(--nx-dark) !important; text-transform: uppercase !important; letter-spacing: 0.5px !important; line-height: 1.2 !important; }
+
+#rec2362047153 { padding-top: 20px !important; padding-bottom: 60px !important; overflow: hidden !important; }
+#rec2362047153 .t-section__container { max-width: 100% !important; width: 100% !important; margin: 0 !important; padding: 0 !important; box-sizing: border-box !important; }
+#rec2362047153 .t-container { display: flex !important; flex-wrap: nowrap !important; gap: 20px !important; overflow-x: auto !important; align-items: stretch !important; padding-bottom: 8px !important; padding-left: var(--nx-grid-padding) !important; width: 100% !important; max-width: 100% !important; margin: 0 !important; scrollbar-width: none !important; box-sizing: border-box !important; }
+#rec2362047153 .t-container::-webkit-scrollbar { display: none !important; }
+#rec2362047153 .t404__col { flex: 0 0 387px !important; width: 387px !important; min-width: 387px !important; margin: 0 !important; display: flex !important; flex-direction: column !important; }
+#rec2362047153 .t404__link { display: flex !important; flex-direction: column !important; flex: 1 !important; height: 100% !important; text-decoration: none !important; background: #ffffff !important; border-radius: 8px !important; border: 1px solid var(--nx-border) !important; box-shadow: 0 2px 12px rgba(0,0,0,.05) !important; overflow: hidden !important; transition: box-shadow .2s, transform .15s !important; }
+#rec2362047153 .t404__link:hover { box-shadow: 0 6px 24px rgba(0,0,0,.10) !important; transform: translateY(-2px) !important; }
+#rec2362047153 .t404__imgbox { flex-shrink: 0 !important; overflow: hidden !important; background: #F7F7F7 !important; }
+#rec2362047153 .t404__img { width: 100% !important; display: block !important; }
+#rec2362047153 .t404__textwrapper { padding: 16px 20px 20px !important; box-sizing: border-box !important; flex: 1 !important; display: flex !important; flex-direction: column !important; }
+#rec2362047153 .t404__date, #rec2362047153 .t404__uptitle { font-family: var(--nx-font) !important; font-size: 12px !important; color: #AAAAAA !important; margin-bottom: 8px !important; display: block !important; }
+#rec2362047153 .t404__title { font-family: var(--nx-font) !important; font-size: 16px !important; font-weight: 700 !important; color: var(--nx-text) !important; line-height: 1.35 !important; margin-bottom: 10px !important; }
+#rec2362047153 .t404__link:hover .t404__title { color: var(--nx-green) !important; }
+#rec2362047153 .t404__descr { font-family: var(--nx-font) !important; font-size: 13px !important; color: var(--nx-muted) !important; line-height: 1.55 !important; flex: 1 !important; }
+#rec2362047153 .t404__separator { height: 3px !important; background: linear-gradient(var(--nx-green) 0 0) left/32% 100% no-repeat, linear-gradient(#E8E8E8 0 0) center/32% 100% no-repeat, linear-gradient(#E8E8E8 0 0) right/32% 100% no-repeat !important; border-radius: 2px !important; margin: 0 !important; }
+
+@media (max-width: 1199px) { #rec2362047153 .t404__col { flex: 0 0 calc((100vw - 40px) / 3) !important; width: calc((100vw - 40px) / 3) !important; min-width: calc((100vw - 40px) / 3) !important; } }
+@media (max-width: 768px)  { #rec2362047153 .t404__col { flex: 0 0 280px !important; width: 280px !important; min-width: 280px !important; } }
+
+/* ================================================
+   8. ФУТЕР #rec2362175613
+   ================================================ */
+
+#rec2362175613 { background: var(--nx-dark) !important; }
+#rec2362175613 .t977__wrapper { display: flex !important; align-items: flex-start !important; padding: 60px 50px !important; gap: 40px !important; box-sizing: border-box !important; width: 100% !important; }
+#rec2362175613 .t977__col_left { flex-shrink: 0 !important; min-width: 180px !important; max-width: 210px !important; }
+#rec2362175613 .t977__logo { max-width: 170px !important; margin-bottom: 24px !important; display: block !important; }
+#rec2362175613 .t977__text, #rec2362175613 .t977__text * { font-family: var(--nx-font) !important; font-size: 12px !important; color: rgba(255,255,255,.4) !important; line-height: 1.7 !important; margin: 0 !important; padding: 0 !important; }
+#rec2362175613 .t977__col_center { flex: 1 !important; display: flex !important; gap: 32px !important; align-items: flex-start !important; }
+#rec2362175613 .t977__col-inner:nth-child(4) { display: none !important; }
+#rec2362175613 .t977__col-inner { flex: 1 !important; min-width: 0 !important; }
+#rec2362175613 .t977__col-inner:nth-child(3) { flex: 1.3 !important; }
+#rec2362175613 .t977__col-inner::before { display: block !important; font-family: var(--nx-font) !important; font-size: 14px !important; font-weight: 700 !important; color: #ffffff !important; margin-bottom: 18px !important; line-height: 1.3 !important; }
+#rec2362175613 .t977__col-inner:nth-child(1)::before { content: 'Информация'; }
+#rec2362175613 .t977__col-inner:nth-child(2)::before { content: 'Каталог'; }
+#rec2362175613 .t977__col-inner:nth-child(3)::before { content: 'Контакты'; }
+#rec2362175613 .t977__descr, #rec2362175613 .t977__descr ul li a, #rec2362175613 .t977__descr a { font-family: var(--nx-font) !important; font-size: 13px !important; font-weight: 400 !important; color: rgba(255,255,255,.65) !important; }
+#rec2362175613 .t977__descr { line-height: 1.5 !important; margin: 0 !important; }
+#rec2362175613 .t977__descr ul { list-style: none !important; padding: 0 !important; margin: 0 !important; }
+#rec2362175613 .t977__descr ul li { margin-bottom: 10px !important; padding: 0 !important; }
+#rec2362175613 .t977__descr ul li a, #rec2362175613 .t977__descr a { text-decoration: none !important; transition: color .2s !important; }
+#rec2362175613 .t977__descr ul li a:hover, #rec2362175613 .t977__descr a:hover { color: #ffffff !important; }
+#rec2362175613 .t977__col_right { flex-shrink: 0 !important; width: 270px !important; }
+#rec2362175613 .t977__socials::before { content: 'Хочу быть в курсе акций и новинок'; display: block !important; font-family: var(--nx-font) !important; font-size: 14px !important; font-weight: 700 !important; color: #ffffff !important; line-height: 1.4 !important; margin-bottom: 20px !important; max-width: 200px !important; }
+#rec2362175613 .t-sociallinks__item_telegram { display: block !important; width: 100% !important; }
+#rec2362175613 .t-sociallinks__item_telegram a { display: inline-flex !important; align-items: center !important; gap: 12px !important; width: 205px !important; height: 50px !important; box-sizing: border-box !important; background: #ffffff !important; border: none !important; border-radius: 8px !important; padding: 0 20px !important; text-decoration: none !important; transition: background .2s !important; cursor: pointer !important; }
+#rec2362175613 .t-sociallinks__item_telegram a:hover { background: #f0f0f0 !important; }
+#rec2362175613 .t-sociallinks__item_telegram svg { width: 32px !important; height: 32px !important; flex-shrink: 0 !important; fill: #ffffff !important; background: #2CA5E0 !important; border-radius: 50% !important; padding: 6px !important; box-sizing: border-box !important; }
+#rec2362175613 .t-sociallinks__item_telegram svg path { fill: #ffffff !important; }
+#rec2362175613 .t-sociallinks__item_telegram a::after { content: 'Подписаться'; font-family: var(--nx-font) !important; font-size: 14px !important; color: #2CA5E0 !important; }
+
+/* ================================================
+   9. БАННЕР #rec2362047053
+   ================================================ */
+
+/* Carousel arrows visibility */
+#rec2362047053 .t-carousel__btn-wrapper { display: flex !important; opacity: 1 !important; visibility: visible !important; }
+#rec2362047053 .t-carousel__btn { position: relative !important; z-index: 10 !important; opacity: 1 !important; visibility: visible !important; }
+
+/* Native indicators off, custom indicator bar on */
+#rec2362047053 .t-carousel__indicators { display: none !important; }
+#nx-ind-rec2362047053 { display: flex !important; align-items: center !important; justify-content: center !important; gap: 8px !important; padding: 16px 0 !important; width: 100% !important; }
+#nx-ind-rec2362047053 div { width: 115px !important; height: 3px !important; border-radius: 2px !important; flex-shrink: 0 !important; cursor: pointer !important; transition: background .3s !important; background: #E0E0E0 !important; }
+#nx-ind-rec2362047053 div.active { background: var(--nx-green) !important; }
+
+/* ================================================
+   10. МОБИЛЬНОЕ МЕНЮ
+   ================================================ */
+
+/* Внешняя обёртка — ограничить по высоте экрана */
+.t-menu__mobile-popup,
+.t-menusub__menu-popup {
+    max-height: 100dvh !important;
+    overflow: hidden !important;
+    display: flex !important;
+    flex-direction: column !important;
+}
+
+/* Внутренний скролл-контейнер */
+.t-menu__mobile-inner {
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    flex: 1 1 auto !important;
+    max-height: 100dvh !important;
+    scrollbar-width: thin !important;
+    scrollbar-color: var(--nx-green) transparent !important;
+}
+.t-menu__mobile-inner::-webkit-scrollbar { width: 4px !important; }
+.t-menu__mobile-inner::-webkit-scrollbar-thumb { background: var(--nx-green) !important; border-radius: 2px !important; }
+
+/* ================================================
+   11. АДАПТИВ
+   ================================================ */
+
+@media (max-width: 960px) {
+    #rec2362174763 .t-catalog__cont-wrapper,
+    #rec2362172923 .t-catalog__cont-wrapper { flex-direction: column !important; padding-left: 16px !important; padding-right: 16px !important; }
+    #rec2362174763 .t-catalog__sidebar,
+    #rec2362172923 .t-catalog__sidebar { width: 100% !important; min-width: 0 !important; order: -1 !important; }
+    #rec2362174763 .t-catalog__stretch-col,
+    #rec2362172923 .t-catalog__stretch-col { width: 100% !important; max-width: 100% !important; flex: 0 0 100% !important; order: 1 !important; }
+    #rec2362174763 .t-catalog-parts-above__container,
+    #rec2362174763 .t-catalog__breadcrumbs,
+    #rec2362172923 .t-catalog-parts-above__container,
+    #rec2362172923 .t-catalog__breadcrumbs { padding-left: var(--nx-grid-padding) !important; }
+
+    /* ГЛАВНЫЙ ФИКС мобильной пустоты: грид-контейнер — КОЛОНКА, а не ряд.
+       Иначе полноширинная панель «Найдено/Сбросить» (chosen-bar, flex:0 0 100%)
+       встаёт РЯДОМ со списком карточек и выталкивает его за экран (left=414). */
+    .js-catalog-grid-cont { flex-direction: column !important; }
+    .t-catalog__card-list { width: 100% !important; }
+}
+
+@media (max-width: 640px) {
+    .t-catalog__card-list { display: flex !important; flex-direction: row !important; flex-wrap: wrap !important; align-items: stretch !important; padding: 0 12px !important; gap: 10px !important; }
+    .t-catalog__card { width: calc(50% - 5px) !important; max-width: calc(50% - 5px) !important; flex: 0 0 calc(50% - 5px) !important; margin-bottom: 0 !important; display: flex !important; flex-direction: column !important; }
+    .t-catalog__card__wrap_txt-and-btns,
+    .t-store__card__wrap_txt-and-btns { padding: 0 10px 12px !important; flex: 1 1 auto !important; }
+    html body .t-catalog__card__title,
+    html body .t-store__card__title { font-size: 13px !important; line-height: 1.3 !important; margin-bottom: 2px !important; }
+    html body .t-catalog__card__descr,
+    html body .t-store__card__descr { font-size: 11px !important; }
+    .nx-size-row { font-size: 11px !important; }
+    .nx-price-val-main { font-size: 13px !important; }
+    .nx-price-label { font-size: 10px !important; }
+    .t-catalog__stretch-col { width: 100% !important; max-width: 100% !important; }
+    #rec2362175613 .t977__wrapper { flex-direction: column !important; padding: 40px 20px !important; gap: 32px !important; }
+    #rec2362175613 .t977__col_left { max-width: 100% !important; width: 100% !important; }
+    #rec2362175613 .t977__col_center { flex-wrap: wrap !important; gap: 24px 16px !important; width: 100% !important; }
+    #rec2362175613 .t977__col-inner { flex: 0 0 calc(50% - 8px) !important; width: calc(50% - 8px) !important; }
+    #rec2362175613 .t977__col_right { width: 100% !important; max-width: 100% !important; }
+    #rec2362047143 .nx-popular-toprow { padding-left: 20px !important; padding-right: 20px !important; }
+}
+
+@media (max-width: 768px) {
+    /* Мобайл: одна колонка; порядок — фото → миниатюры → правый блок → характеристики */
+    #nx-prod-root .nx-p-layout { display: grid !important; grid-template-columns: 1fr; }
+    /* Растворяем .nx-p-left и .nx-p-gallery (display:contents): фото, миниатюры,
+       правый блок и характеристики становятся прямыми grid-элементами .nx-p-layout
+       и слушаются order */
+    #nx-prod-root .nx-p-left,
+    #nx-prod-root .nx-p-gallery { display: contents !important; }
+    #nx-prod-root .nx-p-mainimg { order: 1; width: 100% !important; }
+    /* Миниатюры — горизонтальной лентой ПОД главным фото */
+    #nx-prod-root .nx-p-thumbs {
+        order: 2; flex-direction: row !important; flex: none !important;
+        max-height: none !important; overflow-y: visible !important;
+        overflow-x: auto !important;
+    }
+    #nx-prod-root .nx-p-right { order: 3; }
+    #nx-prod-root .nx-p-chars { order: 4; }
+    #nx-prod-root .nx-p-thumb { flex-shrink: 0 !important; width: 60px !important; height: 60px !important; }
+    /* Мобайл: заголовок наверху, десктоп-заголовок скрыт */
+    #nx-prod-root .nx-p-title--mob { display: block !important; margin-bottom: 12px; }
+    #nx-prod-root .nx-p-title--dsk { display: none !important; }
+    #nx-prod-root .nx-p-pop__grid { grid-template-columns: repeat(2, 1fr); }
+    #nx-prod-root .nx-p-select-wrap { max-width: calc(50% - 8px); }
+    /* Тип покрытия — отдельная строка */
+    #nx-prod-root .nx-p-select-wrap[data-prop="Тип покрытия"] {
+        flex-basis: 100% !important; max-width: 100% !important;
+    }
+}
+
+@media (max-width: 640px) {
+    #nx-prod-root { padding: 80px 0 60px; }
+    #nx-prod-root .nx-p-inner { padding: 0 16px; }
+    #nx-prod-root .nx-p-title { font-size: 18px; }
+    #nx-prod-root .nx-p-select-wrap { max-width: 100% !important; min-width: 0; }
+    #nx-prod-root .nx-p-pop__grid { grid-template-columns: 1fr; }
+    #nx-prod-root .nx-p-color-btn { width: 42px; height: 42px; }
+    #nx-prod-root .nx-p-color-inner { width: 30px; height: 30px; }
+}
+
+/* ================================================
+   12. СТРАНИЦА ПАЛИТРЫ
+   ================================================ */
+
+.nx-palette-page { max-width: 1200px; margin: 0 auto; padding: 48px 20px 80px; font-family: var(--nx-font); }
+.nx-palette-page__title { font-size: 28px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px; color: #111; margin-bottom: 8px; }
+.nx-palette-page__subtitle { font-size: 14px; color: #888; margin-bottom: 32px; }
+.nx-palette-filters { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 28px; }
+.nx-palette-filter-btn { padding: 7px 18px; border: 1.5px solid #ddd; border-radius: 20px; background: #fff; font-family: var(--nx-font); font-size: 13px; color: #333; cursor: pointer; transition: all 0.15s; white-space: nowrap; }
+.nx-palette-filter-btn:hover { border-color: var(--nx-green); color: var(--nx-green); }
+.nx-palette-filter-btn--active { background: var(--nx-green) !important; border-color: var(--nx-green) !important; color: #fff !important; font-weight: 700; }
+.nx-palette-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)); gap: 12px; }
+.nx-palette-item { cursor: pointer; border-radius: 8px; overflow: hidden; border: 2px solid transparent; transition: border-color 0.15s, transform 0.1s, box-shadow 0.15s; }
+.nx-palette-item:hover { transform: scale(1.03); box-shadow: 0 4px 16px rgba(0,0,0,0.1); }
+.nx-palette-item--active { border-color: var(--nx-green) !important; box-shadow: 0 0 0 3px var(--nx-green-bg) !important; }
+.nx-palette-item__swatch { width: 100%; aspect-ratio: 1/1; border-radius: 6px 6px 0 0; }
+.nx-palette-item__info { padding: 6px 8px; background: #fff; border-top: 1px solid #f0f0f0; }
+.nx-palette-item__name { font-size: 11px; font-weight: 600; color: #222; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.nx-palette-item__code { font-size: 10px; color: #999; margin-top: 1px; }
+/* Скрываем бейджи ТОЛЬКО на странице палитры (не глобально) */
+.nx-palette-page .t-catalog__card__mark,
+.nx-palette-page .nx-cat-badge { display: none !important; }
+.nx-palette-select-bar { position: fixed; bottom: 0; left: 0; right: 0; background: #fff; border-top: 1px solid #eee; padding: 16px 20px; display: flex; align-items: center; gap: 16px; z-index: 100; box-shadow: 0 -4px 20px rgba(0,0,0,0.08); transform: translateY(100%); transition: transform 0.25s; }
+.nx-palette-select-bar--visible { transform: translateY(0); }
+.nx-palette-select-bar__preview { width: 40px; height: 40px; border-radius: 50%; border: 2px solid #eee; flex-shrink: 0; }
+.nx-palette-select-bar__name { font-size: 14px; font-weight: 600; color: #222; flex: 1; }
+.nx-palette-select-bar__btn { background: var(--nx-green); color: #fff; border: none; border-radius: 8px; padding: 12px 24px; font-family: var(--nx-font); font-size: 14px; font-weight: 700; cursor: pointer; transition: background 0.15s; white-space: nowrap; }
+.nx-palette-select-bar__btn:hover { background: var(--nx-green-dk); }
+.nx-palette-select-bar__cancel { background: none; border: none; color: #999; font-size: 13px; cursor: pointer; padding: 0; }
+
+@media (max-width: 640px) {
+    .nx-palette-grid { grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 8px; }
+    .nx-palette-page { padding: 24px 16px 100px; }
+}
+
+/* ════════════════════════════════════════
+   Механика выбора цвета: карточка ↔ палитра
+   ════════════════════════════════════════ */
+
+/* Плашка цвета поверх главного фото */
+#nx-prod-root .nx-p-mainimg { position: relative; overflow: hidden; }
+
+#nx-prod-root .nx-p-color-swatch {
+   /* display: none;*/
+    position: absolute;
+    inset: 0;
+    border-radius: 8px;
+    align-items: flex-end;
+    padding: 16px;
+    box-sizing: border-box;
+}
+#nx-prod-root .nx-p-color-swatch__name {
+    background: rgba(255,255,255,.88);
+    backdrop-filter: blur(4px);
+    border-radius: 6px;
+    padding: 6px 12px;
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.4;
+}
+#nx-prod-root .nx-p-color-swatch__code {
+    display: block;
+    font-size: 11px;
+    color: #888;
+    font-weight: 400;
+}
+
+/* Тег выбранного цвета под свотчами */
+.nx-color-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #F2F7EE;
+    border: 1px solid var(--nx-green, #4C9E24);
+    border-radius: 20px;
+    padding: 4px 10px 4px 6px;
+    font-size: 13px;
+    margin-top: 8px;
+    font-family: var(--nx-font);
+}
+.nx-color-tag__dot {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    border: 1px solid rgba(0,0,0,.1);
+    flex-shrink: 0;
+}
+.nx-color-tag__code { font-weight: 600; color: #1a1a1a; }
+.nx-color-tag__name { color: #555; }
+.nx-color-tag__clear {
+    background: none;
+    border: none;
+    color: #888;
+    cursor: pointer;
+    font-size: 16px;
+    line-height: 1;
+    padding: 0;
+    margin-left: 2px;
+    font-family: inherit;
+}
+.nx-color-tag__clear:hover { color: #e00; }
+
+/* Кнопка «Заказать пробный выкрас» */
+#nx-prod-root .nx-p-btn--outline {
+    background: #fff;
+    color: var(--nx-green, #4C9E24);
+    border: 1.5px solid var(--nx-green, #4C9E24);
+    margin-top: 12px;
+}
+
+/* Анимация пульса для кнопки «Палитра цветов» */
+@keyframes nx-pulse {
+    0%   { box-shadow: 0 0 0 0 rgba(76,158,36,.6); }
+    70%  { box-shadow: 0 0 0 8px rgba(76,158,36,0); }
+    100% { box-shadow: 0 0 0 0 rgba(76,158,36,0); }
+}
+
+/* ── Корзина Tilda: крестик на границе попапа + адаптивная ширина ── */
+
+/* Попап-контейнер: позволяем крестику выходить за границу */
+.t-cart__overlay-wrapp,
+.t-cart__checkout-wrapp,
+[class*="t-cart__wrap"] {
+    position: relative !important;
+    overflow: visible !important;
+}
+
+/* Адаптивная ширина попапа */
+.t-cart__overlay-wrapp,
+.t-cart__checkout-wrapp {
+    width: 100% !important;
+    max-width: 560px !important;
+    box-sizing: border-box !important;
+}
+@media (max-width: 600px) {
+    .t-cart__overlay-wrapp,
+    .t-cart__checkout-wrapp {
+        max-width: 100% !important;
+        margin: 0 !important;
+        border-radius: 0 !important;
+    }
+}
+
+/* Крестик: на верхней правой границе попапа */
+.t-cart__close-btn,
+.t-cart__btn-close,
+[class*="t-cart"][class*="close"] {
+    position: absolute !important;
+    top: -16px !important;
+    right: -16px !important;
+    left: auto !important;
+    width: 32px !important;
+    height: 32px !important;
+    border-radius: 50% !important;
+    background: #fff !important;
+    border: 1.5px solid #ddd !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,.12) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-size: 18px !important;
+    color: #555 !important;
+    cursor: pointer !important;
+    z-index: 10 !important;
+}
