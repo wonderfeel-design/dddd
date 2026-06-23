@@ -368,18 +368,6 @@ html body .t-product__option-item_active .t-product__option-title {
 /* Нативный блок товара — скрываем сразу */
 .t-store__prod-snippet__container { display: none !important; }
 
-/* Скрытие категории «Палитра» (родитель + 5 подпалитр) */
-.t-catalog__parts-tree-item[data-part-uid="152547959142"],
-.t-catalog__parts-tree-item[data-part-uid="179624093472"],
-.t-catalog__parts-tree-item[data-part-uid="236627535922"],
-.t-catalog__parts-tree-item[data-part-uid="726570418172"],
-.t-catalog__parts-tree-item[data-part-uid="189744702942"],
-.t-catalog__parts-tree-item[data-part-uid="819691203232"] { display: none !important; }
-
-/* Скрытие пункта «Все» в сайдбаре разделов */
-.t-catalog__parts-tree-item:first-child,
-.t-catalog__parts-tree-item[data-part-uid=""] { display: none !important; }
-
 /* Мобильная: панель «Найдено: N + чипсы фильтров» во всю ширину СВЕРХУ,
    а не узкой колонкой (она лежит внутри грида .t-catalog__mobile-two-columns) */
 @media screen and (max-width: 640px) {
