@@ -133,7 +133,8 @@ body.nx-palitra .nx-cat-badge { display: none !important; }
 body.nx-palitra .t-store__card__price,
 body.nx-palitra .t-catalog__card__price,
 body.nx-palitra .t-store__card__btns-wrapper,
-body.nx-palitra .t-catalog__card__btns-wrapper { display: none !important; }
+body.nx-palitra .t-catalog__card__btns-wrapper,
+body.nx-palitra .js-catalog-price-wrapper.t-catalog__card__price-wrapper { display: none !important; }
 
 body.nx-palitra .t-store__card__wrap_txt-and-btns,
 body.nx-palitra .t-catalog__card__wrap_txt-and-btns { padding: 0 14px 14px !important; }
@@ -143,10 +144,6 @@ body.nx-palitra .t-catalog__card__wrap_txt-and-btns::before { margin-bottom: 10p
 
 body.nx-palitra .t-store__card__title,
 body.nx-palitra .t-catalog__card__title { margin-bottom: 2px !important; }
-
-.js-catalog-price-wrapper.t-catalog__card__price-wrapper {
-    display: none !important;
-}
 
 body.nx-palitra .t-store__card__descr,
 body.nx-palitra .t-catalog__card__descr {
@@ -422,16 +419,21 @@ body.nx-palitra .t-catalog__card__descr {
     { key: 'deco',     label: 'Deco' }
   ];
 
+  /* Единый детектор бренда по тексту (используется и в гриде, и в ограничении 0c) */
+  function brandOf(text) {
+    text = text || '';
+    if (/\bvinha\b/i.test(text))    return 'vinha';
+    if (/\bvaltti\b/i.test(text))   return 'valtti';
+    if (/\bpuutalot\b/i.test(text)) return 'puutalot';
+    if (/\bral\b/i.test(text))      return 'ral';
+    if (/\bdeco\b/i.test(text))     return 'deco';
+    return null;
+  }
+
   function getCardBrand(card) {
     var d = card.querySelector('.t-store__card__descr,.t-catalog__card__descr');
     var ti = card.querySelector('.t-store__card__title,.t-catalog__card__title');
-    var text = (d ? d.textContent : '') + ' ' + (ti ? ti.textContent : '');
-    if (/\bVinha\b/i.test(text))    return 'vinha';
-    if (/\bValtti\b/i.test(text))   return 'valtti';
-    if (/\bPuutalot\b/i.test(text)) return 'puutalot';
-    if (/\bRAL\b/i.test(text))      return 'ral';
-    if (/\bDeco\b/i.test(text))     return 'deco';
-    return 'other';
+    return brandOf((d ? d.textContent : '') + ' ' + (ti ? ti.textContent : '')) || 'other';
   }
 
   function applyBrandFilter() {
@@ -513,16 +515,8 @@ body.nx-palitra .t-catalog__card__descr {
     /* нативные кнопки фильтра палитр Tilda (store parts-switch) */
     var NATIVE_SEL = '[data-storepart-path], .t-catalog__parts-switch-btn';
 
-    function brandOf(text) {
-      text = (text || '').toLowerCase();
-      if (/vinha/.test(text))    return 'vinha';
-      if (/valtti/.test(text))   return 'valtti';
-      if (/puutalot/.test(text)) return 'puutalot';
-      if (/deco/.test(text))     return 'deco';
-      if (/\bral\b/.test(text))  return 'ral';
-      return null;
-    }
-    /* бренд нативной кнопки — по data-storepart-path ("Палитра RAL"), иначе по тексту */
+    /* бренд нативной кнопки — по data-storepart-path ("Палитра RAL"), иначе по тексту
+       (детектор brandOf определён во внешней области — см. секцию 0b) */
     function nativeBrand(el) {
       return brandOf((el.getAttribute && el.getAttribute('data-storepart-path')) || el.textContent);
     }
