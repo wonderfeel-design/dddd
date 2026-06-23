@@ -396,11 +396,14 @@ body.nx-palitra .t-catalog__parts-text-title {
   font-weight: 600 !important;
 }
 /* Отключённые опции нативных фильтров (Бренд/Тип покрытия) */
-.t-catalog__filter__custom-sel.nx-filter-opt--disabled {
+.t-catalog__filter__custom-sel.nx-filter-opt--disabled,
+.t-store__filter__custom-sel.nx-filter-opt--disabled {
   opacity: .45;
   pointer-events: none;
 }
-.t-catalog__filter__custom-sel.nx-filter-opt--disabled .t-catalog__filter__title {
+.t-catalog__filter__custom-sel.nx-filter-opt--disabled .t-catalog__filter__title,
+.t-store__filter__custom-sel.nx-filter-opt--disabled .t-catalog__filter__title,
+.t-store__filter__custom-sel.nx-filter-opt--disabled .t-store__filter__title {
   color: #999 !important;
 }
 </style>
@@ -484,9 +487,17 @@ body.nx-palitra .t-catalog__parts-text-title {
 
   function buildBrandFilter() {
     if (document.getElementById('nx-coat-wrap')) return;
-    var container = document.querySelector(
-      '.t-catalog__filter-w-parts, .t-catalog__filter-container, .t-catalog__cont-filter'
-    );
+    var container = (function () {
+      var c = document.querySelector(
+        '.t-catalog__filter-w-parts, .t-catalog__filter-container, .t-catalog__cont-filter, ' +
+        '.t-store__filter-w-parts, .t-store__filter-container, .t-store__cont-filter, ' +
+        '.js-catalog-filter, .js-store-filter, .t-catalog__filter, .t-store__filter'
+      );
+      if (c) return c;
+      var item = document.querySelector('.t-catalog__filter__item, .t-store__filter__item');
+      if (!item) return null;
+      return item.closest('.t-catalog__filter, .t-store__filter, .js-catalog-filter, .js-store-filter') || item.parentElement;
+    })();
     if (!container) return;
 
     var wrap = document.createElement('div');
@@ -572,11 +583,13 @@ body.nx-palitra .t-catalog__parts-text-title {
       }
       return uniq(out);
     }
+    var FILTER_ITEM_SEL = '.t-catalog__filter__item, .t-store__filter__item';
+    var FILTER_OPT_SEL = '.t-catalog__filter__custom-sel, .t-store__filter__custom-sel';
     function selectedCoatingBrands() {
       var item = coatingItem();
       if (!item) return [];
       var selectedVals = [];
-      item.querySelectorAll('.t-catalog__filter__custom-sel.active').forEach(function (el) {
+      item.querySelectorAll(FILTER_OPT_SEL + '.active').forEach(function (el) {
         var v = (el.getAttribute('data-filter-value') || '').trim();
         if (!v) {
           var ttl = el.querySelector('.t-catalog__filter__title');
@@ -610,7 +623,7 @@ body.nx-palitra .t-catalog__parts-text-title {
       if (activeBrand && activeBrand !== 'all') out.push(activeBrand);
       var bItem = brandFilterItem();
       if (bItem) {
-        bItem.querySelectorAll('.t-catalog__filter__custom-sel.active').forEach(function (el) {
+        bItem.querySelectorAll(FILTER_OPT_SEL + '.active').forEach(function (el) {
           var br = brandOf(optionValue(el));
           if (br) out.push(br);
         });
@@ -623,7 +636,7 @@ body.nx-palitra .t-catalog__parts-text-title {
 
       var cItem = coatingItem();
       if (cItem) {
-        cItem.querySelectorAll('.t-catalog__filter__custom-sel').forEach(function (el) {
+        cItem.querySelectorAll(FILTER_OPT_SEL).forEach(function (el) {
           var isActive = el.classList.contains('active');
           var b = brandsFromCoatingValue(optionValue(el));
           var disable = false;
@@ -634,7 +647,7 @@ body.nx-palitra .t-catalog__parts-text-title {
 
       var bItem = brandFilterItem();
       if (bItem) {
-        bItem.querySelectorAll('.t-catalog__filter__custom-sel').forEach(function (el) {
+        bItem.querySelectorAll(FILTER_OPT_SEL).forEach(function (el) {
           var isActive = el.classList.contains('active');
           var br = brandOf(optionValue(el));
           var disable = false;
@@ -648,7 +661,7 @@ body.nx-palitra .t-catalog__parts-text-title {
     function activeFilterValues(item) {
       var out = [];
       if (!item) return out;
-      item.querySelectorAll('.t-catalog__filter__custom-sel.active').forEach(function (el) {
+      item.querySelectorAll(FILTER_OPT_SEL + '.active').forEach(function (el) {
         var v = (el.getAttribute('data-filter-value') || '').trim();
         if (!v) {
           var ttl = el.querySelector('.t-catalog__filter__title');
@@ -700,11 +713,11 @@ body.nx-palitra .t-catalog__parts-text-title {
         }
       }
       /* Fallback 2: определить фильтр по значениям опций */
-      var items = document.querySelectorAll('.t-catalog__filter__item');
+      var items = document.querySelectorAll(FILTER_ITEM_SEL);
       for (var k = 0; k < items.length; k++) {
         var item2 = items[k];
         var values = [];
-        item2.querySelectorAll('.t-catalog__filter__custom-sel').forEach(function (el) {
+        item2.querySelectorAll(FILTER_OPT_SEL).forEach(function (el) {
           var v = (el.getAttribute('data-filter-value') || '').trim();
           if (!v) {
             var ttl = el.querySelector('.t-catalog__filter__title');
@@ -761,11 +774,11 @@ body.nx-palitra .t-catalog__parts-text-title {
     /* Авто-применение нативных фильтров снова включено:
        данные по «Тип покрытия»/«Бренд» в Tilda размечены поштучно. */
     function hasActiveIn(item) {
-      return !!(item && item.querySelector('.t-catalog__filter__custom-sel.active'));
+      return !!(item && item.querySelector(FILTER_OPT_SEL + '.active'));
     }
     function applyFirstMatch(item, predicate) {
       if (!item || hasActiveIn(item)) return false;
-      var els = item.querySelectorAll('.t-catalog__filter__custom-sel');
+      var els = item.querySelectorAll(FILTER_OPT_SEL);
       for (var i = 0; i < els.length; i++) {
         var el = els[i];
         var v = (el.getAttribute('data-filter-value') || '').trim();
@@ -846,7 +859,7 @@ body.nx-palitra .t-catalog__parts-text-title {
     function optionsState(item, toKey) {
       var out = [];
       if (!item) return out;
-      item.querySelectorAll('.t-catalog__filter__custom-sel').forEach(function (el) {
+      item.querySelectorAll(FILTER_OPT_SEL).forEach(function (el) {
         var v = optionValue(el);
         out.push({
           key: toKey ? toKey(v) : v,
@@ -864,7 +877,7 @@ body.nx-palitra .t-catalog__parts-text-title {
       if (!t || !t.closest) return;
       var pill = t.closest('.nx-coat-btn');
       var link = t.closest(NATIVE_SEL);
-      var disabledNativeOpt = t.closest('.t-catalog__filter__custom-sel.nx-filter-opt--disabled');
+      var disabledNativeOpt = t.closest('.t-catalog__filter__custom-sel.nx-filter-opt--disabled, .t-store__filter__custom-sel.nx-filter-opt--disabled');
       if (!pill && !link && !disabledNativeOpt) return;
       if (disabledNativeOpt) {
         e.preventDefault();
@@ -918,6 +931,10 @@ body.nx-palitra .t-catalog__parts-text-title {
           coating_context: coating || '',
           active_brand_chip: activeBrand,
           allowed_brands: getAllowedBrands(),
+          filter_items_total: document.querySelectorAll(FILTER_ITEM_SEL).length,
+          filter_options_total: document.querySelectorAll(FILTER_OPT_SEL).length,
+          has_coating_item: !!coatingItem(),
+          has_brand_item: !!brandFilterItem(),
           brand_options: optionsState(brandFilterItem(), brandOf),
           coating_options: optionsState(coatingItem(), function (v) { return brandsFromCoatingValue(v); }),
           custom_brand_buttons: Array.prototype.slice.call(document.querySelectorAll('.nx-coat-btn')).map(function (b) {
@@ -1090,14 +1107,23 @@ body.nx-palitra .t-catalog__parts-text-title {
 
   orderBtn.addEventListener('click', function () {
     if (!_current) return;
-    try { sessionStorage.setItem('nx_palette_color', JSON.stringify(_current)); } catch (e) {}
+    var productCtx = null;
+    try { productCtx = JSON.parse(sessionStorage.getItem('nx_palette_product') || 'null'); } catch (e) {}
+    var coatingLabel = '';
+    if (productCtx && productCtx.coating) coatingLabel = String(productCtx.coating);
+    else if (_current.coating) coatingLabel = String(_current.coating);
+    var colorPayload = Object.assign({}, _current);
+    if (coatingLabel) colorPayload.coating = coatingLabel;
+    try { sessionStorage.setItem('nx_palette_color', JSON.stringify(colorPayload)); } catch (e) {}
     var label = [_current.code,
       (_current.name && _current.name !== _current.code) ? _current.name : ''
     ].filter(Boolean).join(' — ');
+    var optionParts = ['Цвет: ' + label];
+    if (coatingLabel) optionParts.push('Покрытие: ' + coatingLabel);
     try {
       if (typeof tcart__addProduct === 'function') {
         /* Выкрас — ручная позиция 0 ₽ без складского uid (иначе NOT FOUND PRODUCTS IN STORE) */
-        var sampleItem = { name: 'Пробный выкрас — ' + label, price: 0, quantity: 1, amount: 0, img: _current.img || '', uid: '306044934692', option: 'Цвет: ' + label };
+        var sampleItem = { name: 'Пробный выкрас — ' + label, price: 0, quantity: 1, amount: 0, img: _current.img || '', uid: '306044934692', option: optionParts.join(', ') };
         console.log('nx: sample to cart', JSON.stringify(sampleItem));
         tcart__addProduct(sampleItem);
       }

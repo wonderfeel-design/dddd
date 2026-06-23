@@ -844,10 +844,22 @@ root.addEventListener('change', function (e) {
           return;
         }
         var colorName = [c.code, (c.name && c.name !== c.code) ? c.name : ''].filter(Boolean).join(' — ');
+        var coatingLabel = '';
+        if (_selected['Тип покрытия']) coatingLabel = String(_selected['Тип покрытия']);
+        else if (c.coating) coatingLabel = String(c.coating);
+        else {
+          try {
+            var rawCtx = sessionStorage.getItem('nx_palette_product');
+            var pctx = rawCtx ? JSON.parse(rawCtx) : null;
+            if (pctx && pctx.coating) coatingLabel = String(pctx.coating);
+          } catch (e) {}
+        }
+        var optionParts = ['Цвет: ' + colorName];
+        if (coatingLabel) optionParts.push('Покрытие: ' + coatingLabel);
         try {
           if (typeof tcart__addProduct === 'function') {
             /* Выкрас — ручная позиция 0 ₽ без складского uid (иначе NOT FOUND PRODUCTS IN STORE) */
-            var sampleItem = { name: 'Пробный выкрас — ' + colorName, price: 0, quantity: 1, amount: 0, img: c.img || '', uid: '306044934692', option: 'Цвет: ' + colorName };
+            var sampleItem = { name: 'Пробный выкрас — ' + colorName, price: 0, quantity: 1, amount: 0, img: c.img || '', uid: '306044934692', option: optionParts.join(', ') };
             console.log('nx: sample to cart', JSON.stringify(sampleItem));
             tcart__addProduct(sampleItem);
           }
