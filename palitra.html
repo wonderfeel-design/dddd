@@ -399,7 +399,11 @@ body.nx-palitra .t-catalog__parts-text-title {
 .t-catalog__filter__custom-sel.nx-filter-opt--disabled,
 .t-store__filter__custom-sel.nx-filter-opt--disabled {
   opacity: .45;
-  pointer-events: none;
+  cursor: not-allowed !important;
+}
+.nx-filter-opt--disabled {
+  opacity: .45;
+  cursor: not-allowed !important;
 }
 .t-catalog__filter__custom-sel.nx-filter-opt--disabled .t-catalog__filter__title,
 .t-store__filter__custom-sel.nx-filter-opt--disabled .t-catalog__filter__title,
@@ -486,38 +490,9 @@ body.nx-palitra .t-catalog__parts-text-title {
   }
 
   function buildBrandFilter() {
-    if (document.getElementById('nx-coat-wrap')) return;
-    var container = (function () {
-      var c = document.querySelector(
-        '.t-catalog__filter-w-parts, .t-catalog__filter-container, .t-catalog__cont-filter, ' +
-        '.t-store__filter-w-parts, .t-store__filter-container, .t-store__cont-filter, ' +
-        '.js-catalog-filter, .js-store-filter, .t-catalog__filter, .t-store__filter'
-      );
-      if (c) return c;
-      var item = document.querySelector('.t-catalog__filter__item, .t-store__filter__item');
-      if (!item) return null;
-      return item.closest('.t-catalog__filter, .t-store__filter, .js-catalog-filter, .js-store-filter') || item.parentElement;
-    })();
-    if (!container) return;
-
-    var wrap = document.createElement('div');
-    wrap.id = 'nx-coat-wrap';
-    wrap.className = 'nx-coat-wrap';
-    var pills = BRANDS.map(function (b) {
-      return '<button class="nx-coat-btn' + (b.key === 'all' ? ' nx-active' : '') +
-             '" data-brand="' + b.key + '">' + b.label + '</button>';
-    }).join('');
-    wrap.innerHTML = '<div class="nx-coat-title">Бренд палитры</div><div class="nx-coat-pills">' + pills + '</div>';
-    container.appendChild(wrap);
-
-    wrap.querySelectorAll('.nx-coat-btn').forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        activeBrand = this.dataset.brand;
-        wrap.querySelectorAll('.nx-coat-btn').forEach(function (b) { b.classList.remove('nx-active'); });
-        this.classList.add('nx-active');
-        applyBrandFilter();
-      });
-    });
+    var wrap = document.getElementById('nx-coat-wrap');
+    if (wrap && wrap.parentNode) wrap.parentNode.removeChild(wrap);
+    activeBrand = 'all';
   }
 
   /* Tilda рендерит каталог с задержкой и при смене категории */
@@ -585,16 +560,45 @@ body.nx-palitra .t-catalog__parts-text-title {
     }
     var FILTER_ITEM_SEL = '.t-catalog__filter__item, .t-store__filter__item';
     var FILTER_OPT_SEL = '.t-catalog__filter__custom-sel, .t-store__filter__custom-sel';
+    var FILTER_OPT_FALLBACK_SEL =
+      '.t-catalog__filter__checkbox, .t-store__filter__checkbox, ' +
+      '.t-catalog__filter__checkbox_color, .t-store__filter__checkbox_color, ' +
+      '.t-checkbox, label';
+    function optionInput(el) {
+      if (!el) return null;
+      if (el.tagName && el.tagName.toLowerCase() === 'input') return el;
+      return el.querySelector('input[data-filter-value], input[type="checkbox"], input[type="radio"]');
+    }
+    function optionNodes(item) {
+      if (!item) return [];
+      var out = [];
+      function push(el) { if (el && out.indexOf(el) === -1) out.push(el); }
+      item.querySelectorAll(FILTER_OPT_SEL).forEach(push);
+      if (out.length) return out;
+      item.querySelectorAll(FILTER_OPT_FALLBACK_SEL).forEach(function (el) {
+        if (el.querySelector(FILTER_ITEM_SEL)) return;
+        if (optionInput(el) || (el.getAttribute && el.getAttribute('data-filter-value'))) push(el);
+      });
+      if (out.length) return out;
+      item.querySelectorAll('input[data-filter-value]').forEach(function (inp) {
+        push(inp.closest(FILTER_OPT_FALLBACK_SEL) || inp);
+      });
+      return out;
+    }
+    function isOptionActive(el) {
+      if (!el) return false;
+      if (el.classList && el.classList.contains('active')) return true;
+      if (el.getAttribute && el.getAttribute('aria-checked') === 'true') return true;
+      var inp = optionInput(el);
+      return !!(inp && (inp.checked || inp.getAttribute('aria-checked') === 'true'));
+    }
     function selectedCoatingBrands() {
       var item = coatingItem();
       if (!item) return [];
       var selectedVals = [];
-      item.querySelectorAll(FILTER_OPT_SEL + '.active').forEach(function (el) {
-        var v = (el.getAttribute('data-filter-value') || '').trim();
-        if (!v) {
-          var ttl = el.querySelector('.t-catalog__filter__title');
-          v = (ttl ? ttl.textContent : el.textContent || '').trim();
-        }
+      optionNodes(item).forEach(function (el) {
+        if (!isOptionActive(el)) return;
+        var v = optionValue(el);
         if (v) selectedVals.push(v);
       });
       if (!selectedVals.length) return [];
@@ -615,15 +619,21 @@ body.nx-palitra .t-catalog__parts-text-title {
       var v = (el && el.getAttribute ? el.getAttribute('data-filter-value') : '') || '';
       v = v.trim();
       if (v) return v;
+      var inp = optionInput(el);
+      if (inp) {
+        v = (inp.getAttribute('data-filter-value') || inp.value || '').trim();
+        if (v) return v;
+      }
       var ttl = el && el.querySelector ? el.querySelector('.t-catalog__filter__title') : null;
+      if (!ttl) ttl = el && el.querySelector ? el.querySelector('.t-store__filter__title') : null;
       return (ttl ? ttl.textContent : (el && el.textContent) || '').trim();
     }
     function selectedBrands() {
       var out = [];
-      if (activeBrand && activeBrand !== 'all') out.push(activeBrand);
       var bItem = brandFilterItem();
       if (bItem) {
-        bItem.querySelectorAll(FILTER_OPT_SEL + '.active').forEach(function (el) {
+        optionNodes(bItem).forEach(function (el) {
+          if (!isOptionActive(el)) return;
           var br = brandOf(optionValue(el));
           if (br) out.push(br);
         });
@@ -636,8 +646,8 @@ body.nx-palitra .t-catalog__parts-text-title {
 
       var cItem = coatingItem();
       if (cItem) {
-        cItem.querySelectorAll(FILTER_OPT_SEL).forEach(function (el) {
-          var isActive = el.classList.contains('active');
+        optionNodes(cItem).forEach(function (el) {
+          var isActive = isOptionActive(el);
           var b = brandsFromCoatingValue(optionValue(el));
           var disable = false;
           if (!isActive && selBrands.length && b.length) disable = !intersects(b, selBrands);
@@ -647,8 +657,8 @@ body.nx-palitra .t-catalog__parts-text-title {
 
       var bItem = brandFilterItem();
       if (bItem) {
-        bItem.querySelectorAll(FILTER_OPT_SEL).forEach(function (el) {
-          var isActive = el.classList.contains('active');
+        optionNodes(bItem).forEach(function (el) {
+          var isActive = isOptionActive(el);
           var br = brandOf(optionValue(el));
           var disable = false;
           if (!isActive && br && allowBrands.length) disable = allowBrands.indexOf(br) === -1;
@@ -661,12 +671,9 @@ body.nx-palitra .t-catalog__parts-text-title {
     function activeFilterValues(item) {
       var out = [];
       if (!item) return out;
-      item.querySelectorAll(FILTER_OPT_SEL + '.active').forEach(function (el) {
-        var v = (el.getAttribute('data-filter-value') || '').trim();
-        if (!v) {
-          var ttl = el.querySelector('.t-catalog__filter__title');
-          v = (ttl ? ttl.textContent : el.textContent || '').trim();
-        }
+      optionNodes(item).forEach(function (el) {
+        if (!isOptionActive(el)) return;
+        var v = optionValue(el);
         if (v) out.push(v);
       });
       return out;
@@ -717,12 +724,8 @@ body.nx-palitra .t-catalog__parts-text-title {
       for (var k = 0; k < items.length; k++) {
         var item2 = items[k];
         var values = [];
-        item2.querySelectorAll(FILTER_OPT_SEL).forEach(function (el) {
-          var v = (el.getAttribute('data-filter-value') || '').trim();
-          if (!v) {
-            var ttl = el.querySelector('.t-catalog__filter__title');
-            v = (ttl ? ttl.textContent : el.textContent || '').trim();
-          }
+        optionNodes(item2).forEach(function (el) {
+          var v = optionValue(el);
           if (v) values.push(v.toLowerCase());
         });
         var blob = values.join(' | ');
@@ -774,20 +777,21 @@ body.nx-palitra .t-catalog__parts-text-title {
     /* Авто-применение нативных фильтров снова включено:
        данные по «Тип покрытия»/«Бренд» в Tilda размечены поштучно. */
     function hasActiveIn(item) {
-      return !!(item && item.querySelector(FILTER_OPT_SEL + '.active'));
+      if (!item) return false;
+      var ops = optionNodes(item);
+      for (var i = 0; i < ops.length; i++) if (isOptionActive(ops[i])) return true;
+      return false;
     }
     function applyFirstMatch(item, predicate) {
       if (!item || hasActiveIn(item)) return false;
-      var els = item.querySelectorAll(FILTER_OPT_SEL);
+      var els = optionNodes(item);
       for (var i = 0; i < els.length; i++) {
         var el = els[i];
-        var v = (el.getAttribute('data-filter-value') || '').trim();
-        if (!v) {
-          var ttl = el.querySelector('.t-catalog__filter__title');
-          v = (ttl ? ttl.textContent : el.textContent || '').trim();
-        }
+        var v = optionValue(el);
         if (predicate(v, el)) {
-          el.click();
+          var inp = optionInput(el);
+          if (inp && !inp.checked && typeof inp.click === 'function') inp.click();
+          else if (typeof el.click === 'function') el.click();
           return true;
         }
       }
@@ -859,12 +863,12 @@ body.nx-palitra .t-catalog__parts-text-title {
     function optionsState(item, toKey) {
       var out = [];
       if (!item) return out;
-      item.querySelectorAll(FILTER_OPT_SEL).forEach(function (el) {
+      optionNodes(item).forEach(function (el) {
         var v = optionValue(el);
         out.push({
           key: toKey ? toKey(v) : v,
           value: v,
-          active: el.classList.contains('active'),
+          active: isOptionActive(el),
           disabled: el.classList.contains('nx-filter-opt--disabled')
         });
       });
@@ -877,7 +881,7 @@ body.nx-palitra .t-catalog__parts-text-title {
       if (!t || !t.closest) return;
       var pill = t.closest('.nx-coat-btn');
       var link = t.closest(NATIVE_SEL);
-      var disabledNativeOpt = t.closest('.t-catalog__filter__custom-sel.nx-filter-opt--disabled, .t-store__filter__custom-sel.nx-filter-opt--disabled');
+      var disabledNativeOpt = t.closest('.nx-filter-opt--disabled');
       if (!pill && !link && !disabledNativeOpt) return;
       if (disabledNativeOpt) {
         e.preventDefault();
@@ -921,6 +925,14 @@ body.nx-palitra .t-catalog__parts-text-title {
     setTimeout(mark, 600);
     mark();
 
+    function allOptionsCount() {
+      var total = 0;
+      document.querySelectorAll(FILTER_ITEM_SEL).forEach(function (item) {
+        total += optionNodes(item).length;
+      });
+      return total;
+    }
+
     /* Debug helper для консоли:
        __nxPalDebug.report()
        __nxPalDebug.recalc() */
@@ -932,7 +944,7 @@ body.nx-palitra .t-catalog__parts-text-title {
           active_brand_chip: activeBrand,
           allowed_brands: getAllowedBrands(),
           filter_items_total: document.querySelectorAll(FILTER_ITEM_SEL).length,
-          filter_options_total: document.querySelectorAll(FILTER_OPT_SEL).length,
+          filter_options_total: allOptionsCount(),
           has_coating_item: !!coatingItem(),
           has_brand_item: !!brandFilterItem(),
           brand_options: optionsState(brandFilterItem(), brandOf),
