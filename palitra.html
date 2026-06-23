@@ -586,6 +586,31 @@ body.nx-palitra .t-catalog__parts-text-title {
       if (byFilter.length) return byFilter;
       return allowed || [];
     }
+    var DEBUG_0C = true;
+    function activeFilterValues(item) {
+      var out = [];
+      if (!item) return out;
+      item.querySelectorAll('.t-catalog__filter__custom-sel.active').forEach(function (el) {
+        var v = (el.getAttribute('data-filter-value') || '').trim();
+        if (!v) {
+          var ttl = el.querySelector('.t-catalog__filter__title');
+          v = (ttl ? ttl.textContent : el.textContent || '').trim();
+        }
+        if (v) out.push(v);
+      });
+      return out;
+    }
+    function log0c(reason) {
+      if (!DEBUG_0C || !window.console) return;
+      console.log('[nx-pal][0c]', {
+        reason: reason,
+        coating_context: coating || '',
+        allowed_brands: getAllowedBrands(),
+        active_brand_chip: activeBrand,
+        active_brand_native: activeFilterValues(brandFilterItem()),
+        active_coating_native: activeFilterValues(coatingItem())
+      });
+    }
     function blocked(brand) {
       var cur = getAllowedBrands();
       return !!(brand && brand !== 'all' && cur.length && cur.indexOf(brand) === -1);
@@ -709,6 +734,7 @@ body.nx-palitra .t-catalog__parts-text-title {
       });
       applyBrandFilter();          /* грид по активному бренду (не по покрытию) */
       tuneFilters();               /* порядок фильтров + чекбокс-вид «Тип покрытия» */
+      log0c('mark');
     }
 
     /* перехватываем клик в capture-фазе — раньше обработчиков Tilda и пилюль */
@@ -723,8 +749,10 @@ body.nx-palitra .t-catalog__parts-text-title {
         e.preventDefault();
         e.stopImmediatePropagation();   /* блокируем и переключатель Tilda */
         showMsg();
+        log0c('blocked-click');
       } else {
         hideMsg();
+        log0c('allowed-click');
       }
     }, true);
 
