@@ -198,6 +198,14 @@ body.nx-palitra .t-catalog__card__descr {
 }
 .nx-coat-btn--disabled:hover { border-color: #ddd; color: #444; background: #fff; }
 .nx-pal-link--disabled { text-decoration: line-through; }
+
+/* Совместимые с выбранным покрытием — зелёная подсветка */
+.nx-coat-btn--match {
+  border-color: var(--nx-green, #4C9E24) !important;
+  color: var(--nx-green, #4C9E24);
+  background: var(--nx-green-bg, #E8F5E2);
+}
+.nx-pal-link--match { color: var(--nx-green, #4C9E24) !important; }
 .nx-coat-msg {
   display: none;
   margin: 10px auto 0;
@@ -521,6 +529,7 @@ body.nx-palitra .t-catalog__card__descr {
       return brandOf((el.getAttribute && el.getAttribute('data-storepart-path')) || el.textContent);
     }
     function blocked(brand) { return brand && brand !== 'all' && allowed.indexOf(brand) === -1; }
+    function matched(brand) { return brand && brand !== 'all' && allowed.indexOf(brand) !== -1; }
 
     /* === Нативный фильтр «Тип покрытия» (charact:11257411) ===
        В данных 2 значения: длинная строка (группа Valtti) и «Укрывная». */
@@ -587,10 +596,14 @@ body.nx-palitra .t-catalog__card__descr {
 
     function mark() {
       document.querySelectorAll('.nx-coat-btn').forEach(function (b) {
-        b.classList.toggle('nx-coat-btn--disabled', blocked(b.dataset.brand));
+        var br = b.dataset.brand;
+        b.classList.toggle('nx-coat-btn--disabled', blocked(br));
+        b.classList.toggle('nx-coat-btn--match', matched(br));
       });
       document.querySelectorAll(NATIVE_SEL).forEach(function (a) {
-        a.classList.toggle('nx-pal-link--disabled', blocked(nativeBrand(a)));
+        var br = nativeBrand(a);
+        a.classList.toggle('nx-pal-link--disabled', blocked(br));
+        a.classList.toggle('nx-pal-link--match', matched(br));
       });
       applyBrandFilter();          /* грид по активному бренду (не по покрытию) */
       tuneFilters();               /* порядок фильтров + чекбокс-вид «Тип покрытия» */
