@@ -133,7 +133,8 @@ body.nx-palitra .nx-cat-badge { display: none !important; }
 body.nx-palitra .t-store__card__price,
 body.nx-palitra .t-catalog__card__price,
 body.nx-palitra .t-store__card__btns-wrapper,
-body.nx-palitra .t-catalog__card__btns-wrapper { display: none !important; }
+body.nx-palitra .t-catalog__card__btns-wrapper,
+body.nx-palitra .js-catalog-price-wrapper.t-catalog__card__price-wrapper { display: none !important; }
 
 body.nx-palitra .t-store__card__wrap_txt-and-btns,
 body.nx-palitra .t-catalog__card__wrap_txt-and-btns { padding: 0 14px 14px !important; }
@@ -143,10 +144,6 @@ body.nx-palitra .t-catalog__card__wrap_txt-and-btns::before { margin-bottom: 10p
 
 body.nx-palitra .t-store__card__title,
 body.nx-palitra .t-catalog__card__title { margin-bottom: 2px !important; }
-
-.js-catalog-price-wrapper.t-catalog__card__price-wrapper {
-    display: none !important;
-}
 
 body.nx-palitra .t-store__card__descr,
 body.nx-palitra .t-catalog__card__descr {
@@ -201,6 +198,14 @@ body.nx-palitra .t-catalog__card__descr {
 }
 .nx-coat-btn--disabled:hover { border-color: #ddd; color: #444; background: #fff; }
 .nx-pal-link--disabled { text-decoration: line-through; }
+
+/* Совместимые с выбранным покрытием — зелёная подсветка */
+.nx-coat-btn--match {
+  border-color: var(--nx-green, #4C9E24) !important;
+  color: var(--nx-green, #4C9E24);
+  background: var(--nx-green-bg, #E8F5E2);
+}
+.nx-pal-link--match { color: var(--nx-green, #4C9E24) !important; }
 .nx-coat-msg {
   display: none;
   margin: 10px auto 0;
@@ -422,16 +427,21 @@ body.nx-palitra .t-catalog__card__descr {
     { key: 'deco',     label: 'Deco' }
   ];
 
+  /* Единый детектор бренда по тексту (используется и в гриде, и в ограничении 0c) */
+  function brandOf(text) {
+    text = text || '';
+    if (/\bvinha\b/i.test(text))    return 'vinha';
+    if (/\bvaltti\b/i.test(text))   return 'valtti';
+    if (/\bpuutalot\b/i.test(text)) return 'puutalot';
+    if (/\bral\b/i.test(text))      return 'ral';
+    if (/\bdeco\b/i.test(text))     return 'deco';
+    return null;
+  }
+
   function getCardBrand(card) {
     var d = card.querySelector('.t-store__card__descr,.t-catalog__card__descr');
     var ti = card.querySelector('.t-store__card__title,.t-catalog__card__title');
-    var text = (d ? d.textContent : '') + ' ' + (ti ? ti.textContent : '');
-    if (/\bVinha\b/i.test(text))    return 'vinha';
-    if (/\bValtti\b/i.test(text))   return 'valtti';
-    if (/\bPuutalot\b/i.test(text)) return 'puutalot';
-    if (/\bRAL\b/i.test(text))      return 'ral';
-    if (/\bDeco\b/i.test(text))     return 'deco';
-    return 'other';
+    return brandOf((d ? d.textContent : '') + ' ' + (ti ? ti.textContent : '')) || 'other';
   }
 
   function applyBrandFilter() {
@@ -476,12 +486,19 @@ body.nx-palitra .t-catalog__card__descr {
   }
 
   /* Tilda рендерит каталог с задержкой и при смене категории */
-  new MutationObserver(function () {
-    buildBrandFilter();
-    if (activeBrand !== 'all') applyBrandFilter();
-  }).observe(document.body, { childList: true, subtree: true });
+  var _brandRefreshScheduled = false;
+  function scheduleBrandRefresh() {
+    if (_brandRefreshScheduled) return;
+    _brandRefreshScheduled = true;
+    setTimeout(function () {
+      _brandRefreshScheduled = false;
+      buildBrandFilter();
+      if (activeBrand !== 'all') applyBrandFilter();
+    }, 140);
+  }
+  new MutationObserver(scheduleBrandRefresh).observe(document.body, { childList: true, subtree: true });
 
-  setTimeout(buildBrandFilter, 600);
+  setTimeout(scheduleBrandRefresh, 600);
 
   /* ══ 0c. Ограничение палитр по типу покрытия ══
      При переходе с карточки товара показываем подходящие палитры,
@@ -513,20 +530,13 @@ body.nx-palitra .t-catalog__card__descr {
     /* нативные кнопки фильтра палитр Tilda (store parts-switch) */
     var NATIVE_SEL = '[data-storepart-path], .t-catalog__parts-switch-btn';
 
-    function brandOf(text) {
-      text = (text || '').toLowerCase();
-      if (/vinha/.test(text))    return 'vinha';
-      if (/valtti/.test(text))   return 'valtti';
-      if (/puutalot/.test(text)) return 'puutalot';
-      if (/deco/.test(text))     return 'deco';
-      if (/\bral\b/.test(text))  return 'ral';
-      return null;
-    }
-    /* бренд нативной кнопки — по data-storepart-path ("Палитра RAL"), иначе по тексту */
+    /* бренд нативной кнопки — по data-storepart-path ("Палитра RAL"), иначе по тексту
+       (детектор brandOf определён во внешней области — см. секцию 0b) */
     function nativeBrand(el) {
       return brandOf((el.getAttribute && el.getAttribute('data-storepart-path')) || el.textContent);
     }
     function blocked(brand) { return brand && brand !== 'all' && allowed.indexOf(brand) === -1; }
+    function matched(brand) { return brand && brand !== 'all' && allowed.indexOf(brand) !== -1; }
 
     /* === Нативный фильтр «Тип покрытия» (charact:11257411) ===
        В данных 2 значения: длинная строка (группа Valtti) и «Укрывная». */
@@ -593,10 +603,14 @@ body.nx-palitra .t-catalog__card__descr {
 
     function mark() {
       document.querySelectorAll('.nx-coat-btn').forEach(function (b) {
-        b.classList.toggle('nx-coat-btn--disabled', blocked(b.dataset.brand));
+        var br = b.dataset.brand;
+        b.classList.toggle('nx-coat-btn--disabled', blocked(br));
+        b.classList.toggle('nx-coat-btn--match', matched(br));
       });
       document.querySelectorAll(NATIVE_SEL).forEach(function (a) {
-        a.classList.toggle('nx-pal-link--disabled', blocked(nativeBrand(a)));
+        var br = nativeBrand(a);
+        a.classList.toggle('nx-pal-link--disabled', blocked(br));
+        a.classList.toggle('nx-pal-link--match', matched(br));
       });
       applyBrandFilter();          /* грид по активному бренду (не по покрытию) */
       tuneFilters();               /* порядок фильтров + чекбокс-вид «Тип покрытия» */
@@ -619,7 +633,16 @@ body.nx-palitra .t-catalog__card__descr {
       }
     }, true);
 
-    new MutationObserver(mark).observe(document.body, { childList: true, subtree: true });
+    var _markScheduled = false;
+    function scheduleMark() {
+      if (_markScheduled) return;
+      _markScheduled = true;
+      setTimeout(function () {
+        _markScheduled = false;
+        mark();
+      }, 140);
+    }
+    new MutationObserver(scheduleMark).observe(document.body, { childList: true, subtree: true });
     setTimeout(mark, 600);
     mark();
   })();
@@ -822,7 +845,16 @@ body.nx-palitra .t-catalog__card__descr {
       if (isPrice) item.style.setProperty('display', 'none', 'important');
     });
   }
+  var _paintScheduled = false;
+  function schedulePaint() {
+    if (_paintScheduled) return;
+    _paintScheduled = true;
+    setTimeout(function () {
+      _paintScheduled = false;
+      paint();
+    }, 120);
+  }
   paint();
-  if (window.MutationObserver) new MutationObserver(paint).observe(document.body, { childList: true, subtree: true });
+  if (window.MutationObserver) new MutationObserver(schedulePaint).observe(document.body, { childList: true, subtree: true });
 })();
 </script>

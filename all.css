@@ -489,6 +489,23 @@ html body .t-product__option-item_active .t-product__option-title {
     flex-shrink: 0 !important;
 }
 
+/* Заголовок «Раздел» над нативным деревом категорий (parts-sidebar) */
+#parts-sidebar-id-2362174763::before {
+    content: 'Раздел';
+    display: block;
+    font-family: var(--nx-font);
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    color: var(--nx-text);
+    margin-bottom: 12px;
+}
+
+/* Скрыть фильтр-дубль дерева разделов: каталог уже имеет нативный сайдбар «Раздел».
+   Цель — только фасет с деревом категорий; фильтры Цвет/Цена/Тип покрытия не затрагиваются. */
+.t-catalog__filter__item:has(.js-catalog-filter-tree-container) { display: none !important; }
+
 /* Список карточек */
 #rec2362174763 .t-catalog__card-list {
     padding: 0 !important;

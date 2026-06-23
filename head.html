@@ -14,6 +14,7 @@
    Прячем сообщение корзины только если это ошибка склада/заказа
    (Order error / NOT FOUND PRODUCTS IN STORE), не трогая валидацию полей. */
 (function () {
+  var _storeErrScheduled = false;
   function hideStoreOrderError() {
     var boxes = document.querySelectorAll('.t-form__errorbox-text, .t-store__error, .js-errorbox-all, .t-form__errorbox');
     for (var i = 0; i < boxes.length; i++) {
@@ -24,52 +25,22 @@
       }
     }
   }
+  function scheduleHideStoreOrderError() {
+    if (_storeErrScheduled) return;
+    _storeErrScheduled = true;
+    setTimeout(function () {
+      _storeErrScheduled = false;
+      hideStoreOrderError();
+    }, 120);
+  }
   if (window.MutationObserver) {
-    new MutationObserver(hideStoreOrderError).observe(document.documentElement, { childList: true, subtree: true });
+    new MutationObserver(scheduleHideStoreOrderError).observe(document.documentElement, { childList: true, subtree: true });
   }
   document.addEventListener('DOMContentLoaded', hideStoreOrderError);
 })();
 </script>
 
 <script>
-/* ══ 0. Фильтр каталога из мегаменю ══
-   После перехода на /catalog head.html читает nx-cat из sessionStorage
-   и кликает нативный фильтр Tilda в сайдбаре — их собственный элемент,
-   никакого редиректа, блокировка не срабатывает. */
-(function () {
-  if (location.pathname.indexOf('/catalog') !== 0) return;
-  var catId;
-  try { catId = sessionStorage.getItem('nx-cat'); } catch (e) {}
-  if (!catId) return;
-  try { sessionStorage.removeItem('nx-cat'); } catch (e) {}
-
-  function tryClick() {
-    /* Ищем ссылку сайдбара Tilda, содержащую нужный ID категории в href */
-    var links = document.querySelectorAll(
-      '.t-catalog__parts-tree a, .t-catalog__parts-tree-item a, ' +
-      '.t-catalog__filter a, [class*="partnav"] a'
-    );
-    for (var i = 0; i < links.length; i++) {
-      if ((links[i].getAttribute('href') || '').indexOf(catId) !== -1) {
-        links[i].click();
-        return true;
-      }
-    }
-    /* Fallback: элемент с data-атрибутом содержащим ID */
-    var byData = document.querySelector('[data-partnavval="' + catId + '"]');
-    if (byData) { byData.click(); return true; }
-    return false;
-  }
-
-  /* Пробуем сразу и повторяем пока Tilda не отрисует сайдбар */
-  if (!tryClick()) {
-    var n = 0;
-    var iv = setInterval(function () {
-      if (tryClick() || ++n > 40) clearInterval(iv);
-    }, 150);
-  }
-})();
-
 /* ══ 1. Скрытие «Палитры» + ссылка ══ */
 (function () {
   'use strict';
@@ -92,8 +63,18 @@
     tree.appendChild(wrap);
   }
   function init() {
+    var _paletteScheduled = false;
+    function schedulePaletteRefresh() {
+      if (_paletteScheduled) return;
+      _paletteScheduled = true;
+      setTimeout(function () {
+        _paletteScheduled = false;
+        hidePalette();
+        injectPaletteLink();
+      }, 120);
+    }
     hidePalette(); injectPaletteLink();
-    new MutationObserver(function () { hidePalette(); injectPaletteLink(); })
+    new MutationObserver(schedulePaletteRefresh)
       .observe(document.body, { childList: true, subtree: true });
   }
   document.readyState === 'loading' ? document.addEventListener('DOMContentLoaded', init) : setTimeout(init, 300);
@@ -197,12 +178,22 @@
       injectCategoryBadge(card); injectSize(card); injectDualPrice(card); initHoverPhoto(card); injectDeliveryInfo(card);
     });
   }
+  function scheduleProcessCards(delay) {
+    setTimeout(function () {
+      if (typeof window.requestIdleCallback === 'function') {
+        window.requestIdleCallback(function () { processCards(); }, { timeout: 700 });
+      } else {
+        processCards();
+      }
+    }, delay || 0);
+  }
 
   window._nxProcessCards = processCards;
 
-  if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', processCards); } else { processCards(); }
-  setTimeout(processCards, 800);
-  setTimeout(processCards, 2000);
+  if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', function () { scheduleProcessCards(0); }); }
+  else { scheduleProcessCards(0); }
+  scheduleProcessCards(800);
+  scheduleProcessCards(2000);
 })();
 
 /* ══ 3. Страница товара /tproduct/ ══ */
@@ -210,8 +201,6 @@
   if (location.pathname.indexOf('/tproduct/') === -1) return;
 
   var STORE_UID   = '650833272852';
-
-  /*var CATALOG_REC = '2062271593';*/
   var CATALOG_REC = '2362174763';
 
   var _p            = null;
@@ -258,11 +247,6 @@
         return (d.products || []).find(function (x) { return String(x.uid) === String(uid); }) || null;
       });
   }
-
-  var PROP_TO_ED = {
-    'Ширина (мм)': 'pack_y',
-    'Длина':       'pack_x'
-  };
 
   var COATING_MAP = {};
   var _noColorCoatings = {};
@@ -573,45 +557,39 @@ if (firstEd && firstEd['Покрытие'] === 'Без покрытия') {
         '</div>' +
       '</div>';
 
-    var root = document.getElementById('nx-prod-root');
-    if (!root) {
-      root = document.createElement('div');
-      root.id = 'nx-prod-root';
-      var allrec = document.getElementById('allrecords');
-      if (allrec && allrec.children.length > 1) allrec.insertBefore(root, allrec.children[1]);
-      else document.body.appendChild(root);
-    }
+    var root = ensureProdRoot();
     root.innerHTML = html;
 
-    /* Скрыть нативный Tilda-блок */
+    /* Скрыть нативный Tilda-блок (и его rec), не трогая rec2362047083 (популярные) и наш root */
     var SNIPPET_SELS2 = [
       '.t-store__prod-snippet__container', '.t-store__prod-snippet',
       '.t-catalog__prod-snippet__container', '.t-catalog__prod-snippet'
     ];
-
-    /* Первичное скрытие */
-    SNIPPET_SELS2.forEach(function (sel) {
-      document.querySelectorAll(sel).forEach(function (el) {
-        el.style.cssText = 'display:none!important';
-        var rec = el.closest('[id^="rec"]');
-        if (rec && rec.id !== 'rec2362047083') rec.style.cssText = 'display:none!important';
-      });
-    });
-
-    /* Наблюдатель — скрывает сниппеты Tilda, но НЕ трогает rec2362047083 (популярные) */
-    new MutationObserver(function () {
+    function hideSnippets() {
       SNIPPET_SELS2.forEach(function (sel) {
         document.querySelectorAll(sel).forEach(function (el) {
-          if (el.style.display !== 'none') {
-            el.style.cssText = 'display:none!important';
-            var rec = el.closest('[id^="rec"]');
-            if (rec && rec !== document.getElementById('nx-prod-root') && rec.id !== 'rec2362047083') {
-              rec.style.cssText = 'display:none!important';
-            }
+          if (el.style.display === 'none') return;
+          el.style.cssText = 'display:none!important';
+          var rec = el.closest('[id^="rec"]');
+          if (rec && rec.id !== 'nx-prod-root' && rec.id !== 'rec2362047083') {
+            rec.style.cssText = 'display:none!important';
           }
         });
       });
-    }).observe(document.body, { childList: true, subtree: true });
+    }
+    var _hideSnippetsScheduled = false;
+    function scheduleHideSnippets() {
+      if (_hideSnippetsScheduled) return;
+      _hideSnippetsScheduled = true;
+      setTimeout(function () {
+        _hideSnippetsScheduled = false;
+        hideSnippets();
+      }, 120);
+    }
+
+    /* Первичное скрытие + наблюдатель (Tilda дорисовывает сниппеты асинхронно) */
+    hideSnippets();
+    new MutationObserver(scheduleHideSnippets).observe(document.body, { childList: true, subtree: true });
 
     attachEvents();
     updateColors();
@@ -680,13 +658,7 @@ if (firstEd && firstEd['Покрытие'] === 'Без покрытия') {
     var colors = document.getElementById('nx-colors');
     if (colors && colors.parentNode) colors.parentNode.insertBefore(tag, colors.nextSibling);
     tag.querySelector('.nx-color-tag__clear').addEventListener('click', function () {
-      sessionStorage.removeItem('nx_palette_color');
-      _paletteColor = null;
-      tag.remove();
-      var sw = document.getElementById('nx-color-swatch');
-      if (sw) sw.style.display = 'none';
-      var mi = document.getElementById('nx-mi');
-      if (mi) mi.style.display = '';
+      clearPaletteColor();
       updatePricesAndImage();
     });
   }
@@ -738,6 +710,17 @@ if (firstEd && firstEd['Покрытие'] === 'Без покрытия') {
     colorsEl.innerHTML = renderColorSwatches(filtered, getColorMap());
   }
 
+  /* Сброс выбранного из палитры цвета: общий блок для всех мест,
+     где пользователь уходит от палитрового цвета (клик по свотчу,
+     смена покрытия на «Без покрытия», крестик тега цвета). */
+  function clearPaletteColor() {
+    _paletteColor = null;
+    try { sessionStorage.removeItem('nx_palette_color'); } catch (e) {}
+    var sw = document.getElementById('nx-color-swatch'); if (sw) sw.style.display = 'none';
+    var mi = document.getElementById('nx-mi'); if (mi) mi.style.display = '';
+    var ct = document.getElementById('nx-color-tag'); if (ct) ct.remove();
+  }
+
   function attachEvents() {
     var root = document.getElementById('nx-prod-root');
     if (!root) return;
@@ -771,16 +754,9 @@ if (firstEd && firstEd['Покрытие'] === 'Без покрытия') {
     root.addEventListener('click', function (e) {
       var btn = e.target.closest('.nx-p-color-btn');
       if (!btn) return;
-      if (_paletteColor) {
-        _paletteColor = null;
-        sessionStorage.removeItem('nx_palette_color');
-        var sw = document.getElementById('nx-color-swatch'); if (sw) sw.style.display = 'none';
-        var mi = document.getElementById('nx-mi'); if (mi) mi.style.display = '';
-        var ct = document.getElementById('nx-color-tag'); if (ct) ct.remove();
-      }
+      if (_paletteColor) clearPaletteColor();
       root.querySelectorAll('.nx-p-color-btn').forEach(function (b) { b.classList.remove('nx-p-color-btn--active'); });
       btn.classList.add('nx-p-color-btn--active');
-      _selected['Цвет'] = btn.dataset.color;
       _selected['Цвет'] = btn.dataset.color;
 
 // Найти edition с этим цветом и обновить покрытие
@@ -800,14 +776,7 @@ root.addEventListener('change', function (e) {
   if (!sel) return;
   _selected[sel.dataset.prop] = sel.value;
   if (sel.dataset.prop === 'Тип покрытия' && sel.value === 'Без покрытия') {
-    _paletteColor = null;
-    sessionStorage.removeItem('nx_palette_color');
-    var sw = document.getElementById('nx-color-swatch');
-    if (sw) sw.style.display = 'none';
-    var mi = document.getElementById('nx-mi');
-    if (mi) mi.style.display = '';
-    var ct = document.getElementById('nx-color-tag');
-    if (ct) ct.remove();
+    clearPaletteColor();
     _selected['Цвет'] = 'без';
   }
   updatePricesAndImage();
@@ -907,40 +876,46 @@ root.addEventListener('change', function (e) {
     var m = location.pathname.match(/\/tproduct\/(\d+)/);
     if (!m) return;
     var uid = m[1];
+    function revealOnFail() {
+      document.documentElement.classList.remove('nx-tp');
+    }
     var attempts = 0;
     var iv = setInterval(function () {
       attempts++;
       if ((window.tStoreOptionsList && window.tStoreOptionsList.length) || attempts > 30) {
         clearInterval(iv);
         loadProduct(uid).then(function (p) {
-          if (!p) { console.error('nx: product not found'); return; }
+          if (!p) { console.error('nx: product not found'); revealOnFail(); return; }
           renderRoot(p);
-        }).catch(function (err) { console.error('nx: loadProduct error', err); });
+        }).catch(function (err) { console.error('nx: loadProduct error', err); revealOnFail(); });
       }
     }, 100);
   }
 
-  /* Создать #nx-prod-root как можно раньше — чтобы не было пустоты пока грузится продукт */
-  function createRootEarly() {
-    if (document.getElementById('nx-prod-root')) return;
-    var root = document.createElement('div');
+  /* Создать #nx-prod-root как можно раньше — чтобы не было пустоты пока грузится продукт.
+     Возвращает существующий или только что созданный корень (используется и в renderRoot). */
+  function ensureProdRoot() {
+    var root = document.getElementById('nx-prod-root');
+    if (root) return root;
+    root = document.createElement('div');
     root.id = 'nx-prod-root';
     var allrec = document.getElementById('allrecords');
-    if (allrec && allrec.children.length > 0) {
+    if (allrec && allrec.children.length) {
       allrec.insertBefore(root, allrec.children[1] || null);
-    } else if (document.body) {
+    } else {
       document.body.appendChild(root);
     }
+    return root;
   }
 
   /* Запускаем сразу на DOMContentLoaded — не ждём window.load */
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', function () {
-      createRootEarly();
+      ensureProdRoot();
       setTimeout(boot, 50);
     });
   } else {
-    createRootEarly();
+    ensureProdRoot();
     setTimeout(boot, 50);
   }
   /* Fallback: window.load на случай если DOMContentLoaded уже прошёл */
@@ -982,6 +957,7 @@ root.addEventListener('change', function (e) {
   function handleCheckoutError(errEl) {
     if (_handled) return;
     _handled = true;
+    try { if (_obs) _obs.disconnect(); } catch (e) {}
 
     errEl.style.cssText = 'display:none!important';
 
@@ -1028,6 +1004,7 @@ root.addEventListener('change', function (e) {
 
   /* Слушаем и добавление новых узлов, и изменение атрибутов/стилей существующих */
   var _obs = new MutationObserver(function (mutations) {
+    if (_handled) return;
     for (var i = 0; i < mutations.length; i++) {
       var m = mutations[i];
       if (m.type === 'childList') {
