@@ -501,6 +501,43 @@ html body .t-product__option-item_active .t-product__option-title {
     flex: 0 0 calc(33.333% - 14px) !important;
 }
 
+/* Каталог: универсальное применение стилей (если rec-id в Tilda изменится) */
+#allrecords .t-catalog__breadcrumbs { padding-left: var(--nx-grid-padding) !important; }
+#allrecords .t-catalog-parts-above__container,
+#allrecords .t-catalog__filter__search-and-sort {
+    padding-left: var(--nx-grid-padding) !important;
+    padding-right: var(--nx-grid-padding) !important;
+    box-sizing: border-box !important;
+}
+#allrecords .t-catalog__cont-w-filter {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    box-sizing: border-box !important;
+}
+#allrecords .t-catalog__cont-wrapper {
+    padding-left: var(--nx-grid-padding) !important;
+    padding-right: var(--nx-grid-padding) !important;
+    box-sizing: border-box !important;
+    width: 100% !important;
+}
+#allrecords .t-catalog__sidebar {
+    width: 260px !important;
+    min-width: 260px !important;
+    flex-shrink: 0 !important;
+}
+#allrecords .t-catalog__card-list {
+    padding: 0 !important;
+    gap: 20px !important;
+    column-gap: 20px !important;
+    align-items: flex-start;
+}
+#allrecords .t-catalog__stretch-col {
+    width: calc(33.333% - 14px) !important;
+    max-width: calc(33.333% - 14px) !important;
+    min-width: 0 !important;
+    flex: 0 0 calc(33.333% - 14px) !important;
+}
+
 /* Фильтры */
 .t-catalog__filter-cont,
 .js-catalog-filter-cont { background: #ffffff !important; }
