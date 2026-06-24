@@ -514,7 +514,7 @@ if (ed) {
   if (typeof optDims === 'string') { try { optDims = JSON.parse(optDims); } catch (e) { optDims = []; } }
   var keys = (optDims && optDims.length)
     ? optDims.map(function (o) { return o && o.title; })
-    : ['Цвет', 'Покрытие', 'Цена за кв метр'];
+    : ['Цвет', 'Покрытие'];
   keys.forEach(function (k) {
     if (k && ed[k] !== undefined && ed[k] !== '' && String(ed[k]) !== 'undefined') {
       propParts.push(k + ': ' + ed[k]);
@@ -551,6 +551,25 @@ var item = {
       added = true;
     }
   } catch (e) { console.error('nx: addToCart error', e); }
+
+  /* Страховка: Tilda иногда «тихо» отбрасывает позицию при синхронизации со складом
+     (издание не сматчилось / нет в наличии), и второй товар не попадает в корзину.
+     Если после addProduct позиции с этим uid в корзине нет — добавляем вручную. */
+  try {
+    if (added && window.tcart && window.tcart.products) {
+      var inCart = window.tcart.products.some(function (p) {
+        return String(p.uid) === item.uid && p.option === item.option;
+      });
+      if (!inCart) {
+        window.tcart.products.push(item);
+        if (typeof tcart__saveLocalObj === 'function') tcart__saveLocalObj();
+        if (typeof tcart__reDrawCartIcon === 'function') tcart__reDrawCartIcon();
+        if (typeof tcart__reDrawProducts === 'function') tcart__reDrawProducts();
+        console.log('nx: re-added dropped item', item.uid);
+      }
+    }
+  } catch (e) { console.error('nx: re-add error', e); }
+
   if (added) showToast('Добавлено в корзину: ' + _p.title);
 }
 
