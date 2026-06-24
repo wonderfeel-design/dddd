@@ -123,10 +123,29 @@
 
   .nx-megamenu-col { flex: 1; padding: 0 24px; min-width: 130px; }
   html body .nx-menu .nx-megamenu-col h4 {
+    font-family: 'Gotham Pro', sans-serif !important;
     font-size: 12px; color: #252525 !important;
-    text-transform: uppercase; letter-spacing: 0.3px;
-    padding: 24px 0 14px; margin-bottom: 14px;
+    font-weight: 700;
+    line-height: 1.2;
+    text-transform: uppercase; letter-spacing: 0;
+    padding: 0; margin: 0;
   }
+  html body .nx-menu .nx-megamenu-col h4 a {
+    font-family: inherit !important;
+    font-size: inherit !important;
+    font-weight: inherit !important;
+    line-height: inherit !important;
+    text-transform: inherit !important;
+    letter-spacing: 0 !important;
+    color: inherit !important;
+    display: block;
+    width: 100%;
+    padding: 24px 0 14px;
+    margin-bottom: 14px;
+    cursor: pointer;
+    text-decoration: none;
+  }
+  html body .nx-menu .nx-megamenu-col h4 a:hover { text-decoration: underline; }
   html body .nx-menu .nx-megamenu-col ul {
     display: flex; flex-direction: column; gap: 0; padding-bottom: 24px;
   }
@@ -172,18 +191,18 @@
 
       <div class="nx-megamenu-sidebar">
         <ul>
-          <li class="active"><a href="#" onclick="showCat(event,'interier')">Для интерьера</a></li>
-          <li><a href="#" onclick="showCat(event,'fasad')">Для фасада</a></li>
-          <li><a href="#" onclick="showCat(event,'pilo')">Пиломатериалы</a></li>
-          <li><a href="#" onclick="showCat(event,'krepezh')">Крепеж</a></li>
-          <li><a href="#" onclick="showCat(event,'kraski')">Краски</a></li>
+          <li class="active"><a href="/catalog/810291631742-dlya-interera" data-panel="interier">Для интерьера</a></li>
+          <li><a href="/catalog/799009129752-dlya-fasada" data-panel="fasad">Для фасада</a></li>
+          <li><a href="/catalog/929460929152-pilomateriali" data-panel="pilo">Пиломатериалы</a></li>
+          <li><a href="/catalog/559088613632-krepezh" data-panel="krepezh">Крепеж</a></li>
+          <li><a href="/catalog/807847057542-kraski" data-panel="kraski">Краски</a></li>
         </ul>
       </div>
 
       <!-- Для интерьера -->
       <div class="nx-megamenu-content active" id="cat-interier">
         <div class="nx-megamenu-col">
-          <h4>Потолок</h4>
+          <h4><a href="/catalog/565173393412-potolok">Потолок</a></h4>
           <ul>
             <li><a href="/catalog/752465215952-vagonka" data-cat="752465215952">Вагонка</a></li>
             <li><a href="/catalog/586794862262-imitatsiya-brusa" data-cat="586794862262">Имитация бруса</a></li>
@@ -193,7 +212,7 @@
           </ul>
         </div>
         <div class="nx-megamenu-col">
-          <h4>Стены</h4>
+          <h4><a href="/catalog/786215589522-steni">Стены</a></h4>
           <ul>
             <li><a href="/catalog/727322905002-vagonka" data-cat="727322905002">Вагонка</a></li>
             <li><a href="/catalog/979626884442-imitatsiya-brusa" data-cat="979626884442">Имитация бруса</a></li>
@@ -204,7 +223,7 @@
           </ul>
         </div>
         <div class="nx-megamenu-col">
-          <h4>Пол</h4>
+          <h4><a href="/catalog/168434912242-pol">Пол</a></h4>
           <ul>
             <li><a href="/catalog/872722103702-terrasnaya-doska" data-cat="872722103702">Террасная доска</a></li>
             <li><a href="/catalog/374112886602-palubnaya-doska" data-cat="374112886602">Палубная доска</a></li>
@@ -213,7 +232,7 @@
           </ul>
         </div>
         <div class="nx-megamenu-col">
-          <h4>Окна / Двери</h4>
+          <h4><a href="/catalog/662542174522-okna-dveri">Окна / Двери</a></h4>
           <ul>
             <li><a href="/catalog/563319022162-vagonka" data-cat="563319022162">Вагонка</a></li>
             <li><a href="/catalog/477014464882-imitatsiya-brusa" data-cat="477014464882">Имитация бруса</a></li>
@@ -224,7 +243,7 @@
           </ul>
         </div>
         <div class="nx-megamenu-col">
-          <h4>Декор</h4>
+          <h4><a href="/catalog/597495000982-dekor">Декор</a></h4>
           <ul>
             <li><a href="/catalog/922401543332-dekorativnie-paneli" data-cat="922401543332">Декоративные панели</a></li>
             <li><a href="/catalog/529584857882-moldingi" data-cat="529584857882">Молдинги</a></li>
@@ -236,7 +255,7 @@
       <!-- Для фасада -->
       <div class="nx-megamenu-content" id="cat-fasad">
         <div class="nx-megamenu-col">
-          <h4>Фасадные панели</h4>
+          <h4><a href="/catalog/813806349812-fasadnie-paneli">Фасадные панели</a></h4>
           <ul>
             <li><a href="/catalog/546702251802-fasadnaya-doska" data-cat="546702251802">Фасадная доска</a></li>
             <li><a href="/catalog/165489477212-blok-haus" data-cat="165489477212">Блок-хаус</a></li>
@@ -245,7 +264,7 @@
           </ul>
         </div>
         <div class="nx-megamenu-col">
-          <h4>Террасные доски</h4>
+          <h4><a href="/catalog/640717199452-terrasnie-doski">Террасные доски</a></h4>
           <ul>
             <li><a href="/catalog/311305480882-palubnaya-doska" data-cat="311305480882">Палубная доска</a></li>
             <li><a href="/catalog/297627384262-slebi" data-cat="297627384262">Слэбы</a></li>
@@ -256,7 +275,7 @@
       <!-- Пиломатериалы -->
       <div class="nx-megamenu-content" id="cat-pilo">
         <div class="nx-megamenu-col">
-          <h4>Пиломатериалы</h4>
+          <h4><a href="/catalog/929460929152-pilomateriali">Пиломатериалы</a></h4>
           <ul>
             <li><a href="/catalog/528547846822-brus" data-cat="528547846822">Брус</a></li>
             <li><a href="/catalog/140001465242-doska-obreznaya" data-cat="140001465242">Доска обрезная</a></li>
@@ -270,7 +289,7 @@
       <!-- Крепеж -->
       <div class="nx-megamenu-content" id="cat-krepezh">
         <div class="nx-megamenu-col">
-          <h4>Крепеж</h4>
+          <h4><a href="/catalog/559088613632-krepezh">Крепеж</a></h4>
           <ul>
             <li><a href="/catalog/819626010462-samorezi" data-cat="819626010462">Саморезы</a></li>
             <li><a href="/catalog/254591601132-skobi" data-cat="254591601132">Скобы</a></li>
@@ -283,7 +302,7 @@
       <!-- Краски -->
       <div class="nx-megamenu-content" id="cat-kraski">
         <div class="nx-megamenu-col">
-          <h4>Краски и лаки</h4>
+          <h4><a href="/catalog/807847057542-kraski">Краски и лаки</a></h4>
           <ul>
             <li><a href="/catalog/775950412632-maslo-dlya-dereva" data-cat="775950412632">Масло для дерева</a></li>
             <li><a href="/catalog/443883645832-laki" data-cat="443883645832">Лаки</a></li>
@@ -305,13 +324,30 @@
   var isOpen   = false;
   var closeTimer = null;
 
+  function enrichMegamenuLinks() {
+    document.querySelectorAll('.nx-megamenu-content[id^="cat-"]').forEach(function (panel) {
+      var panelId = (panel.id || '').replace(/^cat-/, '');
+      if (!panelId) return;
+      var top = document.querySelector('.nx-bottomnav-links a[data-panel="' + panelId + '"]');
+      var sectionCat = top ? (top.getAttribute('data-cat') || '') : '';
+      var sectionHref = top ? (top.getAttribute('href') || '') : '';
+      var sectionTitle = top ? (top.textContent || '').trim() : '';
+      panel.querySelectorAll('.nx-megamenu-col a[href*="/catalog/"]').forEach(function (a) {
+        if (!a.getAttribute('data-panel')) a.setAttribute('data-panel', panelId);
+        if (sectionCat && !a.getAttribute('data-section-cat')) a.setAttribute('data-section-cat', sectionCat);
+        if (sectionHref && !a.getAttribute('data-section-href')) a.setAttribute('data-section-href', sectionHref);
+        if (sectionTitle && !a.getAttribute('data-section-title')) a.setAttribute('data-section-title', sectionTitle);
+      });
+
+    });
+  }
+
   /* ── Активировать панель ────────────────────────── */
   function activatePanel(panelId) {
     document.querySelectorAll('.nx-megamenu-sidebar li').forEach(function (li) { li.classList.remove('active'); });
     document.querySelectorAll('.nx-megamenu-content').forEach(function (c)  { c.classList.remove('active'); });
     document.querySelectorAll('.nx-megamenu-sidebar li a').forEach(function (a) {
-      if ((a.getAttribute('onclick') || '').indexOf("'" + panelId + "'") !== -1)
-        a.parentElement.classList.add('active');
+      if ((a.getAttribute('data-panel') || '') === panelId) a.parentElement.classList.add('active');
     });
     var panel = document.getElementById('cat-' + panelId);
     if (panel) panel.classList.add('active');
@@ -326,10 +362,22 @@
 
   /* ── Сайдбар: переключить панель ────────────────── */
   window.showCat = function (e, panelId) {
-    e.preventDefault();
-    e.stopPropagation();
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
     activatePanel(panelId);
   };
+
+  /* ── Sidebar мегаменю: hover/focus переключает панель, клик ведет в раздел ── */
+  document.querySelectorAll('.nx-megamenu-sidebar a[data-panel]').forEach(function (link) {
+    link.addEventListener('mouseenter', function () {
+      activatePanel(link.getAttribute('data-panel'));
+    });
+    link.addEventListener('focus', function () {
+      activatePanel(link.getAttribute('data-panel'));
+    });
+  });
 
   /* ── Hover / клик нижней навигации → дропдаун ──── */
   document.querySelectorAll('.nx-bottomnav-links a[data-panel]').forEach(function (link) {
@@ -340,15 +388,56 @@
       megamenu.classList.add('open');
       activatePanel(link.getAttribute('data-panel'));
     });
-    /* Клик: открыть мегаменю, НЕ переходить по ссылке */
-    link.addEventListener('click', function (e) {
-      e.preventDefault();
-      clearTimeout(closeTimer);
-      isOpen = true;
-      megamenu.classList.add('open');
-      activatePanel(link.getAttribute('data-panel'));
-    });
+    /* Клик: переходим по ссылке в верхний раздел (нативно) */
   });
+
+  /* ── Клики по меню каталога ───
+     Переключатели (верх/сайдбар) только переключают панель без reload.
+     Переход выполняется только по ссылкам внутри колонок. */
+  menu.addEventListener('click', function (e) {
+    var link = e.target.closest(
+      '.nx-bottomnav-links a[href*="/catalog/"], ' +
+      '.nx-megamenu-sidebar a[href*="/catalog/"], ' +
+      '.nx-megamenu-col a[href*="/catalog/"]'
+    );
+    if (!link) return;
+    if (e.button !== 0) return;
+    if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    var href = link.getAttribute('href') || '';
+    if (!href) return;
+    var panelId = link.getAttribute('data-panel') || '';
+    var isPanelSwitcher = !!(panelId && link.closest('.nx-bottomnav-links, .nx-megamenu-sidebar'));
+
+    /* Переключатели панелей:
+       1-й клик: открыть/переключить панель без перехода
+       2-й клик по уже активной панели: перейти в раздел */
+    if (isPanelSwitcher) {
+      var active = document.querySelector('.nx-megamenu-sidebar li.active a[data-panel]');
+      var activePanel = active ? (active.getAttribute('data-panel') || '') : '';
+      var sameActivePanel = megamenu.classList.contains('open') && activePanel === panelId;
+      if (!sameActivePanel) {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+        clearTimeout(closeTimer);
+        isOpen = true;
+        megamenu.classList.add('open');
+        activatePanel(panelId);
+        return;
+      }
+    }
+
+    /* Не перезагружать ту же страницу */
+    try {
+      var u = new URL(href, window.location.href);
+      if (u.pathname === window.location.pathname && u.search === window.location.search && u.hash === window.location.hash) {
+        e.preventDefault();
+        return;
+      }
+    } catch (err) {}
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    window.location.href = href;
+  }, true);
 
   /* ── Закрыть при уходе мыши из .nx-menu ─────────── */
   menu.addEventListener('mouseleave', function () {
@@ -370,6 +459,8 @@
       megamenu.classList.remove('open');
     }
   });
+
+  enrichMegamenuLinks();
 
   /* ── Sticky (архитектура из старой версии) ──────────
      Спейсер создаётся через JS с display:none.
@@ -454,4 +545,3 @@
 
 })();
 </script>
-

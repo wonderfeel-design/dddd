@@ -485,6 +485,14 @@ html body .t-product__option-item_active .t-product__option-title {
     align-items: flex-start;
 }
 
+/* Каталог: не прятать верхние разделы при переходе в глубокие подразделы */
+#rec2362174763 .t-catalog__parts-tree-item,
+#rec2362172923 .t-catalog__parts-tree-item,
+#rec2362174763 .t-catalog__parts-tree-item_hidden,
+#rec2362172923 .t-catalog__parts-tree-item_hidden {
+    display: block !important;
+}
+
 /* 3 колонки */
 #rec2362174763 .t-catalog__stretch-col {
     width: calc(33.333% - 14px) !important;
@@ -1375,4 +1383,9 @@ html body .nx-megamenu-wrap { padding-left: 20px !important; }
     color: #555 !important;
     cursor: pointer !important;
     z-index: 10 !important;
+}
+
+/* Если нативное дерево разделов Tilda отрисовано, кастомный fallback не нужен */
+.t-catalog-parts-sidebar__container .t-catalog__parts-root + .js-sidebar-parts {
+    display: none !important;
 }

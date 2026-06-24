@@ -52,6 +52,38 @@
 </script>
 
 <script>
+/* Remove legacy fallback catalog sidebar if it appears */
+(function () {
+  'use strict';
+
+  function removeFallbackSidebar() {
+    document.querySelectorAll('.nx-fallback-sidebar-parts').forEach(function (node) {
+      var holder = node.closest('.js-sidebar-parts');
+      node.remove();
+      if (holder && !holder.children.length) holder.remove();
+    });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', removeFallbackSidebar);
+  } else {
+    removeFallbackSidebar();
+  }
+
+  var obs = new MutationObserver(function () { removeFallbackSidebar(); });
+  function start() {
+    if (!document.body) return;
+    obs.observe(document.body, { childList: true, subtree: true });
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', start);
+  } else {
+    start();
+  }
+})();
+</script>
+
+<script>
 /* ══ 1. Скрытие «Палитры» + ссылка ══ */
 (function () {
   'use strict';
@@ -383,8 +415,28 @@
       '</div>';
   }
 
+  function normalizeImageSrc(src) {
+    if (src == null) return '';
+    var s = String(src).trim();
+    if (!s || s === 'undefined' || s === 'null') return '';
+    if (/[\r\n]/.test(s)) return '';
+    if (s.indexOf('javascript:') === 0) return '';
+    if (
+      s.indexOf('http://') === 0 ||
+      s.indexOf('https://') === 0 ||
+      s.indexOf('//') === 0 ||
+      s.indexOf('/') === 0 ||
+      s.indexOf('./') === 0 ||
+      s.indexOf('../') === 0 ||
+      s.indexOf('data:image/') === 0 ||
+      s.indexOf('blob:') === 0
+    ) return s;
+    return '';
+  }
+
   function ensureMainImagePreload(src) {
-    if (!src) return;
+    var safeSrc = normalizeImageSrc(src);
+    if (!safeSrc) return;
     var head = document.head || document.getElementsByTagName('head')[0];
     if (!head) return;
     var ln = document.getElementById('nx-preload-mainimg');
@@ -396,7 +448,7 @@
       ln.fetchPriority = 'high';
       head.appendChild(ln);
     }
-    if (ln.href !== src) ln.href = src;
+    if (ln.href !== safeSrc) ln.href = safeSrc;
   }
 
   function renderChars(chars) {
