@@ -330,6 +330,16 @@ body.nx-palitra .t-catalog__parts-text-title {
   box-sizing: border-box;
 }
 .nx-pal-popup__btn--pick:hover { background: var(--nx-green-dk, #3d8a1c); }
+.nx-pal-popup__btn--pick:disabled,
+.nx-pal-popup__btn--pick[disabled] {
+  background: #cfcfcf; cursor: not-allowed; opacity: .8;
+}
+.nx-pal-pick-warn {
+  display: none;
+  font-size: 12px; line-height: 1.4; color: #9a5b00;
+  background: #fff4e5; border: 1px solid #f0c27a; border-radius: 8px;
+  padding: 8px 10px; margin-bottom: 8px;
+}
 
 .nx-pal-popup__sample-box {
   background: #F2F7EE;
@@ -1044,6 +1054,27 @@ body.nx-palitra .t-catalog__parts-text-title {
   }
 
   /* ── Попап ── */
+  /* ── Совместимость цвета палитры с типом покрытия товара ──
+     brandOf() определён выше (§0b). «Укрывная» → RAL/Vinha/Puutalot/Deco;
+     пропитки/лессир./лак/воск → Valtti. */
+  function nxCoatingAllowedBrands(coating) {
+    var c = String(coating || '').toLowerCase();
+    if (c.indexOf('укрыв') !== -1) return ['ral', 'vinha', 'puutalot', 'deco'];
+    if (c.indexOf('пропит') !== -1 || c.indexOf('лессир') !== -1 ||
+        c.indexOf('лак')    !== -1 || c.indexOf('воск')   !== -1 ||
+        c.indexOf('valtti') !== -1) return ['valtti'];
+    return null; /* нет ограничения */
+  }
+  function nxColorFitsCoating(data) {
+    var pc = null;
+    try { pc = JSON.parse(sessionStorage.getItem('nx_palette_product') || 'null'); } catch (e) {}
+    var allowed = nxCoatingAllowedBrands(pc && pc.coating);
+    if (!allowed) return true;                       /* покрытия нет/без ограничения */
+    var brand = brandOf((data.name || '') + ' ' + (data.code || ''));
+    if (!brand) return true;                          /* бренд не распознан — не мешаем */
+    return allowed.indexOf(brand) !== -1;
+  }
+
   function openPopup(data) {
     _current = data;
 
@@ -1083,6 +1114,27 @@ body.nx-palitra .t-catalog__parts-text-title {
         if (popupCtxCoat) popupCtxCoat.textContent = productCtx.coating ? 'Покрытие: ' + productCtx.coating : '';
         popupCtx.style.display = '';
       }
+
+      /* Гейт: несовместимый с покрытием цвет нельзя добавить к товару */
+      var fits = nxColorFitsCoating(data);
+      var warn = document.getElementById('nx-pal-pick-warn');
+      if (!warn) {
+        warn = document.createElement('div');
+        warn.id = 'nx-pal-pick-warn';
+        warn.className = 'nx-pal-pick-warn';
+        pickBtn.parentNode.insertBefore(warn, pickBtn);
+      }
+      if (fits) {
+        pickBtn.disabled = false;
+        pickBtn.textContent = '✓ Выбрать этот цвет';
+        warn.style.display = 'none';
+      } else {
+        pickBtn.disabled = true;
+        pickBtn.textContent = 'Не подходит к покрытию';
+        var coatTxt = (productCtx && productCtx.coating) ? ' «' + productCtx.coating + '»' : '';
+        warn.textContent = '⚠ Этот цвет не подходит к покрытию' + coatTxt + '. Уточняйте у менеджера.';
+        warn.style.display = 'block';
+      }
     }
 
     popup.style.display = 'flex';
@@ -1109,6 +1161,7 @@ body.nx-palitra .t-catalog__parts-text-title {
   /* ── Кнопки попапа ── */
   pickBtn.addEventListener('click', function () {
     if (!_current) return;
+    if (pickBtn.disabled || !nxColorFitsCoating(_current)) return;  /* несовместимый цвет не выбираем */
     try { sessionStorage.setItem('nx_palette_color', JSON.stringify(_current)); } catch (e) {}
     history.back();
   });
