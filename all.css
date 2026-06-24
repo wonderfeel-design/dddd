@@ -1275,6 +1275,7 @@ html body .nx-megamenu-wrap { padding-left: 20px !important; }
 /* Скрываем бейджи ТОЛЬКО на странице палитры (не глобально) */
 .nx-palette-page .t-catalog__card__mark,
 .nx-palette-page .nx-cat-badge { display: none !important; }
+.nx-palette-page .nx-p-color-swatch__name { display: none !important; }
 .nx-palette-select-bar { position: fixed; bottom: 0; left: 0; right: 0; background: #fff; border-top: 1px solid #eee; padding: 16px 20px; display: flex; align-items: center; gap: 16px; z-index: 100; box-shadow: 0 -4px 20px rgba(0,0,0,0.08); transform: translateY(100%); transition: transform 0.25s; }
 .nx-palette-select-bar--visible { transform: translateY(0); }
 .nx-palette-select-bar__preview { width: 40px; height: 40px; border-radius: 50%; border: 2px solid #eee; flex-shrink: 0; }

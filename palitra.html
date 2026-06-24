@@ -52,6 +52,10 @@
 </div>
 
 <style>
+/* Hide swatch text on cards, keep it visible in popup */
+.nx-p-color-swatch--card .nx-p-color-swatch__name { display: none !important; }
+.nx-p-color-swatch--popup .nx-p-color-swatch__name { display: block !important; }
+
 /* ══ КОНТЕКСТНАЯ ПАНЕЛЬ ТОВАРА ══ */
 .nx-pal-ctx__inner {
   display: flex;
@@ -1022,7 +1026,7 @@ body.nx-palitra .t-catalog__parts-text-title {
     var data = getCardData(card);
     if (!data.code) return;
     var sw = document.createElement('div');
-    sw.className = 'nx-p-color-swatch';
+    sw.className = 'nx-p-color-swatch nx-p-color-swatch--card';
     var nm = document.createElement('div');
     nm.className = 'nx-p-color-swatch__name';
     var cd = document.createElement('span');
@@ -1052,7 +1056,7 @@ body.nx-palitra .t-catalog__parts-text-title {
     }
     preview.innerHTML = '';
     var sw = document.createElement('div');
-    sw.className = 'nx-p-color-swatch';
+    sw.className = 'nx-p-color-swatch nx-p-color-swatch--popup';
     var nm = document.createElement('div');
     nm.className = 'nx-p-color-swatch__name';
     var cd = document.createElement('span');
