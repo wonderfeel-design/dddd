@@ -324,24 +324,6 @@
   var isOpen   = false;
   var closeTimer = null;
 
-  function enrichMegamenuLinks() {
-    document.querySelectorAll('.nx-megamenu-content[id^="cat-"]').forEach(function (panel) {
-      var panelId = (panel.id || '').replace(/^cat-/, '');
-      if (!panelId) return;
-      var top = document.querySelector('.nx-bottomnav-links a[data-panel="' + panelId + '"]');
-      var sectionCat = top ? (top.getAttribute('data-cat') || '') : '';
-      var sectionHref = top ? (top.getAttribute('href') || '') : '';
-      var sectionTitle = top ? (top.textContent || '').trim() : '';
-      panel.querySelectorAll('.nx-megamenu-col a[href*="/catalog/"]').forEach(function (a) {
-        if (!a.getAttribute('data-panel')) a.setAttribute('data-panel', panelId);
-        if (sectionCat && !a.getAttribute('data-section-cat')) a.setAttribute('data-section-cat', sectionCat);
-        if (sectionHref && !a.getAttribute('data-section-href')) a.setAttribute('data-section-href', sectionHref);
-        if (sectionTitle && !a.getAttribute('data-section-title')) a.setAttribute('data-section-title', sectionTitle);
-      });
-
-    });
-  }
-
   /* ── Активировать панель ────────────────────────── */
   function activatePanel(panelId) {
     document.querySelectorAll('.nx-megamenu-sidebar li').forEach(function (li) { li.classList.remove('active'); });
@@ -459,8 +441,6 @@
       megamenu.classList.remove('open');
     }
   });
-
-  enrichMegamenuLinks();
 
   /* ── Sticky (архитектура из старой версии) ──────────
      Спейсер создаётся через JS с display:none.
