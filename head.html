@@ -482,32 +482,22 @@ var paletteLabel = _paletteColor
   ? (_paletteColor.code + (_paletteColor.name && _paletteColor.name !== _paletteColor.code ? ' ' + _paletteColor.name : ''))
   : '';
 
-// opts — отображение в корзине и CRM
-var optParts = [];
-if (_paletteColor) {
-  optParts.push('Цвет: ' + paletteLabel);
-} else if (ed && ed['Цвет'] && ed['Цвет'] !== 'undefined' && ed['Цвет'] !== 'без') {
-  optParts.push('Цвет: ' + ed['Цвет']);
-}
-if (_selected['Ширина (мм)']) {
-  optParts.push('Ширина: ' + _selected['Ширина (мм)'] + ' мм');
-}
-if (ed && ed['Покрытие']) {
-  optParts.push('Покрытие: ' + ed['Покрытие']);
-}
-if (ed && ed['Цена за кв метр'] && parseFloat(String(ed['Цена за кв метр']).replace(/\s/g,'')) > 0) {
-  optParts.push('Цена за кв метр: ' + ed['Цена за кв метр']);
-}
-var opts = optParts.join(', ');
+/* Видимый состав позиции — цвет + покрытие в названии, единообразно для свотча и
+   палитры (корзина/заказ/CRM). Палитра помечается «Цвет из палитры», обычный свотч —
+   «Цвет». Разные цвет/покрытие → разные имена → отдельные строки корзины; одинаковые
+   → Tilda суммирует количество. Полные структурные опции — в propOpts ниже. */
+var colorLabel = _paletteColor
+  ? ('Цвет из палитры: ' + paletteLabel)
+  : (ed && ed['Цвет'] && ed['Цвет'] !== 'без' && String(ed['Цвет']) !== 'undefined'
+      ? ('Цвет: ' + ed['Цвет']) : '');
+var coatLabel = (ed && ed['Покрытие'] && ed['Покрытие'] !== 'Без покрытия')
+  ? ('Покрытие: ' + ed['Покрытие']) : '';
+var nameSuffix = [colorLabel, coatLabel].filter(Boolean).join(' · ');
 
-/* propOpts — ТОЧНЫЕ опции издания Tilda. Ключи и значения ДОЛЖНЫ совпадать с
-   вариацией в магазине (опции там: «Цвет» и «Покрытие»), иначе склад не найдёт
-   издание → «нет в наличии». Берём значения из подобранного издания ed.
-   Палитровый цвет тут НЕ используем: для палитры бронируем базовое издание
-   (его реальный цвет), а палитровый цвет показываем только в названии (opts). */
-/* ВАЖНО: option должна содержать ВСЕ измерения вариации (Цвет, Покрытие,
-   Цена за кв метр) ТОЧНО как в издании — иначе Tilda: «не указана опция».
-   Менять/убирать поля нельзя. Чистоту отображения решаем отдельно (в корзине). */
+/* propOpts — структурная опция «Цвет: X, Покрытие: Y» для отображения в заказе/CRM.
+   С вариантом B (синтетический uid, без складского бронирования) это уже НЕ влияет на
+   склад — просто аккуратный состав опций. Берём из подобранного издания ed; «Цена за
+   кв метр» не шлём (Tilda трактовала бы как лишнее измерение). */
 var propParts = [];
 if (ed) {
   var optDims = (_p && _p.json_options) || [];
@@ -528,20 +518,20 @@ if (ed) {
 var propOpts = propParts.join(', ');
 
 var item = {
-  /* Палитровый цвет — отдельной заметной подписью в названии (не в скобках),
-     т.к. в складскую option он не идёт (там измерения реальной вариации).
-     Для палитры: «Товар · Цвет из палитры: 2661 Vinha 2661».
-     Для обычной вариации цвет/покрытие видны в option ниже. */
-  name:     _p.title + (_paletteColor ? ' · Цвет из палитры: ' + paletteLabel : ''),
+  /* Название несёт полный видимый состав: «Товар · Цвет: X · Покрытие: Y»
+     (или «… · Цвет из палитры: …»). Это же делает строку уникальной по цвету/покрытию
+     — Tilda определяет тождество позиции корзины по name. */
+  name:     _p.title + (nameSuffix ? ' · ' + nameSuffix : ''),
   option:   propOpts,
   price:    price,
   quantity: _qty,
   amount:   price * _qty,
   img:      img,
-  /* uid ВАРИАЦИИ (ed.uid) — Tilda резервирует остаток именно издания (проверено:
-     остаток изданий реально списывается). uid товара даёт «нет в наличии» (у товара
-     остаток пустой). «Не указана опция» при ed.uid — от старой позиции в корзине. */
-  uid:      String(ed && ed.uid ? ed.uid : _p.uid),
+  /* Вариант B (склад не нужен): синтетический non-store uid — Tilda НЕ пытается
+     бронировать издание (с ed.uid склад падает «не указана опция»). Позиция трактуется
+     как ручная (как «Пробный выкрас»). Детерминирован по изданию+палитре: тот же выбор
+     склеивается, разные — отдельные строки. Полный состав — в name/option. */
+  uid:      'nxm-' + String(ed && ed.uid ? ed.uid : _p.uid) + (_paletteColor && _paletteColor.code ? '-' + _paletteColor.code : ''),
   sku:      (ed && ed.sku) || (_p.sku) || ''
 };
   console.log('nx: item to cart', JSON.stringify(item));
@@ -728,10 +718,13 @@ if (firstEd && firstEd['Покрытие'] === 'Без покрытия') {
     updateColors();
   }
 
-  function applyColorFromPalette(c) {
-    _paletteColor = c;
-    var gallery  = document.querySelector('.nx-p-mainimg');
-    var mainImg  = document.getElementById('nx-mi');
+  /* Превью выбранного цвета: бейдж .nx-p-color-swatch__name на #nx-color-swatch.
+     keepPhoto:true (свотч готового издания) — подпись поверх реального фото, фон не
+     красим, #nx-mi не прячем. keepPhoto:false (палитра — фото нет) — цветной блок + прячем фото. */
+  function paintColorSwatch(c, opts) {
+    opts = opts || {};
+    var gallery = document.querySelector('.nx-p-mainimg');
+    var mainImg = document.getElementById('nx-mi');
     if (gallery) {
       var swatch = document.getElementById('nx-color-swatch');
       if (!swatch) {
@@ -740,14 +733,20 @@ if (firstEd && firstEd['Покрытие'] === 'Без покрытия') {
         swatch.className = 'nx-p-color-swatch';
         gallery.appendChild(swatch);
       }
-      swatch.style.background = c.hex ? c.hex
-        : c.img ? 'center/cover url(' + c.img + ')' : '#e0e0e0';
+      swatch.classList.toggle('nx-p-color-swatch--label', !!opts.keepPhoto);
+      swatch.style.background = opts.keepPhoto ? 'transparent'
+        : (c.hex ? c.hex : c.img ? 'center/cover url(' + c.img + ')' : '#e0e0e0');
       swatch.style.display = 'flex';
       swatch.innerHTML = '<div class="nx-p-color-swatch__name">' +
         '<span class="nx-p-color-swatch__code">' + (c.code || '') + '</span>' +
         (c.name && c.name !== c.code ? c.name : '') + '</div>';
     }
-    if (mainImg) mainImg.style.display = 'none';
+    if (mainImg) mainImg.style.display = opts.keepPhoto ? '' : 'none';
+  }
+
+  function applyColorFromPalette(c) {
+    _paletteColor = c;
+    paintColorSwatch(c, { keepPhoto: false });
     if ((_selected['Тип покрытия'] || '') === 'Без покрытия') {
       var coatingProp = (_p && _p.properties || []).find(function (pr) { return pr.title === 'Тип покрытия'; });
       if (coatingProp) {
@@ -764,7 +763,8 @@ if (firstEd && firstEd['Покрытие'] === 'Без покрытия') {
     updatePricesAndImage();
   }
 
-  function showColorTag(c) {
+  function showColorTag(c, opts) {
+    opts = opts || {};
     var old = document.getElementById('nx-color-tag');
     if (old) old.remove();
     var tag = document.createElement('div');
@@ -776,10 +776,11 @@ if (firstEd && firstEd['Покрытие'] === 'Без покрытия') {
       '<span class="nx-color-tag__dot" style="' + dotStyle + '"></span>' +
       '<span class="nx-color-tag__code">' + (c.code || '') + '</span>' +
       (c.name && c.name !== c.code ? '<span class="nx-color-tag__name"> — ' + c.name + '</span>' : '') +
-      '<button class="nx-color-tag__clear" title="Сбросить цвет">×</button>';
+      (opts.clearable === false ? '' : '<button class="nx-color-tag__clear" title="Сбросить цвет">×</button>');
     var colors = document.getElementById('nx-colors');
     if (colors && colors.parentNode) colors.parentNode.insertBefore(tag, colors.nextSibling);
-    tag.querySelector('.nx-color-tag__clear').addEventListener('click', function () {
+    var clearBtn = tag.querySelector('.nx-color-tag__clear');
+    if (clearBtn) clearBtn.addEventListener('click', function () {
       clearPaletteColor();
       updatePricesAndImage();
     });
@@ -922,6 +923,20 @@ if (matchedEd && matchedEd['Покрытие']) {
   if (coatingSel) coatingSel.value = matchedEd['Покрытие'];
 }
       updatePricesAndImage();
+
+      /* Свотч ведёт себя как палитра: чип #nx-color-tag + подпись на превью.
+         _paletteColor НЕ ставим — это готовое издание, а не кастомный замес. */
+      if (matchedEd && String(matchedEd['Цвет']) && String(matchedEd['Цвет']) !== 'без') {
+        var sc = {
+          code:    String(matchedEd['Цвет']),
+          name:    '',
+          hex:     getColorMap()[String(matchedEd['Цвет'])] || '',
+          img:     matchedEd.img || '',
+          coating: matchedEd['Покрытие'] || ''
+        };
+        paintColorSwatch(sc, { keepPhoto: true });
+        showColorTag(sc, { clearable: false });
+      }
     });
 
 root.addEventListener('change', function (e) {
