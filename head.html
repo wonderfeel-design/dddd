@@ -516,6 +516,10 @@ if (ed) {
     ? optDims.map(function (o) { return o && o.title; })
     : ['Цвет', 'Покрытие'];
   keys.forEach(function (k) {
+    /* «Цена за кв метр» — это поле издания для отображения, НЕ опция вариации.
+       Если отправить его в option, Tilda трактует как 4-е измерение и склад
+       отвечает «не указана опция». Никогда не шлём его в складскую option. */
+    if (k === 'Цена за кв метр') return;
     if (k && ed[k] !== undefined && ed[k] !== '' && String(ed[k]) !== 'undefined') {
       propParts.push(k + ': ' + ed[k]);
     }
