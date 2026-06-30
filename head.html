@@ -530,36 +530,55 @@ var item = {
   sku:      (ed && ed.sku) || (_p.sku) || ''
 };
   console.log('nx: item to cart', JSON.stringify(item));
-  var added = false;
-  try {
-    if (typeof tcart__addProduct === 'function') {
-      tcart__addProduct(item); added = true;
-    } else if (window.tcart && window.tcart.products) {
-      window.tcart.products.push(item);
-      if (typeof tcart__saveLocalObj === 'function') tcart__saveLocalObj();
-      added = true;
-    }
-  } catch (e) { console.error('nx: addToCart error', e); }
 
-  /* Страховка: Tilda иногда «тихо» отбрасывает позицию при синхронизации со складом
-     (издание не сматчилось / нет в наличии), и второй товар не попадает в корзину.
-     Если после addProduct позиции с этим uid в корзине нет — добавляем вручную. */
-  try {
-    if (added && window.tcart && window.tcart.products) {
-      var inCart = window.tcart.products.some(function (p) {
-        return String(p.uid) === item.uid && p.option === item.option;
-      });
-      if (!inCart) {
+  /* Корзина Tilda инициализируется асинхронно — tcart__addProduct может
+     существовать до того, как window.tcart.products готов. Ждём готовности. */
+  function doAdd(retries) {
+    var cartReady = window.tcart && Array.isArray(window.tcart.products);
+    if (!cartReady && retries < 10) {
+      setTimeout(function () { doAdd(retries + 1); }, 200);
+      return;
+    }
+
+    var added = false;
+    try {
+      if (typeof tcart__addProduct === 'function' && cartReady) {
+        tcart__addProduct(item); added = true;
+      } else if (cartReady) {
         window.tcart.products.push(item);
         if (typeof tcart__saveLocalObj === 'function') tcart__saveLocalObj();
-        if (typeof tcart__reDrawCartIcon === 'function') tcart__reDrawCartIcon();
-        if (typeof tcart__reDrawProducts === 'function') tcart__reDrawProducts();
-        console.log('nx: re-added dropped item', item.uid);
+        added = true;
       }
+    } catch (e) {
+      console.error('nx: addToCart error', e);
+      /* Fallback: прямой пуш если tcart__addProduct упал */
+      try {
+        if (cartReady) {
+          window.tcart.products.push(item);
+          if (typeof tcart__saveLocalObj === 'function') tcart__saveLocalObj();
+          added = true;
+        }
+      } catch (e2) {}
     }
-  } catch (e) { console.error('nx: re-add error', e); }
 
-  if (added) showToast('Добавлено в корзину: ' + _p.title);
+    /* Страховка: Tilda иногда тихо отбрасывает позицию. Если uid не в корзине — добавляем вручную. */
+    try {
+      if (added && cartReady) {
+        var inCart = window.tcart.products.some(function (p) {
+          return String(p.uid) === item.uid && p.option === item.option;
+        });
+        if (!inCart) {
+          window.tcart.products.push(item);
+          if (typeof tcart__saveLocalObj === 'function') tcart__saveLocalObj();
+          if (typeof tcart__reDrawCartIcon === 'function') tcart__reDrawCartIcon();
+          if (typeof tcart__reDrawProducts === 'function') tcart__reDrawProducts();
+        }
+      }
+    } catch (e) {}
+
+    if (added) showToast('Добавлено в корзину: ' + _p.title);
+  }
+  doAdd(0);
 }
 
   function showPaletteTooltip(btn) {
