@@ -783,7 +783,18 @@ html body .t-product__option-item_active .t-product__option-title {
     padding: 120px 0 80px;
     font-family: var(--nx-font);
     color: #222;
-    background: #fff; /* гарантирует непрозрачность при любой структуре Tilda-страницы */
+    background: #fff;
+}
+/* Structure B (/catalog/tproduct/): body has only t-zoomer__wrapper, no #allrecords.
+   #nx-prod-root is inserted as a direct body child — make it a fixed overlay
+   that sits ABOVE the zoomer (which Tilda's zoom JS re-shows regardless of our inline hide). */
+body > #nx-prod-root {
+    position: fixed !important;
+    top: 0; left: 0; right: 0; bottom: 0;
+    z-index: 99999 !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    padding: 60px 0 80px !important;
 }
 /* Мобильная: шапка + меню выше, поэтому контент товара заезжал под меню —
    отступ = высота фикс-шапки (--nx-header-h) + меню(~56) + запас(24) */

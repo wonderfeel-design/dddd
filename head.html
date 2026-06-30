@@ -1214,7 +1214,6 @@ root.addEventListener('change', function (e) {
     var uid = m[1];
     function revealOnFail() {
       document.documentElement.classList.remove('nx-tp');
-      restoreZoomerIfNeeded(); /* структура B: вернуть Tilda-контент при ошибке */
     }
     loadProduct(uid).then(function (p) {
       if (!p) { console.error('nx: product not found'); revealOnFail(); return; }
@@ -1228,7 +1227,9 @@ root.addEventListener('change', function (e) {
      Tilda использует две разные структуры для /tproduct/ страниц:
        A) Обычная:  <div id="allrecords"><div id="recXXX">(header)...
        B) Новая:    <body><div class="t-zoomer__wrapper">...  (нет #allrecords!)
-     В случае B скрываем zoomer-overlay и вставляем root перед ним. */
+     В случае B вставляем root первым ребёнком body. CSS (body > #nx-prod-root)
+     делает его position:fixed z-index:99999 — перекрывает zoomer независимо от
+     того, что с ним делает tilda-zoom-2.0.min.js. */
   function ensureProdRoot() {
     var root = document.getElementById('nx-prod-root');
     if (root) return root;
@@ -1239,23 +1240,11 @@ root.addEventListener('change', function (e) {
       /* Структура A: вставляем вторым ребёнком (первый — шапка) */
       allrec.insertBefore(root, allrec.children[1] || null);
     } else {
-      /* Структура B (t-zoomer): прячем оверлей, вставляем root перед ним */
-      var zoomer = document.querySelector('.t-zoomer__wrapper');
-      if (zoomer) {
-        zoomer.style.cssText = 'display:none!important';
-        document.body.insertBefore(root, zoomer);
-      } else {
-        document.body.insertBefore(root, document.body.firstChild || null);
-      }
+      /* Структура B (t-zoomer): вставляем первым ребёнком body.
+         CSS body > #nx-prod-root покрывает весь вьюпорт поверх zoomer. */
+      document.body.insertBefore(root, document.body.firstChild || null);
     }
     return root;
-  }
-
-  /* Вернуть zoomer (структура B) при ошибке загрузки — чтобы Tilda-контент был виден */
-  function restoreZoomerIfNeeded() {
-    if (document.getElementById('allrecords')) return;
-    var zoomer = document.querySelector('.t-zoomer__wrapper');
-    if (zoomer) zoomer.style.cssText = '';
   }
 
   /* Запускаем сразу на DOMContentLoaded — не ждём window.load */
