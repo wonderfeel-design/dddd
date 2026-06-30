@@ -360,7 +360,8 @@
     }).join('');
     return '<div class="nx-p-opt-lbl">Цвет:</div>' +
       '<div class="nx-p-color-circles">' + swatches +
-      '<a href="/palitra" class="nx-p-palette-btn" id="nx-palette-btn">Палитра цветов</a></div>';
+      '<a href="/palitra" class="nx-p-palette-btn" id="nx-palette-btn">Палитра цветов</a></div>' +
+      '<div id="nx-coat-warn" class="nx-coat-warn" style="display:none">Для выбора цвета смените тип покрытия</div>';
   }
 
   function renderSelects(properties, editions) {
@@ -824,13 +825,16 @@ if (firstEd && firstEd['Покрытие'] === 'Без покрытия') {
     var noCovering = edCoating ? !!_noColorCoatings[edCoating] : false;
 
     var palBtn2 = document.getElementById('nx-palette-btn');
+    var coatWarn = document.getElementById('nx-coat-warn');
     if (noCovering) {
       colorsEl.querySelectorAll('.nx-p-color-btn').forEach(function (b) {
         b.style.opacity = '0.3'; b.style.pointerEvents = 'none';
       });
       if (palBtn2) palBtn2.dataset.nxLocked = '1';
+      if (coatWarn) coatWarn.style.display = 'block';
       return;
     }
+    if (coatWarn) coatWarn.style.display = 'none';
 
     colorsEl.style.opacity = '';
     colorsEl.style.pointerEvents = '';

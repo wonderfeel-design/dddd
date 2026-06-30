@@ -1328,6 +1328,18 @@ html body .nx-megamenu-wrap { padding-left: 20px !important; }
 }
 .nx-color-tag__clear:hover { color: #e00; }
 
+/* Предупреждение «Смените покрытие» под свотчами */
+.nx-coat-warn {
+    margin-top: 8px;
+    padding: 10px 14px;
+    background: #FFF8E1;
+    color: #7A5C00;
+    border: 1px solid #FFD54F;
+    border-radius: 8px;
+    font-family: var(--nx-font);
+    font-size: 13px;
+}
+
 /* ── Мобильный bottom-sheet «Превью цвета» ───────────────── */
 #nx-color-preview {
     display: none;
