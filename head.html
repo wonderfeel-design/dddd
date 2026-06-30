@@ -664,6 +664,7 @@ if (firstEd && firstEd['Покрытие'] === 'Без покрытия') {
 
             /* 5. Цвет */
             '<div class="nx-p-opts" id="nx-colors">' + renderColorSwatches(_editions, colorMap) + '</div>' +
+            '<div id="nx-coat-warn" class="nx-coat-warn">⚠ Для выбора цвета смените тип покрытия</div>' +
 
             /* 6. Уведомление */
             '<div class="nx-p-notice"><span class="nx-p-notice__icon">i</span>' +
@@ -817,13 +818,16 @@ if (firstEd && firstEd['Покрытие'] === 'Без покрытия') {
     var noCovering = edCoating ? !!_noColorCoatings[edCoating] : false;
 
     var palBtn2 = document.getElementById('nx-palette-btn');
+    var warnEl  = document.getElementById('nx-coat-warn');
     if (noCovering) {
       colorsEl.querySelectorAll('.nx-p-color-btn').forEach(function (b) {
         b.style.opacity = '0.3'; b.style.pointerEvents = 'none';
       });
       if (palBtn2) palBtn2.dataset.nxLocked = '1';
+      if (warnEl) warnEl.style.display = 'block';
       return;
     }
+    if (warnEl) warnEl.style.display = 'none';
 
     colorsEl.style.opacity = '';
     colorsEl.style.pointerEvents = '';
