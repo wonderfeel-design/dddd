@@ -482,22 +482,17 @@ var paletteLabel = _paletteColor
   ? (_paletteColor.code + (_paletteColor.name && _paletteColor.name !== _paletteColor.code ? ' ' + _paletteColor.name : ''))
   : '';
 
-/* Видимый состав позиции — цвет + покрытие в названии, единообразно для свотча и
-   палитры (корзина/заказ/CRM). Палитра помечается «Цвет из палитры», обычный свотч —
-   «Цвет». Разные цвет/покрытие → разные имена → отдельные строки корзины; одинаковые
-   → Tilda суммирует количество. Полные структурные опции — в propOpts ниже. */
 var colorLabel = _paletteColor
   ? ('Цвет из палитры: ' + paletteLabel)
   : (ed && ed['Цвет'] && ed['Цвет'] !== 'без' && String(ed['Цвет']) !== 'undefined'
       ? ('Цвет: ' + ed['Цвет']) : '');
 var coatLabel = (ed && ed['Покрытие'] && ed['Покрытие'] !== 'Без покрытия')
   ? ('Покрытие: ' + ed['Покрытие']) : '';
-var nameSuffix = [colorLabel, coatLabel].filter(Boolean).join(' · ');
+var widthLabel = (ed && ed.pack_y) ? ('Ширина: ' + ed.pack_y + ' мм') : '';
+var lengthVal  = ed && ed.pack_x ? parseFloat(ed.pack_x) : 0;
+var lengthLabel = lengthVal ? ('Длина: ' + (lengthVal >= 1000 ? (lengthVal / 1000) + ' м' : lengthVal + ' мм')) : '';
+var nameSuffix = [colorLabel, coatLabel, widthLabel, lengthLabel].filter(Boolean).join(' · ');
 
-/* propOpts — структурная опция «Цвет: X, Покрытие: Y» для отображения в заказе/CRM.
-   С вариантом B (синтетический uid, без складского бронирования) это уже НЕ влияет на
-   склад — просто аккуратный состав опций. Берём из подобранного издания ed; «Цена за
-   кв метр» не шлём (Tilda трактовала бы как лишнее измерение). */
 var propParts = [];
 if (ed) {
   var optDims = (_p && _p.json_options) || [];
@@ -506,32 +501,24 @@ if (ed) {
     ? optDims.map(function (o) { return o && o.title; })
     : ['Цвет', 'Покрытие'];
   keys.forEach(function (k) {
-    /* «Цена за кв метр» — это поле издания для отображения, НЕ опция вариации.
-       Если отправить его в option, Tilda трактует как 4-е измерение и склад
-       отвечает «не указана опция». Никогда не шлём его в складскую option. */
     if (k === 'Цена за кв метр') return;
     if (k && ed[k] !== undefined && ed[k] !== '' && String(ed[k]) !== 'undefined') {
       propParts.push(k + ': ' + ed[k]);
     }
   });
+  if (widthLabel) propParts.push(widthLabel);
+  if (lengthLabel) propParts.push(lengthLabel);
 }
 var propOpts = propParts.join(', ');
 
 var item = {
-  /* Название несёт полный видимый состав: «Товар · Цвет: X · Покрытие: Y»
-     (или «… · Цвет из палитры: …»). Это же делает строку уникальной по цвету/покрытию
-     — Tilda определяет тождество позиции корзины по name. */
   name:     _p.title + (nameSuffix ? ' · ' + nameSuffix : ''),
   option:   propOpts,
   price:    price,
   quantity: _qty,
   amount:   price * _qty,
   img:      img,
-  /* Вариант B (склад не нужен): синтетический non-store uid — Tilda НЕ пытается
-     бронировать издание (с ed.uid склад падает «не указана опция»). Позиция трактуется
-     как ручная (как «Пробный выкрас»). Детерминирован по изданию+палитре: тот же выбор
-     склеивается, разные — отдельные строки. Полный состав — в name/option. */
-  uid:      'nxm-' + String(ed && ed.uid ? ed.uid : _p.uid) + (_paletteColor && _paletteColor.code ? '-' + _paletteColor.code : ''),
+  uid:      String(ed && ed.uid ? ed.uid : _p.uid),
   sku:      (ed && ed.sku) || (_p.sku) || ''
 };
   console.log('nx: item to cart', JSON.stringify(item));
