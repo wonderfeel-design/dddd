@@ -778,11 +778,12 @@ html body .t-product__option-item_active .t-product__option-title {
 }
 #nx-prod-root {
     width: 100%;
+    min-height: 100vh;
     overflow: hidden;
     padding: 120px 0 80px;
     font-family: var(--nx-font);
     color: #222;
- /*  top: 55px; /Matches the height of your header */
+    background: #fff; /* гарантирует непрозрачность при любой структуре Tilda-страницы */
 }
 /* Мобильная: шапка + меню выше, поэтому контент товара заезжал под меню —
    отступ = высота фикс-шапки (--nx-header-h) + меню(~56) + запас(24) */
