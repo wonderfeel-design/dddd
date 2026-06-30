@@ -64,10 +64,15 @@ html #allrecords {
 }
 
 /* ── Унификация ширины контента — 1200px на всех страницах ──
-   Перекрывает Tilda-дефолт 960px. Полноширинные блоки уже имеют
-   max-width:100%!important с более высокой специфичностью (#recXXX …). */
+   Tilda выставляет ul.t-card__container и t-section__container в 960px по умолчанию.
+   Полноширинные блоки уже имеют max-width:100%!important с привязкой к #recXXX. */
 .t-section__container {
     max-width: 1200px !important;
+}
+#allrecords ul.t-card__container {
+    max-width: 1200px !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
 }
 
 /* ================================================
