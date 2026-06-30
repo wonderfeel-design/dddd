@@ -4,21 +4,14 @@
 
 <style>
   .t-store__prod-snippet__container { display: none !important; }
-  /* На страницах /tproduct/ скрываем Tilda-реки до рендера нашего блока.
-     :not(:first-child) — первый рек (шапка) остаётся видимым. */
-  html.nx-tp #allrecords > [id^="rec"]:not(#nx-prod-root):not(:first-child) {
+  /* На страницах /tproduct/ скрываем все Tilda-реки до рендера нашего блока */
+  html.nx-tp #allrecords > [id^="rec"]:not(#nx-prod-root) {
     opacity: 0 !important;
     pointer-events: none !important;
   }
 </style>
 
-<script>
-if (location.pathname.indexOf('/tproduct/') !== -1) {
-  document.documentElement.classList.add('nx-tp');
-  /* Страховка: если товар не загрузится — шапка не пропадёт дольше 1.5 сек */
-  setTimeout(function() { document.documentElement.classList.remove('nx-tp'); }, 1500);
-}
-</script>
+<script>if (location.pathname.indexOf('/tproduct/') !== -1) { document.documentElement.classList.add('nx-tp'); }</script>
 
 <script>
 /* ══ Скрытие ошибки заказа склада ══
@@ -367,8 +360,7 @@ if (location.pathname.indexOf('/tproduct/') !== -1) {
     }).join('');
     return '<div class="nx-p-opt-lbl">Цвет:</div>' +
       '<div class="nx-p-color-circles">' + swatches +
-      '<a href="/palitra" class="nx-p-palette-btn" id="nx-palette-btn">Палитра цветов</a></div>' +
-      '<div id="nx-coat-warn" class="nx-coat-warn" style="display:none">Для выбора цвета смените тип покрытия</div>';
+      '<a href="/palitra" class="nx-p-palette-btn" id="nx-palette-btn">Палитра цветов</a></div>';
   }
 
   function renderSelects(properties, editions) {
@@ -530,55 +522,36 @@ var item = {
   sku:      (ed && ed.sku) || (_p.sku) || ''
 };
   console.log('nx: item to cart', JSON.stringify(item));
-
-  /* Корзина Tilda инициализируется асинхронно — tcart__addProduct может
-     существовать до того, как window.tcart.products готов. Ждём готовности. */
-  function doAdd(retries) {
-    var cartReady = window.tcart && Array.isArray(window.tcart.products);
-    if (!cartReady && retries < 10) {
-      setTimeout(function () { doAdd(retries + 1); }, 200);
-      return;
+  var added = false;
+  try {
+    if (typeof tcart__addProduct === 'function') {
+      tcart__addProduct(item); added = true;
+    } else if (window.tcart && window.tcart.products) {
+      window.tcart.products.push(item);
+      if (typeof tcart__saveLocalObj === 'function') tcart__saveLocalObj();
+      added = true;
     }
+  } catch (e) { console.error('nx: addToCart error', e); }
 
-    var added = false;
-    try {
-      if (typeof tcart__addProduct === 'function' && cartReady) {
-        tcart__addProduct(item); added = true;
-      } else if (cartReady) {
+  /* Страховка: Tilda иногда «тихо» отбрасывает позицию при синхронизации со складом
+     (издание не сматчилось / нет в наличии), и второй товар не попадает в корзину.
+     Если после addProduct позиции с этим uid в корзине нет — добавляем вручную. */
+  try {
+    if (added && window.tcart && window.tcart.products) {
+      var inCart = window.tcart.products.some(function (p) {
+        return String(p.uid) === item.uid && p.option === item.option;
+      });
+      if (!inCart) {
         window.tcart.products.push(item);
         if (typeof tcart__saveLocalObj === 'function') tcart__saveLocalObj();
-        added = true;
+        if (typeof tcart__reDrawCartIcon === 'function') tcart__reDrawCartIcon();
+        if (typeof tcart__reDrawProducts === 'function') tcart__reDrawProducts();
+        console.log('nx: re-added dropped item', item.uid);
       }
-    } catch (e) {
-      console.error('nx: addToCart error', e);
-      /* Fallback: прямой пуш если tcart__addProduct упал */
-      try {
-        if (cartReady) {
-          window.tcart.products.push(item);
-          if (typeof tcart__saveLocalObj === 'function') tcart__saveLocalObj();
-          added = true;
-        }
-      } catch (e2) {}
     }
+  } catch (e) { console.error('nx: re-add error', e); }
 
-    /* Страховка: Tilda иногда тихо отбрасывает позицию. Если uid не в корзине — добавляем вручную. */
-    try {
-      if (added && cartReady) {
-        var inCart = window.tcart.products.some(function (p) {
-          return String(p.uid) === item.uid && p.option === item.option;
-        });
-        if (!inCart) {
-          window.tcart.products.push(item);
-          if (typeof tcart__saveLocalObj === 'function') tcart__saveLocalObj();
-          if (typeof tcart__reDrawCartIcon === 'function') tcart__reDrawCartIcon();
-          if (typeof tcart__reDrawProducts === 'function') tcart__reDrawProducts();
-        }
-      }
-    } catch (e) {}
-
-    if (added) showToast('Добавлено в корзину: ' + _p.title);
-  }
-  doAdd(0);
+  if (added) showToast('Добавлено в корзину: ' + _p.title);
 }
 
   function showPaletteTooltip(btn) {
@@ -680,37 +653,6 @@ if (firstEd && firstEd['Покрытие'] === 'Без покрытия') {
 
     var root = ensureProdRoot();
     root.innerHTML = html;
-
-    /* Мобильный bottom-sheet: превью выбранного цвета */
-    (function () {
-      if (document.getElementById('nx-color-preview')) return;
-      var m = document.createElement('div');
-      m.id = 'nx-color-preview';
-      m.innerHTML =
-        '<div class="nx-cp-sheet">' +
-          '<div class="nx-cp-header">' +
-            '<span class="nx-cp-title">Выбранный цвет</span>' +
-            '<button class="nx-cp-close" id="nx-cp-close">×</button>' +
-          '</div>' +
-          '<div class="nx-cp-img-wrap">' +
-            '<img id="nx-cp-img" src="" alt="" style="display:none">' +
-            '<div id="nx-cp-hex" class="nx-cp-hex" style="display:none"></div>' +
-          '</div>' +
-          '<div class="nx-cp-meta">' +
-            '<div class="nx-cp-code" id="nx-cp-code"></div>' +
-            '<div class="nx-cp-coating" id="nx-cp-coating"></div>' +
-          '</div>' +
-          '<div class="nx-cp-hint" id="nx-cp-hint" style="display:none">' +
-            '⚠ Выберите тип покрытия перед добавлением в корзину' +
-          '</div>' +
-          '<button class="nx-p-btn nx-cp-ok" id="nx-cp-ok">Готово</button>' +
-        '</div>';
-      document.body.appendChild(m);
-      function closePreview() { m.classList.remove('nx-cp--open'); }
-      document.getElementById('nx-cp-close').addEventListener('click', closePreview);
-      document.getElementById('nx-cp-ok').addEventListener('click', closePreview);
-      m.addEventListener('click', function (e) { if (e.target === m) closePreview(); });
-    }());
 
     /* Скрыть нативный Tilda-блок (и его rec), не трогая rec2362047083 (популярные) и наш root */
     var SNIPPET_SELS2 = [
@@ -851,16 +793,13 @@ if (firstEd && firstEd['Покрытие'] === 'Без покрытия') {
     var noCovering = edCoating ? !!_noColorCoatings[edCoating] : false;
 
     var palBtn2 = document.getElementById('nx-palette-btn');
-    var coatWarn = document.getElementById('nx-coat-warn');
     if (noCovering) {
       colorsEl.querySelectorAll('.nx-p-color-btn').forEach(function (b) {
         b.style.opacity = '0.3'; b.style.pointerEvents = 'none';
       });
       if (palBtn2) palBtn2.dataset.nxLocked = '1';
-      if (coatWarn) coatWarn.style.display = 'block';
       return;
     }
-    if (coatWarn) coatWarn.style.display = 'none';
 
     colorsEl.style.opacity = '';
     colorsEl.style.pointerEvents = '';
@@ -984,31 +923,6 @@ if (matchedEd && matchedEd['Покрытие']) {
         };
         paintColorSwatch(sc, { keepPhoto: true });
         showColorTag(sc, { clearable: false });
-      }
-
-      /* На мобиле открыть bottom-sheet с превью цвета */
-      if (matchedEd && window.innerWidth < 768) {
-        var modal = document.getElementById('nx-color-preview');
-        if (modal) {
-          var cpImg     = document.getElementById('nx-cp-img');
-          var cpHex     = document.getElementById('nx-cp-hex');
-          var cpCode    = document.getElementById('nx-cp-code');
-          var cpCoating = document.getElementById('nx-cp-coating');
-          var cpHint    = document.getElementById('nx-cp-hint');
-          if (matchedEd.img) {
-            cpImg.src = matchedEd.img; cpImg.style.display = 'block';
-            cpHex.style.display = 'none';
-          } else if (getColorMap()[btn.dataset.color]) {
-            cpHex.style.background = getColorMap()[btn.dataset.color];
-            cpHex.style.display = 'block'; cpImg.style.display = 'none';
-          } else {
-            cpImg.style.display = 'none'; cpHex.style.display = 'none';
-          }
-          cpCode.textContent    = btn.dataset.color || '';
-          cpCoating.textContent = matchedEd['Покрытие'] ? 'Покрытие: ' + matchedEd['Покрытие'] : '';
-          cpHint.style.display  = (_selected['Тип покрытия'] ? 'none' : 'block');
-          modal.classList.add('nx-cp--open');
-        }
       }
     });
 
