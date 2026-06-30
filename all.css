@@ -208,12 +208,13 @@ html body .t-btnflex.t-btnflex_type_button.t-store__card__btn {
     font-size: 12px !important;
     font-weight: 700 !important;
     text-transform: uppercase !important;
-    letter-spacing: 0.5px !important;
-    padding: 10px 16px !important;
+    letter-spacing: 0 !important;
+    padding: 10px 10px !important;
+    white-space: nowrap !important;
     transition: background-color .2s !important;
     display: inline-flex !important;
     align-items: center !important;
-    gap: 7px !important;
+    gap: 5px !important;
 }
 html body .t-btnflex.t-btnflex_type_button.t-catalog__card__btn:hover,
 html body .t-btnflex.t-btnflex_type_button.t-store__card__btn:hover {
@@ -226,8 +227,8 @@ html body .t-btnflex.t-btnflex_type_button.t-store__card__btn::before {
     content: '';
     display: inline-block;
     flex-shrink: 0;
-    width: 16px;
-    height: 16px;
+    width: 14px;
+    height: 14px;
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='9' cy='21' r='1'/%3E%3Ccircle cx='20' cy='21' r='1'/%3E%3Cpath d='M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6'/%3E%3C/svg%3E");
     background-repeat: no-repeat;
     background-size: contain;
@@ -454,6 +455,22 @@ html body .t-product__option-item_active .t-product__option-title {
 #rec2362172923 .t-catalog__parts-tree-item_hidden {
     display: block !important;
 }
+
+/* Заголовок «Раздел» над нативным сайдбаром категорий */
+#parts-sidebar-id-2362174763::before {
+    content: 'Раздел';
+    display: block;
+    font-family: var(--nx-font);
+    font-size: 13px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    color: var(--nx-text);
+    margin-bottom: 12px;
+}
+
+/* Скрыть фильтр-дубль дерева разделов (дублирует нативный сайдбар «Раздел») */
+.t-catalog__filter__item:has(.js-catalog-filter-tree-container) { display: none !important; }
 
 /* Каталог — отступы, сетка, сайдбар (работает при любом rec-id) */
 #allrecords .t-catalog__breadcrumbs { padding-left: var(--nx-grid-padding) !important; }

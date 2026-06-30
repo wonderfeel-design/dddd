@@ -4,14 +4,20 @@
 
 <style>
   .t-store__prod-snippet__container { display: none !important; }
-  /* На страницах /tproduct/ скрываем все Tilda-реки до рендера нашего блока */
-  html.nx-tp #allrecords > [id^="rec"]:not(#nx-prod-root) {
+  /* На страницах /tproduct/ скрываем Tilda-реки (кроме шапки и нашего блока) до рендера */
+  html.nx-tp #allrecords > [id^="rec"]:not(#nx-prod-root):not(:first-child) {
     opacity: 0 !important;
     pointer-events: none !important;
   }
 </style>
 
-<script>if (location.pathname.indexOf('/tproduct/') !== -1) { document.documentElement.classList.add('nx-tp'); }</script>
+<script>
+if (location.pathname.indexOf('/tproduct/') !== -1) {
+  document.documentElement.classList.add('nx-tp');
+  /* Safety: reveal all recs after 3 s regardless of product load outcome */
+  setTimeout(function () { document.documentElement.classList.remove('nx-tp'); }, 3000);
+}
+</script>
 
 <script>
 /* ══ Скрытие ошибки заказа склада ══
@@ -511,9 +517,24 @@ if (ed) {
 }
 var propOpts = propParts.join(', ');
 
+/* Structured options array — Tilda store booking format.
+   Tells the warehouse which edition variant to reserve. */
+var bookingOptions = [];
+if (ed) {
+  var optDefs = (_p && _p.json_options) || [];
+  if (typeof optDefs === 'string') { try { optDefs = JSON.parse(optDefs); } catch (e) { optDefs = []; } }
+  var optKeys = (optDefs && optDefs.length) ? optDefs.map(function (o) { return o && o.title; }) : ['Цвет', 'Покрытие'];
+  optKeys.forEach(function (k) {
+    if (k && ed[k] !== undefined && ed[k] !== '' && String(ed[k]) !== 'undefined') {
+      bookingOptions.push({ option: k, variant: String(ed[k]) });
+    }
+  });
+}
+
 var item = {
   name:     _p.title + (nameSuffix ? ' · ' + nameSuffix : ''),
   option:   propOpts,
+  options:  bookingOptions,
   price:    price,
   quantity: _qty,
   amount:   price * _qty,
@@ -523,35 +544,38 @@ var item = {
 };
   console.log('nx: item to cart', JSON.stringify(item));
   var added = false;
-  try {
-    if (typeof tcart__addProduct === 'function') {
-      tcart__addProduct(item); added = true;
-    } else if (window.tcart && window.tcart.products) {
-      window.tcart.products.push(item);
-      if (typeof tcart__saveLocalObj === 'function') tcart__saveLocalObj();
-      added = true;
-    }
-  } catch (e) { console.error('nx: addToCart error', e); }
-
-  /* Страховка: Tilda иногда «тихо» отбрасывает позицию при синхронизации со складом
-     (издание не сматчилось / нет в наличии), и второй товар не попадает в корзину.
-     Если после addProduct позиции с этим uid в корзине нет — добавляем вручную. */
-  try {
-    if (added && window.tcart && window.tcart.products) {
-      var inCart = window.tcart.products.some(function (p) {
-        return String(p.uid) === item.uid && p.option === item.option;
-      });
-      if (!inCart) {
+  function doAdd(retries) {
+    try {
+      if (typeof tcart__addProduct === 'function') {
+        tcart__addProduct(item);
+      } else if (window.tcart && window.tcart.products) {
         window.tcart.products.push(item);
         if (typeof tcart__saveLocalObj === 'function') tcart__saveLocalObj();
-        if (typeof tcart__reDrawCartIcon === 'function') tcart__reDrawCartIcon();
-        if (typeof tcart__reDrawProducts === 'function') tcart__reDrawProducts();
-        console.log('nx: re-added dropped item', item.uid);
+      } else {
+        throw new Error('tcart not ready');
       }
+      /* Success path: re-add fallback + toast */
+      try {
+        if (window.tcart && window.tcart.products) {
+          var inCart = window.tcart.products.some(function (p) {
+            return String(p.uid) === item.uid && p.option === item.option;
+          });
+          if (!inCart) {
+            window.tcart.products.push(item);
+            if (typeof tcart__saveLocalObj === 'function') tcart__saveLocalObj();
+            if (typeof tcart__reDrawCartIcon === 'function') tcart__reDrawCartIcon();
+            if (typeof tcart__reDrawProducts === 'function') tcart__reDrawProducts();
+            console.log('nx: re-added dropped item', item.uid);
+          }
+        }
+      } catch (e2) { console.error('nx: re-add error', e2); }
+      showToast('Добавлено в корзину: ' + _p.title);
+    } catch (e) {
+      if (retries > 0) { setTimeout(function () { doAdd(retries - 1); }, 300); return; }
+      console.error('nx: addToCart error', e);
     }
-  } catch (e) { console.error('nx: re-add error', e); }
-
-  if (added) showToast('Добавлено в корзину: ' + _p.title);
+  }
+  doAdd(5);
 }
 
   function showPaletteTooltip(btn) {
