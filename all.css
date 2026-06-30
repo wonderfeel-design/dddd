@@ -63,16 +63,19 @@ html #allrecords {
     background: transparent !important;
 }
 
-/* ── Унификация ширины контента — 1200px на всех страницах ──
-   Tilda выставляет ul.t-card__container и t-section__container в 960px по умолчанию.
-   Полноширинные блоки уже имеют max-width:100%!important с привязкой к #recXXX. */
+/* ── Унификация ширины контента — 1200px, выровнено по центру ──
+   Tilda выставляет контейнеры блоков в 960px. Полноширинные блоки
+   переопределяют это через #recXXX max-width:100%!important. */
 .t-section__container {
     max-width: 1200px !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
 }
-#allrecords ul.t-card__container,
 #allrecords ul[class*="__container"] {
     max-width: 1200px !important;
     width: 100% !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
     box-sizing: border-box !important;
 }
 
@@ -444,60 +447,6 @@ html body .t-product__option-item_active .t-product__option-title {
     padding-bottom: 45px !important;
 }
 
-#rec2362174763 .t-catalog__breadcrumbs { padding-left: var(--nx-grid-padding) !important; }
-/* Заголовок каталога «Все товары» */
-#rec2362174763 .t-section__container {
-    padding-left: var(--nx-grid-padding) !important;
-    padding-right: var(--nx-grid-padding) !important;
-    box-sizing: border-box !important;
-    max-width: 100% !important;
-    width: 100% !important;
-}
-
-
-/* Табы категорий */
-#rec2362174763 .t-catalog-parts-above__container {
-    padding-left: var(--nx-grid-padding) !important;
-    padding-right: var(--nx-grid-padding) !important;
-    box-sizing: border-box !important;
-}
-
-/* Строка поиска и сортировки */
-#rec2362174763 .t-catalog__filter__search-and-sort {
-    padding-left: var(--nx-grid-padding) !important;
-    padding-right: var(--nx-grid-padding) !important;
-    box-sizing: border-box !important;
-}
-
-/* Контейнер sidebar + карточки */
-#rec2362174763 .t-catalog__cont-w-filter {
-    padding-left: 0 !important;
-    padding-right: 0 !important;
-    box-sizing: border-box !important;
-}
-
-#rec2362174763 .t-catalog__cont-wrapper {
-    padding-left: var(--nx-grid-padding) !important;
-    padding-right: var(--nx-grid-padding) !important;
-    box-sizing: border-box !important;
-    width: 100% !important;
-}
-
-/* Сайдбар */
-#rec2362174763 .t-catalog__sidebar {
-    width: 260px !important;
-    min-width: 260px !important;
-    flex-shrink: 0 !important;
-}
-
-/* Список карточек */
-#rec2362174763 .t-catalog__card-list {
-    padding: 0 !important;
-    gap: 20px !important;
-    column-gap: 20px !important;
-    align-items: flex-start;
-}
-
 /* Каталог: не прятать верхние разделы при переходе в глубокие подразделы */
 #rec2362174763 .t-catalog__parts-tree-item,
 #rec2362172923 .t-catalog__parts-tree-item,
@@ -506,16 +455,16 @@ html body .t-product__option-item_active .t-product__option-title {
     display: block !important;
 }
 
-/* 3 колонки */
-#rec2362174763 .t-catalog__stretch-col {
-    width: calc(33.333% - 14px) !important;
-    max-width: calc(33.333% - 14px) !important;
-    min-width: 0 !important;
-    flex: 0 0 calc(33.333% - 14px) !important;
-}
-
-/* Каталог: универсальное применение стилей (если rec-id в Tilda изменится) */
+/* Каталог — отступы, сетка, сайдбар (работает при любом rec-id) */
 #allrecords .t-catalog__breadcrumbs { padding-left: var(--nx-grid-padding) !important; }
+#allrecords .t-section__container:has(.t-catalog__cont-w-filter) {
+    padding-left: var(--nx-grid-padding) !important;
+    padding-right: var(--nx-grid-padding) !important;
+    box-sizing: border-box !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    margin: 0 !important;
+}
 #allrecords .t-catalog-parts-above__container,
 #allrecords .t-catalog__filter__search-and-sort {
     padding-left: var(--nx-grid-padding) !important;
