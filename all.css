@@ -494,13 +494,14 @@ html body .t-product__option-item_active .t-product__option-title {
     column-gap: 20px !important;
     align-items: flex-start;
 }
-/* Каталог: 3 колонки; палитра: 4 колонки (ниже) */
-#rec2362174763 .t-catalog__stretch-col {
+/* Все каталоги: 3 колонки; палитра переопределяет на 4 (ниже) */
+#allrecords .t-catalog__stretch-col {
     width: calc(33.333% - 14px) !important;
     max-width: calc(33.333% - 14px) !important;
     min-width: 0 !important;
     flex: 0 0 calc(33.333% - 14px) !important;
 }
+/* Палитра: 4 колонки (одинаковая специфичность → побеждает т.к. стоит позже) */
 #rec2362172923 .t-catalog__stretch-col {
     width: calc(25% - 15px) !important;
     max-width: calc(25% - 15px) !important;

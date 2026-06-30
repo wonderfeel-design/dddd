@@ -4,14 +4,21 @@
 
 <style>
   .t-store__prod-snippet__container { display: none !important; }
-  /* На страницах /tproduct/ скрываем все Tilda-реки до рендера нашего блока */
-  html.nx-tp #allrecords > [id^="rec"]:not(#nx-prod-root) {
+  /* На страницах /tproduct/ скрываем Tilda-реки до рендера нашего блока.
+     :not(:first-child) — первый рек (шапка) остаётся видимым. */
+  html.nx-tp #allrecords > [id^="rec"]:not(#nx-prod-root):not(:first-child) {
     opacity: 0 !important;
     pointer-events: none !important;
   }
 </style>
 
-<script>if (location.pathname.indexOf('/tproduct/') !== -1) { document.documentElement.classList.add('nx-tp'); }</script>
+<script>
+if (location.pathname.indexOf('/tproduct/') !== -1) {
+  document.documentElement.classList.add('nx-tp');
+  /* Страховка: если товар не загрузится — шапка не пропадёт дольше 1.5 сек */
+  setTimeout(function() { document.documentElement.classList.remove('nx-tp'); }, 1500);
+}
+</script>
 
 <script>
 /* ══ Скрытие ошибки заказа склада ══
