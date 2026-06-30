@@ -4,8 +4,12 @@
 
 <style>
   .t-store__prod-snippet__container { display: none !important; }
-  /* На страницах /tproduct/ скрываем Tilda-реки (кроме шапки и нашего блока) до рендера */
-  html.nx-tp #allrecords > [id^="rec"]:not(#nx-prod-root):not(:first-child) {
+  /* На страницах /tproduct/ скрываем Tilda-реки (кроме шапки, футера и нашего блока) до рендера.
+     Раньше использовался позиционный :not(:first-child) — ломался, если шапка
+     не оказывалась первым ребёнком #allrecords (шапка/футер пропадали целиком,
+     т.к. шапка position:fixed и без видимого "провала" в layout). Теперь исключаем
+     явно: рек с .nx-menu (шапка) и рек футера, независимо от их позиции в DOM. */
+  html.nx-tp #allrecords > [id^="rec"]:not(#nx-prod-root):not(#rec2362175613):not(:has(.nx-menu)) {
     opacity: 0 !important;
     pointer-events: none !important;
   }
@@ -467,6 +471,15 @@ if (location.pathname.indexOf('/tproduct/') !== -1) {
       '</div></div>';
   }
 
+  function popularCardBadge(title) {
+    if (!title) return '';
+    return /вагонк/i.test(title)   ? 'Вагонка'
+         : /блок.хаус/i.test(title) ? 'Блок-хаус'
+         : /имитац/i.test(title)    ? 'Имитация бруса'
+         : /планк/i.test(title)     ? 'Планкен'
+         : /термо/i.test(title)     ? 'Термодерево' : '';
+  }
+
   function popularCardImg(prod) {
     var gallery = prod.gallery;
     if (typeof gallery === 'string') { try { gallery = JSON.parse(gallery); } catch (e) { gallery = []; } }
@@ -498,30 +511,58 @@ if (location.pathname.indexOf('/tproduct/') !== -1) {
   }
 
   function renderPopularGrid() {
-    var items = pickPopular(_p.uid, 4);
+    var items = pickPopular(_p.uid, 8);
     if (!items.length) return '';
     var cards = items.map(function (prod) {
+      var ed0 = (prod.editions || [])[0] || {};
       var price = parsePrice(prod.price);
       var priceOld = parsePrice(prod.priceold);
+      var priceSqm = parsePrice(ed0['Цена за кв метр']);
       var img = popularCardImg(prod);
       var size = popularCardSize(prod);
-      var discHtml = '';
+      var badge = popularCardBadge(prod.title);
+      var oldRowHtml = '';
       if (priceOld > price) {
         var pct = Math.round((1 - price / priceOld) * 100);
-        discHtml = '<span class="nx-pop2__old">' + fmt(priceOld) + ' ₽</span><span class="nx-pop2__disc">-' + pct + '%</span>';
+        oldRowHtml = '<div class="nx-price-old-row"><span class="nx-price-extra__old">' + fmt(priceOld) + ' ₽</span><span class="nx-price-extra__badge">-' + pct + '%</span></div>';
       }
-      return '<a class="nx-pop2" href="/tproduct/' + prod.uid + '">' +
-        '<div class="nx-pop2__img" style="background-image:url(' + img + ')"></div>' +
+      return '<div class="nx-pop2">' +
+        '<a class="nx-pop2__media" href="/tproduct/' + prod.uid + '">' +
+          '<div class="nx-pop2__img" style="background-image:url(' + img + ')">' +
+            (badge ? '<div class="nx-cat-badge">' + badge + '</div>' : '') +
+          '</div>' +
+        '</a>' +
         '<div class="nx-pop2__body">' +
-          '<div class="nx-pop2__title">' + prod.title + '</div>' +
+          '<a class="nx-pop2__title" href="/tproduct/' + prod.uid + '">' + prod.title + '</a>' +
           (size ? '<div class="nx-pop2__size">' + size + '</div>' : '') +
-          '<div class="nx-pop2__price">' + fmt(price) + ' ₽' + discHtml + '</div>' +
-        '</div></a>';
+          '<div class="nx-price-block"><div class="nx-price-row">' +
+            '<div class="nx-price-col"><span class="nx-price-label">Цена за шт.:</span><span class="nx-price-val-main">' + fmt(price) + ' ₽</span></div>' +
+            (priceSqm ? '<div class="nx-price-col"><span class="nx-price-label">Цена за кв.м.:</span><span class="nx-price-val-main">' + fmt(priceSqm) + ' ₽</span></div>' : '') +
+          '</div>' + oldRowHtml + '</div>' +
+          '<div class="t-store__card__btns-wrapper">' +
+            '<button type="button" class="t-btnflex t-btnflex_type_button t-store__card__btn nx-pop2__buy" data-uid="' + prod.uid + '">Купить</button>' +
+            '<a href="/tproduct/' + prod.uid + '" class="t-btnflex t-btnflex_type_button2 t-store__card__btn">Подробнее</a>' +
+          '</div>' +
+          '<div class="nx-delivery-row">' +
+            '<div class="nx-delivery-item">Есть самовывоз сегодня</div>' +
+            '<div class="nx-delivery-item">Доставка сегодня или завтра</div>' +
+          '</div>' +
+        '</div>' +
+      '</div>';
     }).join('');
-    return '<div class="nx-p-pop"><div class="nx-p-pop__hdr">' +
-      '<div class="nx-p-pop__ttl">Популярные товары</div>' +
-      '<a href="/catalog" class="nx-p-pop__lnk">Перейти в каталог →</a>' +
-      '</div><div class="nx-p-pop__grid">' + cards + '</div></div>';
+    return '<div class="nx-p-pop">' +
+      '<div class="nx-popular-toprow">' +
+        '<div class="nx-p-pop__ttl">Популярные товары</div>' +
+        '<div class="nx-popular-right">' +
+          '<a href="/catalog" class="nx-catalog-link">Перейти в каталог</a>' +
+          '<div class="nx-popular-arrows">' +
+            '<button type="button" class="nx-arrow-btn nx-pop-prev">‹</button>' +
+            '<button type="button" class="nx-arrow-btn nx-pop-next">›</button>' +
+          '</div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="nx-pop2-grid" id="nx-pop-grid">' + cards + '</div>' +
+    '</div>';
   }
 
 function addToCart() {
@@ -691,11 +732,10 @@ if (firstEd && firstEd['Покрытие'] === 'Без покрытия') {
         '<nav class="nx-p-bc"><a href="/">Главная</a><span class="nx-p-bc__sep">›</span>' +
           '<a href="/catalog">Каталог</a><span class="nx-p-bc__sep">›</span>' +
           '<span class="nx-p-bc__cur">' + p.title + '</span></nav>' +
-        /* Мобайл: заголовок над галереей */
-        '<h1 class="nx-p-title nx-p-title--mob">' + p.title + '</h1>' +
+        /* Единый заголовок над обеими колонками (мобайл + десктоп) */
+        '<h1 class="nx-p-title">' + p.title + '</h1>' +
         '<div class="nx-p-layout">' +
           '<div class="nx-p-left">' +
-            '<h1 class="nx-p-title nx-p-title--dsk">' + p.title + '</h1>' +
             renderGallery(gallery) + renderChars(p.characteristics) + '</div>' +
           '<div class="nx-p-right">' +
             (p.descr ? '<div class="nx-p-descr">' + p.descr + '</div>' : '') +
@@ -752,7 +792,11 @@ if (firstEd && firstEd['Покрытие'] === 'Без покрытия') {
           if (el.style.display === 'none') return;
           el.style.cssText = 'display:none!important';
           var rec = el.closest('[id^="rec"]');
-          if (rec && rec.id !== 'nx-prod-root' && rec.id !== 'rec2362047083') {
+          /* Никогда не прячем рек целиком, если в нём шапка (.nx-menu) или это
+             рек футера (rec2362175613) — иначе сниппет-шаблон Tilda, случайно
+             оказавшийся внутри их река, утаскивает шапку/футер за собой навсегда. */
+          if (rec && rec.id !== 'nx-prod-root' && rec.id !== 'rec2362047083' &&
+              rec.id !== 'rec2362175613' && !rec.querySelector('.nx-menu')) {
             rec.style.cssText = 'display:none!important';
           }
         });
@@ -1105,6 +1149,46 @@ root.addEventListener('change', function (e) {
         _qty = Math.round(m / _boardLen); inpUnits.value = _qty;
       });
     }
+
+    /* Популярные товары — стрелки прокрутки */
+    root.addEventListener('click', function (e) {
+      var popGrid = document.getElementById('nx-pop-grid');
+      if (!popGrid) return;
+      if (e.target.closest('.nx-pop-prev')) {
+        var card = popGrid.querySelector('.nx-pop2');
+        popGrid.scrollBy({ left: -(card ? card.offsetWidth + 20 : 305), behavior: 'smooth' });
+      } else if (e.target.closest('.nx-pop-next')) {
+        var card = popGrid.querySelector('.nx-pop2');
+        popGrid.scrollBy({ left: card ? card.offsetWidth + 20 : 305, behavior: 'smooth' });
+      }
+    });
+
+    /* Популярные товары — кнопка «Купить» */
+    root.addEventListener('click', function (e) {
+      var btn = e.target.closest('.nx-pop2__buy');
+      if (!btn) return;
+      e.preventDefault();
+      var uid = btn.dataset.uid;
+      var prod = _allProducts.find(function (x) { return String(x.uid) === String(uid); });
+      if (!prod) return;
+      var ed0 = (prod.editions || [])[0] || {};
+      var img = popularCardImg(prod);
+      var item = {
+        name:     prod.title,
+        price:    parsePrice(ed0.price || prod.price),
+        quantity: 1,
+        amount:   parsePrice(ed0.price || prod.price),
+        img:      img,
+        uid:      String(ed0.uid || prod.uid),
+        option:   [(ed0['Цвет'] && ed0['Цвет'] !== 'без' ? 'Цвет: ' + ed0['Цвет'] : ''), (ed0['Покрытие'] ? 'Покрытие: ' + ed0['Покрытие'] : '')].filter(Boolean).join(', ')
+      };
+      try {
+        if (typeof tcart__addProduct === 'function') {
+          tcart__addProduct(item);
+          showToast('Добавлено в корзину: ' + prod.title);
+        }
+      } catch (ex) { console.error('nx: pop buy error', ex); }
+    });
 
     setTimeout(restoreColorFromPalette, 150);
   }
