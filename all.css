@@ -69,7 +69,8 @@ html #allrecords {
 .t-section__container {
     max-width: 1200px !important;
 }
-#allrecords ul.t-card__container {
+#allrecords ul.t-card__container,
+#allrecords ul[class*="__container"] {
     max-width: 1200px !important;
     width: 100% !important;
     box-sizing: border-box !important;
