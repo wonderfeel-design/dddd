@@ -1328,6 +1328,80 @@ html body .nx-megamenu-wrap { padding-left: 20px !important; }
 }
 .nx-color-tag__clear:hover { color: #e00; }
 
+/* ── Мобильный bottom-sheet «Превью цвета» ───────────────── */
+#nx-color-preview {
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 9998;
+    background: rgba(0,0,0,.5);
+    align-items: flex-end;
+}
+#nx-color-preview.nx-cp--open { display: flex; }
+
+.nx-cp-sheet {
+    background: #fff;
+    border-radius: 16px 16px 0 0;
+    width: 100%;
+    max-height: 88vh;
+    overflow-y: auto;
+    padding-bottom: 32px;
+    box-shadow: 0 -4px 24px rgba(0,0,0,.18);
+}
+.nx-cp-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px 12px;
+}
+.nx-cp-title {
+    font-family: var(--nx-font);
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--nx-text, #252525);
+}
+.nx-cp-close {
+    background: none; border: none;
+    font-size: 26px; color: #aaa;
+    cursor: pointer; padding: 0;
+    line-height: 1; width: 32px; height: 32px;
+    display: flex; align-items: center; justify-content: center;
+}
+.nx-cp-img-wrap {
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    overflow: hidden;
+    background: #f5f5f5;
+}
+.nx-cp-img-wrap img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.nx-cp-hex { width: 100%; height: 100%; }
+.nx-cp-meta { padding: 14px 20px 0; }
+.nx-cp-code {
+    font-family: var(--nx-font);
+    font-size: 20px; font-weight: 700;
+    color: var(--nx-text, #252525);
+    margin-bottom: 4px;
+}
+.nx-cp-coating {
+    font-family: var(--nx-font);
+    font-size: 14px; color: #666;
+}
+.nx-cp-hint {
+    margin: 12px 20px 0;
+    background: #FFF8E1;
+    color: #7A5C00;
+    border: 1px solid #FFD54F;
+    border-radius: 8px;
+    padding: 12px 16px;
+    font-family: var(--nx-font);
+    font-size: 14px;
+}
+.nx-cp-ok {
+    display: block;
+    margin: 16px 20px 0 !important;
+    width: calc(100% - 40px) !important;
+}
+
 /* Кнопка «Заказать пробный выкрас» */
 #nx-prod-root .nx-p-btn--outline {
     background: #fff;

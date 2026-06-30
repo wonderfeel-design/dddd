@@ -654,6 +654,37 @@ if (firstEd && firstEd['Покрытие'] === 'Без покрытия') {
     var root = ensureProdRoot();
     root.innerHTML = html;
 
+    /* Мобильный bottom-sheet: превью выбранного цвета */
+    (function () {
+      if (document.getElementById('nx-color-preview')) return;
+      var m = document.createElement('div');
+      m.id = 'nx-color-preview';
+      m.innerHTML =
+        '<div class="nx-cp-sheet">' +
+          '<div class="nx-cp-header">' +
+            '<span class="nx-cp-title">Выбранный цвет</span>' +
+            '<button class="nx-cp-close" id="nx-cp-close">×</button>' +
+          '</div>' +
+          '<div class="nx-cp-img-wrap">' +
+            '<img id="nx-cp-img" src="" alt="" style="display:none">' +
+            '<div id="nx-cp-hex" class="nx-cp-hex" style="display:none"></div>' +
+          '</div>' +
+          '<div class="nx-cp-meta">' +
+            '<div class="nx-cp-code" id="nx-cp-code"></div>' +
+            '<div class="nx-cp-coating" id="nx-cp-coating"></div>' +
+          '</div>' +
+          '<div class="nx-cp-hint" id="nx-cp-hint" style="display:none">' +
+            '⚠ Выберите тип покрытия перед добавлением в корзину' +
+          '</div>' +
+          '<button class="nx-p-btn nx-cp-ok" id="nx-cp-ok">Готово</button>' +
+        '</div>';
+      document.body.appendChild(m);
+      function closePreview() { m.classList.remove('nx-cp--open'); }
+      document.getElementById('nx-cp-close').addEventListener('click', closePreview);
+      document.getElementById('nx-cp-ok').addEventListener('click', closePreview);
+      m.addEventListener('click', function (e) { if (e.target === m) closePreview(); });
+    }());
+
     /* Скрыть нативный Tilda-блок (и его rec), не трогая rec2362047083 (популярные) и наш root */
     var SNIPPET_SELS2 = [
       '.t-store__prod-snippet__container', '.t-store__prod-snippet',
@@ -923,6 +954,31 @@ if (matchedEd && matchedEd['Покрытие']) {
         };
         paintColorSwatch(sc, { keepPhoto: true });
         showColorTag(sc, { clearable: false });
+      }
+
+      /* На мобиле открыть bottom-sheet с превью цвета */
+      if (matchedEd && window.innerWidth < 768) {
+        var modal = document.getElementById('nx-color-preview');
+        if (modal) {
+          var cpImg     = document.getElementById('nx-cp-img');
+          var cpHex     = document.getElementById('nx-cp-hex');
+          var cpCode    = document.getElementById('nx-cp-code');
+          var cpCoating = document.getElementById('nx-cp-coating');
+          var cpHint    = document.getElementById('nx-cp-hint');
+          if (matchedEd.img) {
+            cpImg.src = matchedEd.img; cpImg.style.display = 'block';
+            cpHex.style.display = 'none';
+          } else if (getColorMap()[btn.dataset.color]) {
+            cpHex.style.background = getColorMap()[btn.dataset.color];
+            cpHex.style.display = 'block'; cpImg.style.display = 'none';
+          } else {
+            cpImg.style.display = 'none'; cpHex.style.display = 'none';
+          }
+          cpCode.textContent    = btn.dataset.color || '';
+          cpCoating.textContent = matchedEd['Покрытие'] ? 'Покрытие: ' + matchedEd['Покрытие'] : '';
+          cpHint.style.display  = (_selected['Тип покрытия'] ? 'none' : 'block');
+          modal.classList.add('nx-cp--open');
+        }
       }
     });
 
