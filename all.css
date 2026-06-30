@@ -208,13 +208,12 @@ html body .t-btnflex.t-btnflex_type_button.t-store__card__btn {
     font-size: 12px !important;
     font-weight: 700 !important;
     text-transform: uppercase !important;
-    letter-spacing: 0 !important;
-    padding: 10px 10px !important;
-    white-space: nowrap !important;
+    letter-spacing: 0.5px !important;
+    padding: 10px 16px !important;
     transition: background-color .2s !important;
     display: inline-flex !important;
     align-items: center !important;
-    gap: 5px !important;
+    gap: 7px !important;
 }
 html body .t-btnflex.t-btnflex_type_button.t-catalog__card__btn:hover,
 html body .t-btnflex.t-btnflex_type_button.t-store__card__btn:hover {
@@ -227,8 +226,8 @@ html body .t-btnflex.t-btnflex_type_button.t-store__card__btn::before {
     content: '';
     display: inline-block;
     flex-shrink: 0;
-    width: 14px;
-    height: 14px;
+    width: 16px;
+    height: 16px;
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='9' cy='21' r='1'/%3E%3Ccircle cx='20' cy='21' r='1'/%3E%3Cpath d='M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6'/%3E%3C/svg%3E");
     background-repeat: no-repeat;
     background-size: contain;
@@ -494,14 +493,13 @@ html body .t-product__option-item_active .t-product__option-title {
     column-gap: 20px !important;
     align-items: flex-start;
 }
-/* Все каталоги: 3 колонки; палитра переопределяет на 4 (ниже) */
-#allrecords .t-catalog__stretch-col {
+/* Каталог: 3 колонки; палитра: 4 колонки (ниже) */
+#rec2362174763 .t-catalog__stretch-col {
     width: calc(33.333% - 14px) !important;
     max-width: calc(33.333% - 14px) !important;
     min-width: 0 !important;
     flex: 0 0 calc(33.333% - 14px) !important;
 }
-/* Палитра: 4 колонки (одинаковая специфичность → побеждает т.к. стоит позже) */
 #rec2362172923 .t-catalog__stretch-col {
     width: calc(25% - 15px) !important;
     max-width: calc(25% - 15px) !important;
@@ -1329,92 +1327,6 @@ html body .nx-megamenu-wrap { padding-left: 20px !important; }
     font-family: inherit;
 }
 .nx-color-tag__clear:hover { color: #e00; }
-
-/* Предупреждение «Смените покрытие» под свотчами */
-.nx-coat-warn {
-    margin-top: 8px;
-    padding: 10px 14px;
-    background: #FFF8E1;
-    color: #7A5C00;
-    border: 1px solid #FFD54F;
-    border-radius: 8px;
-    font-family: var(--nx-font);
-    font-size: 13px;
-}
-
-/* ── Мобильный bottom-sheet «Превью цвета» ───────────────── */
-#nx-color-preview {
-    display: none;
-    position: fixed;
-    inset: 0;
-    z-index: 9998;
-    background: rgba(0,0,0,.5);
-    align-items: flex-end;
-}
-#nx-color-preview.nx-cp--open { display: flex; }
-
-.nx-cp-sheet {
-    background: #fff;
-    border-radius: 16px 16px 0 0;
-    width: 100%;
-    max-height: 88vh;
-    overflow-y: auto;
-    padding-bottom: 32px;
-    box-shadow: 0 -4px 24px rgba(0,0,0,.18);
-}
-.nx-cp-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 16px 20px 12px;
-}
-.nx-cp-title {
-    font-family: var(--nx-font);
-    font-size: 16px;
-    font-weight: 700;
-    color: var(--nx-text, #252525);
-}
-.nx-cp-close {
-    background: none; border: none;
-    font-size: 26px; color: #aaa;
-    cursor: pointer; padding: 0;
-    line-height: 1; width: 32px; height: 32px;
-    display: flex; align-items: center; justify-content: center;
-}
-.nx-cp-img-wrap {
-    width: 100%;
-    aspect-ratio: 1 / 1;
-    overflow: hidden;
-    background: #f5f5f5;
-}
-.nx-cp-img-wrap img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.nx-cp-hex { width: 100%; height: 100%; }
-.nx-cp-meta { padding: 14px 20px 0; }
-.nx-cp-code {
-    font-family: var(--nx-font);
-    font-size: 20px; font-weight: 700;
-    color: var(--nx-text, #252525);
-    margin-bottom: 4px;
-}
-.nx-cp-coating {
-    font-family: var(--nx-font);
-    font-size: 14px; color: #666;
-}
-.nx-cp-hint {
-    margin: 12px 20px 0;
-    background: #FFF8E1;
-    color: #7A5C00;
-    border: 1px solid #FFD54F;
-    border-radius: 8px;
-    padding: 12px 16px;
-    font-family: var(--nx-font);
-    font-size: 14px;
-}
-.nx-cp-ok {
-    display: block;
-    margin: 16px 20px 0 !important;
-    width: calc(100% - 40px) !important;
-}
 
 /* Кнопка «Заказать пробный выкрас» */
 #nx-prod-root .nx-p-btn--outline {
