@@ -510,23 +510,25 @@ html body .t-product__option-item_active .t-product__option-title {
     column-gap: 20px !important;
     align-items: flex-start;
 }
-/* Каталог: 3 колонки; палитра: 6 колонок (2 из 12), гэп 12px */
+/* Палитра: убрать двойной отступ — centering уже на уровне section container */
+#rec2362172923 .t-catalog__cont-wrapper {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+}
+
+/* Каталог: 3 колонки; палитра: 4 колонки, гэп 20px */
 #rec2362174763 .t-catalog__stretch-col {
     width: calc(33.333% - 14px) !important;
     max-width: calc(33.333% - 14px) !important;
     min-width: 0 !important;
     flex: 0 0 calc(33.333% - 14px) !important;
 }
-#rec2362172923 .t-catalog__card-list {
-    gap: 12px !important;
-    column-gap: 12px !important;
-}
 #rec2362172923 .t-catalog__stretch-col {
-    /* 6 cols, gap 12px: 5 × 12px = 60px ÷ 6 = 10px deduction per col */
-    width: calc(16.666% - 10px) !important;
-    max-width: calc(16.666% - 10px) !important;
+    /* 4 cols, gap 20px: 3 × 20px = 60px ÷ 4 = 15px deduction per col */
+    width: calc(25% - 15px) !important;
+    max-width: calc(25% - 15px) !important;
     min-width: 0 !important;
-    flex: 0 0 calc(16.666% - 10px) !important;
+    flex: 0 0 calc(25% - 15px) !important;
 }
 
 /* Фильтры */
