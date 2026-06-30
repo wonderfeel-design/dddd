@@ -284,6 +284,8 @@ if (location.pathname.indexOf('/tproduct/') !== -1) {
     return map;
   }
 
+  var _allProducts = [];
+
   function loadProduct(uid) {
     return fetch('https://store.tildaapi.one/api/getproductslist/?storepartuid=' + STORE_UID + '&recid=' + CATALOG_REC)
       .then(function (r) { return r.text(); })
@@ -294,7 +296,8 @@ if (location.pathname.indexOf('/tproduct/') !== -1) {
         }
         var d;
         try { d = JSON.parse(txt); } catch (e) { console.warn('nx: store API non-JSON response'); return null; }
-        return (d.products || []).find(function (x) { return String(x.uid) === String(uid); }) || null;
+        _allProducts = d.products || [];
+        return _allProducts.find(function (x) { return String(x.uid) === String(uid); }) || null;
       });
   }
 
@@ -462,6 +465,63 @@ if (location.pathname.indexOf('/tproduct/') !== -1) {
     return '<div class="nx-p-chars"><div class="nx-p-chars-ttl">Характеристики</div><div class="nx-p-chars-list">' +
       chars.map(function (c) { return '<div class="nx-p-chars-item"><strong>' + c.title + ':</strong> ' + c.value + '</div>'; }).join('') +
       '</div></div>';
+  }
+
+  function popularCardImg(prod) {
+    var gallery = prod.gallery;
+    if (typeof gallery === 'string') { try { gallery = JSON.parse(gallery); } catch (e) { gallery = []; } }
+    if (gallery && gallery.length) {
+      var g0 = gallery[0];
+      return (g0 && g0.img) ? g0.img : g0;
+    }
+    return '';
+  }
+
+  function popularCardSize(prod) {
+    var ed = (prod.editions || [])[0];
+    if (ed && ed.pack_y && ed.pack_x) {
+      var y = parseFloat(ed.pack_y), x = parseFloat(ed.pack_x);
+      if (y && x) return y + '×' + (x >= 1000 ? (x / 1000) + ' м' : x + ' мм');
+    }
+    return '';
+  }
+
+  function pickPopular(currentUid, count) {
+    var pool = _allProducts.filter(function (x) {
+      return String(x.uid) !== String(currentUid) && x.title && parsePrice(x.price) > 0;
+    });
+    for (var i = pool.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var tmp = pool[i]; pool[i] = pool[j]; pool[j] = tmp;
+    }
+    return pool.slice(0, count);
+  }
+
+  function renderPopularGrid() {
+    var items = pickPopular(_p.uid, 4);
+    if (!items.length) return '';
+    var cards = items.map(function (prod) {
+      var price = parsePrice(prod.price);
+      var priceOld = parsePrice(prod.priceold);
+      var img = popularCardImg(prod);
+      var size = popularCardSize(prod);
+      var discHtml = '';
+      if (priceOld > price) {
+        var pct = Math.round((1 - price / priceOld) * 100);
+        discHtml = '<span class="nx-pop2__old">' + fmt(priceOld) + ' ₽</span><span class="nx-pop2__disc">-' + pct + '%</span>';
+      }
+      return '<a class="nx-pop2" href="/tproduct/' + prod.uid + '">' +
+        '<div class="nx-pop2__img" style="background-image:url(' + img + ')"></div>' +
+        '<div class="nx-pop2__body">' +
+          '<div class="nx-pop2__title">' + prod.title + '</div>' +
+          (size ? '<div class="nx-pop2__size">' + size + '</div>' : '') +
+          '<div class="nx-pop2__price">' + fmt(price) + ' ₽' + discHtml + '</div>' +
+        '</div></a>';
+    }).join('');
+    return '<div class="nx-p-pop"><div class="nx-p-pop__hdr">' +
+      '<div class="nx-p-pop__ttl">Популярные товары</div>' +
+      '<a href="/catalog" class="nx-p-pop__lnk">Перейти в каталог →</a>' +
+      '</div><div class="nx-p-pop__grid">' + cards + '</div></div>';
   }
 
 function addToCart() {
@@ -674,12 +734,14 @@ if (firstEd && firstEd['Покрытие'] === 'Без покрытия') {
             '<button id="nx-btn-sample" class="nx-p-btn nx-p-btn--outline">🖌 Заказать пробный выкрас</button>' +
           '</div>' +
         '</div>' +
+        (p.text ? '<div class="nx-p-fulltext">' + p.text + '</div>' : '') +
+        renderPopularGrid() +
       '</div>';
 
     var root = ensureProdRoot();
     root.innerHTML = html;
 
-    /* Скрыть нативный Tilda-блок (и его rec), не трогая rec2362047083 (популярные) и наш root */
+    /* Скрыть нативный Tilda-блок снипета (и его rec), не трогая наш root */
     var SNIPPET_SELS2 = [
       '.t-store__prod-snippet__container', '.t-store__prod-snippet',
       '.t-catalog__prod-snippet__container', '.t-catalog__prod-snippet'
@@ -717,7 +779,7 @@ if (firstEd && firstEd['Покрытие'] === 'Без покрытия') {
 
     attachEvents();
     updateColors();
-    injectPopularBlock();
+    hideNativePopularBlock();
     /* Снять CSS-скрытие Tilda-реков — наш контент уже отрендерен */
     document.documentElement.classList.remove('nx-tp');
   }
@@ -1047,27 +1109,17 @@ root.addEventListener('change', function (e) {
     setTimeout(restoreColorFromPalette, 150);
   }
 
-  function injectPopularBlock() {
-    var nxRoot = document.getElementById('nx-prod-root');
-    if (!nxRoot || !nxRoot.parentNode) return;
-
-    function activate(rec) {
-      var snippet = rec.querySelector('.t-store__prod-snippet__container');
-      if (snippet) snippet.style.cssText = 'display:none!important';
-      rec.style.cssText = '';
-      nxRoot.parentNode.insertBefore(rec, nxRoot.nextSibling);
-      setTimeout(function () {
-        if (typeof window._nxProcessCards === 'function') window._nxProcessCards();
-      }, 400);
-    }
-
+  /* Нативный Tilda-блок «Популярные товары» (rec2362047083) на странице товара
+     дублирует один и тот же товар — заменён собственной сеткой renderPopularGrid()
+     с реальными разными товарами. Прячем нативный блок, чтобы не было дублей. */
+  function hideNativePopularBlock() {
+    function hide(rec) { rec.style.cssText = 'display:none!important'; }
     var existing = document.getElementById('rec2362047083');
-    if (existing) { activate(existing); return; }
-
+    if (existing) { hide(existing); return; }
     var n = 0;
     var iv = setInterval(function () {
       var rec = document.getElementById('rec2362047083');
-      if (rec) { clearInterval(iv); activate(rec); return; }
+      if (rec) { clearInterval(iv); hide(rec); return; }
       if (++n > 50) clearInterval(iv);
     }, 100);
   }

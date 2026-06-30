@@ -1025,6 +1025,54 @@ html body .t-product__option-item_active .t-product__option-title {
 #nx-prod-root .nx-p-chars-item strong { font-weight: 700; color: #222; }
 
 
+/* Полное описание (Text) — свойства, таблица покрытий, применение, доставка */
+#nx-prod-root .nx-p-fulltext {
+    margin-top: 48px;
+    padding-top: 36px;
+    border-top: 1.5px solid #eee;
+    font-size: 14px;
+    line-height: 1.65;
+    color: #444;
+}
+#nx-prod-root .nx-p-fulltext h2,
+#nx-prod-root .nx-p-fulltext h3 {
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: .3px;
+    color: #111;
+    margin: 28px 0 14px;
+}
+#nx-prod-root .nx-p-fulltext h2:first-child,
+#nx-prod-root .nx-p-fulltext h3:first-child { margin-top: 0; }
+#nx-prod-root .nx-p-fulltext h2 { font-size: 20px; }
+#nx-prod-root .nx-p-fulltext h3 { font-size: 16px; }
+#nx-prod-root .nx-p-fulltext p { margin: 0 0 14px; }
+#nx-prod-root .nx-p-fulltext ul,
+#nx-prod-root .nx-p-fulltext ol { margin: 0 0 14px; padding-left: 22px; }
+#nx-prod-root .nx-p-fulltext li { margin-bottom: 6px; }
+#nx-prod-root .nx-p-fulltext strong { color: #222; font-weight: 700; }
+#nx-prod-root .nx-p-fulltext table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0 0 20px;
+    font-size: 13px;
+}
+#nx-prod-root .nx-p-fulltext th,
+#nx-prod-root .nx-p-fulltext td {
+    border: 1px solid var(--nx-border, #e5e5e5);
+    padding: 8px 12px;
+    text-align: left;
+}
+#nx-prod-root .nx-p-fulltext th {
+    background: #f7f7f7;
+    font-weight: 700;
+    color: #222;
+    text-transform: uppercase;
+    font-size: 11px;
+    letter-spacing: .4px;
+}
+#nx-prod-root .nx-p-fulltext a { color: var(--nx-green); }
+
 /* Популярные товары */
 #nx-prod-root .nx-p-pop { margin-top: 56px; }
 #nx-prod-root .nx-p-pop__hdr { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; flex-wrap: wrap; gap: 8px; }
