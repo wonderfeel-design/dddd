@@ -721,8 +721,9 @@ html body .t-product__option-item_active .t-product__option-title {
     align-items: stretch !important;
 }
 #rec2362047083 .t-store__card {
-    flex: 0 0 285px !important;
-    width: 285px !important;
+    flex: 0 0 280px !important;
+    width: 280px !important;
+    max-width: 280px !important;
     margin: 0 !important;
     display: flex !important;
     flex-direction: column !important;
