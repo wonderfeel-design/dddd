@@ -437,6 +437,21 @@ html body .t-product__option-item_active .t-product__option-title {
   box-shadow: 0 0 0 2.5px var(--nx-green) !important;
 }
 
+/* Обычные чекбоксы (не цвет) — фильтры каталога, панель справа, выбор палитры.
+   Активная/выбранная позиция — зелёный скруглённый квадрат. */
+#rec2362174763 .t-catalog__filter__checkbox input:checked + .t-catalog__filter__checkmark,
+#rec2362174763 .t-catalog__filter__checkbox input:checked ~ .t-catalog__filter__checkmark,
+#rec2362172923 .t-catalog__filter__checkbox input:checked + .t-catalog__filter__checkmark,
+#rec2362172923 .t-catalog__filter__checkbox input:checked ~ .t-catalog__filter__checkmark,
+#rec2362174763 .t-checkbox input:checked ~ .t-checkbox__indicator,
+#rec2362172923 .t-checkbox input:checked ~ .t-checkbox__indicator {
+  box-sizing: border-box !important;
+  width: 20px !important;
+  height: 20px !important;
+  background: #4C9E24 !important;
+  border-radius: 3px !important;
+}
+
 /* Ссылка на палитру */
 .nx-palette-link-wrap { padding: 8px 16px 16px; }
 .nx-palette-link {
