@@ -1049,6 +1049,11 @@ if (firstEd && firstEd['Покрытие'] === 'Без покрытия') {
     root.addEventListener('click', function (e) {
       var thumb = e.target.closest('.nx-p-thumb');
       if (!thumb) return;
+      /* A previously selected palette/swatch color hides #nx-mi behind a color
+         overlay and leaves _paletteColor set — without clearing it here, the
+         thumbnail's image src would update on a hidden <img> (looks like nothing
+         happened) and addToCart() would still add the stale color selection. */
+      if (_paletteColor) clearPaletteColor();
       root.querySelectorAll('.nx-p-thumb').forEach(function (t) { t.classList.remove('nx-p-thumb--active'); });
       thumb.classList.add('nx-p-thumb--active');
       var mi = document.getElementById('nx-mi');
