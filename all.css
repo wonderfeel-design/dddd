@@ -815,14 +815,14 @@ body > #nx-prod-root {
 #nx-prod-root .nx-p-left  { flex: 0 0 420px; max-width: 420px; }
 #nx-prod-root .nx-p-right { flex: 1; min-width: 0; width: 100% !important; }
 
-/* Галерея */
-#nx-prod-root .nx-p-gallery { display: flex; gap: 12px; align-items: stretch; }
+/* Галерея. Главное фото — фиксированный квадрат (ширина колонки 420px минус
+   миниатюры 78px минус gap 12px = 330px); миниатюры — фиксированная высота
+   в тот же квадрат с вертикальным скроллом, а не "растягивание по контенту". */
+#nx-prod-root .nx-p-gallery { display: flex; gap: 12px; align-items: flex-start; }
 #nx-prod-root .nx-p-thumbs  {
     display: flex; flex-direction: column; gap: 8px; flex: 0 0 78px;
     order: -1;               /* миниатюры — слева от главного фото */
-    /* Высота = высота главного фото (aspect-ratio 1/1 от ширины); без hard max-height
-       чтобы все миниатюры были видны без обрезки */
-    max-height: none;
+    height: 330px;
     overflow-y: auto;
     scrollbar-width: thin;
     scrollbar-color: #ddd transparent;
@@ -839,7 +839,7 @@ body > #nx-prod-root {
 }
 #nx-prod-root .nx-p-thumb img { width: 100%; height: 100%; object-fit: cover; }
 #nx-prod-root .nx-p-thumb--active { border-color: var(--nx-green); }
-#nx-prod-root .nx-p-mainimg { flex: 1; aspect-ratio: 1/1; border-radius: 8px; overflow: hidden; background: #f5f5f5; }
+#nx-prod-root .nx-p-mainimg { flex: 0 0 330px; width: 330px; height: 330px; border-radius: 8px; overflow: hidden; background: #f5f5f5; }
 #nx-prod-root .nx-p-mainimg img { width: 100%; height: 100%; object-fit: cover; transition: opacity .2s; }
 
 /* Текст */
@@ -1380,11 +1380,13 @@ html body .nx-megamenu-wrap { padding-left: 20px !important; }
        и слушаются order */
     #nx-prod-root .nx-p-left,
     #nx-prod-root .nx-p-gallery { display: contents !important; }
-    #nx-prod-root .nx-p-mainimg { order: 1; width: 100% !important; }
+    /* Ширина фото динамическая (100%) — квадрат держим через aspect-ratio,
+       а не фикс. высоту из десктопного правила. */
+    #nx-prod-root .nx-p-mainimg { order: 1; width: 100% !important; height: auto !important; aspect-ratio: 1 / 1 !important; }
     /* Миниатюры — горизонтальной лентой ПОД главным фото */
     #nx-prod-root .nx-p-thumbs {
         order: 2; flex-direction: row !important; flex: none !important;
-        max-height: none !important; overflow-y: visible !important;
+        height: auto !important; max-height: none !important; overflow-y: visible !important;
         overflow-x: auto !important;
     }
     #nx-prod-root .nx-p-right { order: 3; }
