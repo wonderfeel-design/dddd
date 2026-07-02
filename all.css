@@ -1103,23 +1103,20 @@ body > #nx-prod-root ~ *,
 #nx-prod-root .nx-p-pop .nx-popular-toprow { margin-bottom: 20px; }
 #nx-prod-root .nx-p-pop__ttl { font-size: 20px; font-weight: 800; text-transform: uppercase; letter-spacing: .5px; color: #111; }
 
-/* Горизонтально прокручиваемый ряд карточек (аналог .js-store-grid-cont на главной) */
+/* Сетка карточек — тот же размер и кол-во в ряд, что и в каталоге
+   (>960px 3 колонки, 641-960px 2, ≤640px 1), без горизонтального скролла. */
 #nx-prod-root .nx-pop2-grid {
     display: flex;
-    flex-wrap: nowrap;
-    gap: 20px;
-    overflow-x: auto;
-    overflow-y: visible;
-    scroll-behavior: smooth;
-    scrollbar-width: none;
+    flex-wrap: wrap;
+    gap: 12px;
     align-items: stretch;
 }
-#nx-prod-root .nx-pop2-grid::-webkit-scrollbar { display: none; }
+#nx-prod-root .nx-p-pop .nx-popular-arrows { display: none !important; }
 
-/* Карточка */
+/* Карточка — ширина как у .t-catalog__card в каталоге */
 #nx-prod-root .nx-pop2 {
-    flex: 0 0 285px;
-    width: 285px;
+    flex: 0 0 calc(33.333% - 8px);
+    width: calc(33.333% - 8px);
     background: #fff;
     border-radius: 8px;
     border: 1px solid var(--nx-border);
@@ -1173,15 +1170,12 @@ body > #nx-prod-root ~ *,
 /* Доставка — margin-top auto прижимает к низу */
 #nx-prod-root .nx-pop2__body .nx-delivery-row { margin-top: auto; padding-top: 10px; }
 
-@media (max-width: 1199px) {
-    #nx-prod-root .nx-pop2 { flex: 0 0 calc((100vw - 80px) / 3); width: calc((100vw - 80px) / 3); }
-}
 @media (max-width: 960px) {
-    #nx-prod-root .nx-pop2 { flex: 0 0 calc((100vw - 60px) / 2); width: calc((100vw - 60px) / 2); }
+    #nx-prod-root .nx-pop2 { flex: 0 0 calc(50% - 5px); width: calc(50% - 5px); }
+    #nx-prod-root .nx-pop2-grid { gap: 10px; }
 }
 @media (max-width: 640px) {
-    #nx-prod-root .nx-pop2 { flex: 0 0 calc(100vw - 52px); width: calc(100vw - 52px); }
-    #nx-prod-root .nx-p-pop .nx-popular-arrows { display: none !important; }
+    #nx-prod-root .nx-pop2 { flex: 0 0 100%; width: 100%; }
 }
 
 /* ================================================
