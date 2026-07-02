@@ -1314,13 +1314,17 @@ html body .nx-megamenu-wrap { padding-left: 20px !important; }
        встаёт РЯДОМ со списком карточек и выталкивает его за экран (left=414). */
     .js-catalog-grid-cont { flex-direction: column !important; }
 
-    /* 2 карточки в ряд (641–960px): sidebar ушёл наверх, карточки — 50% */
-    .t-catalog__card-list {
+    /* 2 карточки в ряд (641–960px): sidebar ушёл наверх, карточки — 50%.
+       Scoped to catalog/palitra recs only — an unscoped rule here previously
+       hit every .t-catalog__card-list on the site, including unrelated blocks. */
+    #rec2362174763 .t-catalog__card-list,
+    #rec2362172923 .t-catalog__card-list {
         display: flex !important; flex-direction: row !important;
         flex-wrap: wrap !important; align-items: stretch !important;
         width: 100% !important; padding: 0 !important; gap: 10px !important;
     }
-    .t-catalog__card {
+    #rec2362174763 .t-catalog__card,
+    #rec2362172923 .t-catalog__card {
         width: calc(50% - 5px) !important;
         max-width: calc(50% - 5px) !important;
         flex: 0 0 calc(50% - 5px) !important;
@@ -1329,13 +1333,16 @@ html body .nx-megamenu-wrap { padding-left: 20px !important; }
     }
 }
 
-/* > 960px: 3 карточки в ряд (переопределяем нативный Tilda-грид на 4) */
+/* > 960px: 3 карточки в ряд (переопределяем нативный Tilda-грид на 4).
+   Scoped to catalog/palitra recs only (see note above). */
 @media (min-width: 961px) {
-    .t-catalog__card-list {
+    #rec2362174763 .t-catalog__card-list,
+    #rec2362172923 .t-catalog__card-list {
         display: flex !important; flex-wrap: wrap !important;
         gap: 12px !important;
     }
-    .t-catalog__card {
+    #rec2362174763 .t-catalog__card,
+    #rec2362172923 .t-catalog__card {
         width: calc(33.333% - 8px) !important;
         max-width: calc(33.333% - 8px) !important;
         flex: 0 0 calc(33.333% - 8px) !important;
