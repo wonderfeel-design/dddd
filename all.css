@@ -799,7 +799,12 @@ body > #nx-prod-root {
 /* Tilda's own popups (cart, mobile menu, search, wishlist) are appended to
    <body> too and must render ABOVE the Structure-B overlay above, or the
    overlay's z-index:99999 hides them completely — clicking the cart icon
-   would look like it does nothing. */
+   opens the popup (and correctly locks background scroll) but it's
+   invisible behind our overlay, so it just looks like nothing happens.
+   Name-agnostic version: #nx-prod-root is always body's FIRST child on
+   these pages, so anything Tilda appends to body AFTER it (any popup,
+   whatever it's called) is a later sibling — force those above us. */
+body > #nx-prod-root ~ *,
 [class*="cartwin"], [class*="t-popup"],
 .t-menu__mobile-popup, .t-menusub__menu-popup {
     z-index: 2147483000 !important;
