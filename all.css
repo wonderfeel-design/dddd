@@ -1103,15 +1103,20 @@ body > #nx-prod-root ~ *,
 #nx-prod-root .nx-p-pop .nx-popular-toprow { margin-bottom: 20px; }
 #nx-prod-root .nx-p-pop__ttl { font-size: 20px; font-weight: 800; text-transform: uppercase; letter-spacing: .5px; color: #111; }
 
-/* Сетка карточек — тот же размер и кол-во в ряд, что и в каталоге
-   (>960px 3 колонки, 641-960px 2, ≤640px 1), без горизонтального скролла. */
+/* Горизонтальный скролл (как раньше), но ширина карточки — как в каталоге
+   на соответствующей ширине экрана (>960px 3 в ряд видно, 641-960px 2, ≤640px 1);
+   лишние карточки уходят за край и доступны скроллом/стрелками. */
 #nx-prod-root .nx-pop2-grid {
     display: flex;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     gap: 12px;
+    overflow-x: auto;
+    overflow-y: visible;
+    scroll-behavior: smooth;
+    scrollbar-width: none;
     align-items: stretch;
 }
-#nx-prod-root .nx-p-pop .nx-popular-arrows { display: none !important; }
+#nx-prod-root .nx-pop2-grid::-webkit-scrollbar { display: none; }
 
 /* Карточка — ширина как у .t-catalog__card в каталоге */
 #nx-prod-root .nx-pop2 {
@@ -1176,6 +1181,7 @@ body > #nx-prod-root ~ *,
 }
 @media (max-width: 640px) {
     #nx-prod-root .nx-pop2 { flex: 0 0 100%; width: 100%; }
+    #nx-prod-root .nx-p-pop .nx-popular-arrows { display: none !important; }
 }
 
 /* ================================================

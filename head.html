@@ -1277,6 +1277,21 @@ root.addEventListener('change', function (e) {
       /* Структура B (t-zoomer): вставляем первым ребёнком body.
          CSS body > #nx-prod-root покрывает весь вьюпорт поверх zoomer. */
       document.body.insertBefore(root, document.body.firstChild || null);
+      /* Полифилл: на Structure B нет #allrecords вообще, а нативные Tilda-скрипты
+         (напр. tilda-widget-positions — подтверждено консольной ошибкой
+         "Cannot read properties of null (reading 'getAttribute')" на
+         document.getElementById("allrecords")) читают его безусловно и падают.
+         Пустой скрытый div с этим id не меняет их поведение (0 детей — как и
+         раньше), но не даёт им получить null и упасть — вероятная причина,
+         по которой на этой структуре не открывается попап корзины (скрипт,
+         инициализирующий попап, вероятно падает на том же самом allrecords
+         раньше, чем успевает отрисовать сам попап). */
+      if (!allrec) {
+        var stub = document.createElement('div');
+        stub.id = 'allrecords';
+        stub.style.cssText = 'display:none!important';
+        root.appendChild(stub);
+      }
     }
     return root;
   }
