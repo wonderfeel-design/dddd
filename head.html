@@ -470,6 +470,12 @@ if (location.pathname.indexOf('/tproduct/') !== -1) {
   function ensureMainImagePreload(src) {
     var safeSrc = normalizeImageSrc(src);
     if (!safeSrc) return;
+    /* Reject anything the URL parser itself can't resolve — avoids Chrome's
+       "invalid href" console warning when Tilda's gallery data has a
+       malformed/partial path (data: URLs excluded, they aren't real URLs). */
+    if (safeSrc.indexOf('data:') !== 0) {
+      try { new URL(safeSrc, location.href); } catch (e) { return; }
+    }
     var head = document.head || document.getElementsByTagName('head')[0];
     if (!head) return;
     var ln = document.getElementById('nx-preload-mainimg');
@@ -668,7 +674,7 @@ var item = {
   function doAdd(retries) {
     try {
       if (typeof tcart__addProduct === 'function') {
-        tcart__addProduct(item);
+        tcart__addProduct(item, true); /* true = open cart popup after adding */
       } else if (window.tcart && window.tcart.products) {
         window.tcart.products.push(item);
         if (typeof tcart__saveLocalObj === 'function') tcart__saveLocalObj();
@@ -1139,7 +1145,7 @@ root.addEventListener('change', function (e) {
             /* Выкрас — ручная позиция 0 ₽ без складского uid (иначе NOT FOUND PRODUCTS IN STORE) */
             var sampleItem = { name: 'Пробный выкрас — ' + colorName, price: 0, quantity: 1, amount: 0, img: c.img || '', uid: '306044934692', option: optionParts.join(', ') };
             console.log('nx: sample to cart', JSON.stringify(sampleItem));
-            tcart__addProduct(sampleItem);
+            tcart__addProduct(sampleItem, true);
           }
         } catch (e) { console.error('nx: sample error', e); }
       });
@@ -1207,7 +1213,7 @@ root.addEventListener('change', function (e) {
       };
       try {
         if (typeof tcart__addProduct === 'function') {
-          tcart__addProduct(item);
+          tcart__addProduct(item, true);
           showToast('Добавлено в корзину: ' + prod.title);
         }
       } catch (ex) { console.error('nx: pop buy error', ex); }
