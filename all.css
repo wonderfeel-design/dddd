@@ -468,20 +468,7 @@ html body .t-product__option-item_active .t-product__option-title {
     display: block !important;
 }
 
-/* Заголовок «Раздел» над нативным сайдбаром категорий */
-#parts-sidebar-id-2362174763::before {
-    content: 'Раздел';
-    display: block;
-    font-family: var(--nx-font);
-    font-size: 13px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: .5px;
-    color: var(--nx-text);
-    margin-bottom: 12px;
-}
-
-/* Скрыть фильтр-дубль дерева разделов (дублирует нативный сайдбар «Раздел») */
+/* Скрыть фильтр-дубль дерева разделов */
 .t-catalog__filter__item:has(.js-catalog-filter-tree-container) { display: none !important; }
 
 /* Каталог — отступы, сетка, сайдбар (работает при любом rec-id) */
@@ -1130,10 +1117,11 @@ body > #nx-prod-root ~ *,
 }
 #nx-prod-root .nx-pop2-grid::-webkit-scrollbar { display: none; }
 
-/* Карточка — ширина как у .t-catalog__card в каталоге */
+/* Карточка — 280px, как у изображения товара в галерее */
 #nx-prod-root .nx-pop2 {
-    flex: 0 0 calc(33.333% - 8px);
-    width: calc(33.333% - 8px);
+    flex: 0 0 280px;
+    width: 280px;
+    max-width: 280px;
     background: #fff;
     border-radius: 8px;
     border: 1px solid var(--nx-border);
