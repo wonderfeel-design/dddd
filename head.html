@@ -32,8 +32,14 @@
 <script>
 if (location.pathname.indexOf('/tproduct/') !== -1) {
   document.documentElement.classList.add('nx-tp');
-  /* Safety: reveal all recs after 3 s regardless of product load outcome */
-  setTimeout(function () { document.documentElement.classList.remove('nx-tp'); }, 3000);
+  /* Safety: if our custom render never completes within 3s (API error, JS
+     exception before the catch handler), reveal native recs so the page
+     isn't stuck blank. If render succeeded, window._nxProdRendered is true
+     and native recs (which hold the real product widget) must stay hidden —
+     removing nx-tp here would un-hide them and duplicate the title/image. */
+  setTimeout(function () {
+    if (!window._nxProdRendered) document.documentElement.classList.remove('nx-tp');
+  }, 3000);
 }
 </script>
 
@@ -838,8 +844,11 @@ if (firstEd && firstEd['Покрытие'] === 'Без покрытия') {
     attachEvents();
     updateColors();
     hideNativePopularBlock();
-    /* Снять CSS-скрытие Tilda-реков — наш контент уже отрендерен */
-    document.documentElement.classList.remove('nx-tp');
+    /* Header/footer are already excluded from the nx-tp hiding selector, so they're
+       visible regardless. Keep nx-tp ON permanently — it's the only thing hiding the
+       native Tilda product widget (real title/image), which must never reappear
+       next to our custom render. Only mark success for the 3s failsafe above. */
+    window._nxProdRendered = true;
   }
 
   function updatePricesAndImage() {
