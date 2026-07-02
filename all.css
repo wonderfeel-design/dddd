@@ -1314,25 +1314,39 @@ html body .nx-megamenu-wrap { padding-left: 20px !important; }
        встаёт РЯДОМ со списком карточек и выталкивает его за экран (left=414). */
     .js-catalog-grid-cont { flex-direction: column !important; }
 
-    /* 3 карточки в ряд (sidebar ушёл наверх → card-list = 100% ширины страницы).
-       При ≤640px это правило перекрывается блоком ниже (2 карточки). */
+    /* 2 карточки в ряд (641–960px): sidebar ушёл наверх, карточки — 50% */
     .t-catalog__card-list {
         display: flex !important; flex-direction: row !important;
         flex-wrap: wrap !important; align-items: stretch !important;
         width: 100% !important; padding: 0 !important; gap: 10px !important;
     }
     .t-catalog__card {
-        width: calc(33.333% - 7px) !important;
-        max-width: calc(33.333% - 7px) !important;
-        flex: 0 0 calc(33.333% - 7px) !important;
+        width: calc(50% - 5px) !important;
+        max-width: calc(50% - 5px) !important;
+        flex: 0 0 calc(50% - 5px) !important;
+        margin-bottom: 0 !important;
+        display: flex !important; flex-direction: column !important;
+    }
+}
+
+/* > 960px: 3 карточки в ряд (переопределяем нативный Tilda-грид на 4) */
+@media (min-width: 961px) {
+    .t-catalog__card-list {
+        display: flex !important; flex-wrap: wrap !important;
+        gap: 12px !important;
+    }
+    .t-catalog__card {
+        width: calc(33.333% - 8px) !important;
+        max-width: calc(33.333% - 8px) !important;
+        flex: 0 0 calc(33.333% - 8px) !important;
         margin-bottom: 0 !important;
         display: flex !important; flex-direction: column !important;
     }
 }
 
 @media (max-width: 640px) {
-    .t-catalog__card-list { display: flex !important; flex-direction: row !important; flex-wrap: wrap !important; align-items: stretch !important; padding: 0 12px !important; gap: 10px !important; }
-    .t-catalog__card { width: calc(50% - 5px) !important; max-width: calc(50% - 5px) !important; flex: 0 0 calc(50% - 5px) !important; margin-bottom: 0 !important; display: flex !important; flex-direction: column !important; }
+    .t-catalog__card-list { display: flex !important; flex-direction: row !important; flex-wrap: wrap !important; align-items: stretch !important; padding: 0 !important; gap: 10px !important; }
+    .t-catalog__card { width: 100% !important; max-width: 100% !important; flex: 0 0 100% !important; margin-bottom: 0 !important; display: flex !important; flex-direction: column !important; }
     .t-catalog__card__wrap_txt-and-btns,
     .t-store__card__wrap_txt-and-btns { padding: 0 10px 12px !important; flex: 1 1 auto !important; }
     html body .t-catalog__card__title,
