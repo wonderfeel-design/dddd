@@ -446,7 +446,7 @@ html body .t-product__option-item_active .t-product__option-title {
    .t-checkbox__indicator (обычный нативный чекбокс без цвета). */
 .t-catalog__filter__checkbox:not([class*="_color"]) .t-catalog__filter__checkmark:not([class*="_color"]),
 .t-store__filter__checkbox:not([class*="_color"]) .t-store__filter__checkmark:not([class*="_color"]),
-.t-checkbox__indicator {
+.t-checkbox__indicator:not([class*="_color"]) {
   box-sizing: border-box !important;
   width: 20px !important;
   height: 20px !important;
@@ -457,8 +457,8 @@ html body .t-product__option-item_active .t-product__option-title {
 }
 .t-catalog__filter__checkbox:not([class*="_color"]) input:checked ~ .t-catalog__filter__checkmark:not([class*="_color"]),
 .t-store__filter__checkbox:not([class*="_color"]) input:checked ~ .t-store__filter__checkmark:not([class*="_color"]),
-input:checked + .t-checkbox__indicator,
-input:checked ~ .t-checkbox__indicator {
+input:checked + .t-checkbox__indicator:not([class*="_color"]),
+input:checked ~ .t-checkbox__indicator:not([class*="_color"]) {
   background-color: #4C9E24 !important;
   border-color: #4C9E24 !important;
   background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M9.95463 0L11.4286 0.806867L5.03781 8H3.56387L0 4.103L1.47394 3.03004L4.30084 5.09013L9.95463 0Z' fill='white'/%3E%3C/svg%3E") !important;
