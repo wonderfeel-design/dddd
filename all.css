@@ -3,16 +3,49 @@
    Версия: очищенная
    ================================================ */
 
-/* Корзина (t706): крестик закрытия был позиционирован относительно viewport,
-   а не самого попапа корзины — визуально "плавал" в углу экрана вместо
-   правого верхнего угла карточки корзины. */
+/* Корзина (t706): адаптивный попап + крестик в правом верхнем углу карточки,
+   зелёного цвета. База (мобайл/узкие): карточка ~на всю ширину, крестик 16/16. */
 .t706__cartwin-close {
     position: absolute !important;
     top: 16px !important;
     right: 16px !important;
     bottom: auto !important;
     left: auto !important;
-    z-index: 5;
+    z-index: 6 !important;
+    cursor: pointer !important;
+}
+/* Крестик — зелёный (нативно белый на тёмном фоне) */
+.t706__cartwin-close svg,
+.t706__cartwin-close svg g,
+.t706__cartwin-close svg rect,
+.t706__cartwin-close svg path {
+    fill: var(--nx-green) !important;
+    stroke: var(--nx-green) !important;
+}
+/* >900px: карточка корзины шире (70%), по центру; крестик — в её правом
+   верхнем углу (right:15% = правый край центрированной карточки 70%). */
+@media (min-width: 901px) {
+    .t706__cartwin {
+        display: flex !important;
+        justify-content: center !important;
+        align-items: flex-start !important;
+        padding: 48px 0 60px !important;
+        box-sizing: border-box !important;
+        overflow-y: auto !important;
+    }
+    .t706__cartwin-content {
+        width: 70% !important;
+        max-width: 70% !important;
+        margin: 0 auto !important;
+        position: relative !important;
+        border-radius: 12px !important;
+    }
+    .t706__cartwin-close {
+        position: fixed !important;
+        top: 56px !important;
+        right: 15% !important;
+        transform: translateX(-16px) !important;
+    }
 }
 
 /* ── ДИЗАЙН-ТОКЕНЫ ── */
