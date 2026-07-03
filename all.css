@@ -452,16 +452,6 @@ html body .t-product__option-item_active .t-product__option-title {
   border-radius: 3px !important;
 }
 
-/* Ссылка на палитру */
-.nx-palette-link-wrap { padding: 8px 16px 16px; }
-.nx-palette-link {
-    font-size: 14px;
-    color: var(--nx-green);
-    text-decoration: none;
-    display: inline-block;
-}
-.nx-palette-link:hover { text-decoration: underline; }
-
 #rec2362174763 {
     padding-top: 90px !important;   /* было «85» без px — невалидно, игнорировалось */
     padding-bottom: 60px !important;
@@ -473,14 +463,6 @@ html body .t-product__option-item_active .t-product__option-title {
 #rec2362172923 {
     padding-top: 90px !important;
     padding-bottom: 45px !important;
-}
-
-/* Каталог: не прятать верхние разделы при переходе в глубокие подразделы */
-#rec2362174763 .t-catalog__parts-tree-item,
-#rec2362172923 .t-catalog__parts-tree-item,
-#rec2362174763 .t-catalog__parts-tree-item_hidden,
-#rec2362172923 .t-catalog__parts-tree-item_hidden {
-    display: block !important;
 }
 
 /* Скрыть фильтр-дубль дерева разделов */
@@ -1232,24 +1214,26 @@ html body .nx-megamenu-wrap { padding-left: 20px !important; }
 #rec2362047143 .nx-popular-toprow { width: 100% !important; padding-left: var(--nx-grid-padding) !important; padding-right: var(--nx-grid-padding) !important; box-sizing: border-box !important; }
 #rec2362047143 .nx-popular-toprow .t-section__title { margin: 0 !important; flex: 1 !important; font-family: var(--nx-font) !important; font-size: 28px !important; font-weight: 700 !important; color: var(--nx-dark) !important; text-transform: uppercase !important; letter-spacing: 0.5px !important; line-height: 1.2 !important; }
 
+/* Блог «Полезные статьи» (T404): горизонтальный скролл, карточки 280px (кол-во в
+   ряд определяется вьюпортом само), line-clamp вместо нативного t404_unifyHeights
+   (который фиксировал height инлайном и ломал перенос текста), без «Загрузить ещё». */
 #rec2362047153 { padding-top: 20px !important; padding-bottom: 60px !important; overflow: hidden !important; }
 #rec2362047153 .t-section__container { max-width: 100% !important; width: 100% !important; margin: 0 !important; padding: 0 !important; box-sizing: border-box !important; }
-#rec2362047153 .t-container { display: flex !important; flex-wrap: nowrap !important; gap: 20px !important; overflow-x: auto !important; align-items: stretch !important; padding-bottom: 8px !important; padding-left: var(--nx-grid-padding) !important; width: 100% !important; max-width: 100% !important; margin: 0 !important; scrollbar-width: none !important; box-sizing: border-box !important; }
+#rec2362047153 .t-container { display: flex !important; flex-wrap: nowrap !important; gap: 20px !important; overflow-x: auto !important; align-items: stretch !important; padding: 0 var(--nx-grid-padding) 8px !important; width: 100% !important; max-width: 100% !important; margin: 0 !important; scrollbar-width: none !important; box-sizing: border-box !important; }
 #rec2362047153 .t-container::-webkit-scrollbar { display: none !important; }
-#rec2362047153 .t404__col { flex: 0 0 387px !important; width: 387px !important; min-width: 387px !important; margin: 0 !important; display: flex !important; flex-direction: column !important; }
+#rec2362047153 .t404__col { flex: 0 0 280px !important; width: 280px !important; max-width: 280px !important; min-width: 280px !important; margin: 0 !important; padding: 0 !important; display: flex !important; flex-direction: column !important; }
 #rec2362047153 .t404__link { display: flex !important; flex-direction: column !important; flex: 1 !important; height: 100% !important; text-decoration: none !important; background: #ffffff !important; border-radius: 8px !important; border: 1px solid var(--nx-border) !important; box-shadow: 0 2px 12px rgba(0,0,0,.05) !important; overflow: hidden !important; transition: box-shadow .2s, transform .15s !important; }
 #rec2362047153 .t404__link:hover { box-shadow: 0 6px 24px rgba(0,0,0,.10) !important; transform: translateY(-2px) !important; }
 #rec2362047153 .t404__imgbox { flex-shrink: 0 !important; overflow: hidden !important; background: #F7F7F7 !important; }
-#rec2362047153 .t404__img { width: 100% !important; display: block !important; }
-#rec2362047153 .t404__textwrapper { padding: 16px 20px 20px !important; box-sizing: border-box !important; flex: 1 !important; display: flex !important; flex-direction: column !important; }
-#rec2362047153 .t404__date, #rec2362047153 .t404__uptitle { font-family: var(--nx-font) !important; font-size: 12px !important; color: #AAAAAA !important; margin-bottom: 8px !important; display: block !important; }
-#rec2362047153 .t404__title { font-family: var(--nx-font) !important; font-size: 16px !important; font-weight: 700 !important; color: var(--nx-text) !important; line-height: 1.35 !important; margin-bottom: 10px !important; }
+#rec2362047153 .t404__img { width: 100% !important; aspect-ratio: 4 / 3 !important; background-size: cover !important; background-position: center !important; display: block !important; }
+#rec2362047153 .t404__separator { display: none !important; }
+#rec2362047153 .t404__textwrapper { padding: 16px 20px 20px !important; box-sizing: border-box !important; flex: 1 1 auto !important; display: flex !important; flex-direction: column !important; width: 100% !important; }
+#rec2362047153 .t404__date, #rec2362047153 .t404__uptitle { font-family: var(--nx-font) !important; font-size: 12px !important; color: #AAAAAA !important; margin-bottom: 8px !important; display: block !important; letter-spacing: .5px !important; }
+#rec2362047153 .t404__title { height: auto !important; min-height: 0 !important; display: -webkit-box !important; -webkit-line-clamp: 3 !important; -webkit-box-orient: vertical !important; overflow: hidden !important; font-family: var(--nx-font) !important; font-size: 16px !important; font-weight: 700 !important; color: var(--nx-text) !important; line-height: 1.35 !important; margin-bottom: 10px !important; }
 #rec2362047153 .t404__link:hover .t404__title { color: var(--nx-green) !important; }
-#rec2362047153 .t404__descr { font-family: var(--nx-font) !important; font-size: 13px !important; color: var(--nx-muted) !important; line-height: 1.55 !important; flex: 1 !important; }
-#rec2362047153 .t404__separator { height: 3px !important; background: linear-gradient(var(--nx-green) 0 0) left/32% 100% no-repeat, linear-gradient(#E8E8E8 0 0) center/32% 100% no-repeat, linear-gradient(#E8E8E8 0 0) right/32% 100% no-repeat !important; border-radius: 2px !important; margin: 0 !important; }
-
-@media (max-width: 1199px) { #rec2362047153 .t404__col { flex: 0 0 calc((100vw - 40px) / 3) !important; width: calc((100vw - 40px) / 3) !important; min-width: calc((100vw - 40px) / 3) !important; } }
-@media (max-width: 768px)  { #rec2362047153 .t404__col { flex: 0 0 280px !important; width: 280px !important; min-width: 280px !important; } }
+#rec2362047153 .t404__descr { height: auto !important; min-height: 0 !important; display: -webkit-box !important; -webkit-line-clamp: 3 !important; -webkit-box-orient: vertical !important; overflow: hidden !important; font-family: var(--nx-font) !important; font-size: 13px !important; color: var(--nx-muted) !important; line-height: 1.55 !important; flex: 1 !important; }
+/* Кнопка «Загрузить ещё» не нужна при горизонтальном скролле */
+#rec2362047153 [class*="load-more"], #rec2362047153 [class*="showmore"], #rec2362047153 [class*="btn-more"], #rec2362047153 .t404__load-more, #rec2362047153 .t-feed__showmore-btn { display: none !important; }
 
 /* ================================================
    8. ФУТЕР #rec2362175613
@@ -1613,81 +1597,4 @@ html body .nx-megamenu-wrap { padding-left: 20px !important; }
 /* Если нативное дерево разделов Tilda отрисовано, кастомный fallback не нужен */
 .t-catalog-parts-sidebar__container .t-catalog__parts-root + .js-sidebar-parts {
     display: none !important;
-}
-
-/* ================================================
-   14. БЛОГ «ПОЛЕЗНЫЕ СТАТЬИ» #rec2362047153 (T404)
-   ================================================
-   t404_unifyHeights() (нативный Tilda-скрипт) жёстко фиксирует
-   height:216px/343px на title/descr инлайн-стилем без гарантии ширины
-   колонки — при узкой ширине текст переносится по одному слову в
-   строке, заполняя эту высоту. Убираем зависимость от JS-подгонки
-   высоты: единый размер картинки, line-clamp вместо фикс. высоты. */
-#rec2362047153 .t404__col {
-    box-sizing: border-box !important;
-    padding: 0 12px !important;
-}
-#rec2362047153 .t404__withbg {
-    background: #fff !important;
-    border-radius: 12px !important;
-    overflow: hidden !important;
-    box-shadow: 0 2px 12px rgba(0,0,0,.05) !important;
-    transition: box-shadow .2s, transform .15s !important;
-}
-#rec2362047153 .t404__withbg:hover {
-    box-shadow: 0 6px 24px rgba(0,0,0,.10) !important;
-    transform: translateY(-2px) !important;
-}
-#rec2362047153 .t404__link { display: flex !important; flex-direction: column !important; height: 100% !important; }
-#rec2362047153 .t404__imgbox { width: 100% !important; }
-#rec2362047153 .t404__img {
-    width: 100% !important;
-    aspect-ratio: 4 / 3 !important;
-    background-size: cover !important;
-    background-position: center !important;
-}
-#rec2362047153 .t404__separator { display: none !important; }
-#rec2362047153 .t404__textwrapper {
-    box-sizing: border-box !important;
-    width: 100% !important;
-    padding: 20px !important;
-    display: flex !important;
-    flex-direction: column !important;
-    flex: 1 1 auto !important;
-}
-#rec2362047153 .t404__date {
-    font-family: var(--nx-font) !important;
-    font-size: 12px !important;
-    color: var(--nx-muted) !important;
-    letter-spacing: .5px !important;
-}
-#rec2362047153 .t404__title {
-    height: auto !important;
-    min-height: 0 !important;
-    width: 100% !important;
-    box-sizing: border-box !important;
-    display: -webkit-box !important;
-    -webkit-line-clamp: 3 !important;
-    -webkit-box-orient: vertical !important;
-    overflow: hidden !important;
-    font-family: var(--nx-font) !important;
-    font-size: 18px !important;
-    font-weight: 700 !important;
-    line-height: 1.35 !important;
-    color: var(--nx-text) !important;
-    margin: 10px 0 8px !important;
-}
-#rec2362047153 .t404__descr {
-    height: auto !important;
-    min-height: 0 !important;
-    width: 100% !important;
-    box-sizing: border-box !important;
-    display: -webkit-box !important;
-    -webkit-line-clamp: 3 !important;
-    -webkit-box-orient: vertical !important;
-    overflow: hidden !important;
-    font-family: var(--nx-font) !important;
-    font-size: 14px !important;
-    line-height: 1.5 !important;
-    color: var(--nx-muted) !important;
 }

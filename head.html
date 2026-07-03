@@ -17,7 +17,8 @@
 <link rel="preconnect" href="https://static.tildacdn.one" crossorigin>
 
 <style>
-  .t-store__prod-snippet__container { display: none !important; }
+  .t-store__prod-snippet__container, .t-store__prod-snippet,
+  .t-catalog__prod-snippet__container, .t-catalog__prod-snippet { display: none !important; }
   /* На страницах /tproduct/ скрываем Tilda-реки (кроме шапки, футера, корзины и
      нашего блока) до рендера. Раньше использовался позиционный :not(:first-child) —
      ломался, если шапка не оказывалась первым ребёнком #allrecords (шапка/футер
@@ -50,10 +51,13 @@ if (location.pathname.indexOf('/tproduct/') !== -1) {
 <script>
 /* ══ Скрытие ошибки заказа склада ══
    Прячем сообщение корзины только если это ошибка склада/заказа
-   (Order error / NOT FOUND PRODUCTS IN STORE), не трогая валидацию полей. */
+   (Order error / NOT FOUND PRODUCTS IN STORE), не трогая валидацию полей.
+   Наблюдатель вешается ЛЕНИВО — только после первого взаимодействия с корзиной,
+   и на контейнер корзины (.t706), а не на весь body. На главной/каталоге, где
+   корзину не открывали, не выполняется ничего (экономия на каждой загрузке). */
 (function () {
-  var _storeErrScheduled = false;
-  var _storeErrObs = null;
+  if (!window.MutationObserver) return;
+  var _scheduled = false, _attached = false;
   function hideStoreOrderError() {
     var boxes = document.querySelectorAll('.t-form__errorbox-text, .t-store__error, .js-errorbox-all, .t-form__errorbox');
     for (var i = 0; i < boxes.length; i++) {
@@ -64,31 +68,31 @@ if (location.pathname.indexOf('/tproduct/') !== -1) {
       }
     }
   }
-  function scheduleHideStoreOrderError() {
-    if (_storeErrScheduled) return;
-    _storeErrScheduled = true;
-    setTimeout(function () {
-      _storeErrScheduled = false;
-      hideStoreOrderError();
-    }, 120);
+  function scheduleHide() {
+    if (_scheduled) return;
+    _scheduled = true;
+    setTimeout(function () { _scheduled = false; hideStoreOrderError(); }, 120);
   }
-  if (window.MutationObserver) {
-    _storeErrObs = new MutationObserver(scheduleHideStoreOrderError);
-    function startStoreErrObs() {
-      var host = document.body || document.documentElement;
-      _storeErrObs.observe(host, { childList: true, subtree: true });
-    }
-    if (document.body) startStoreErrObs();
-    else document.addEventListener('DOMContentLoaded', startStoreErrObs);
+  function attach() {
+    if (_attached) return;
+    _attached = true;
+    var host = document.querySelector('.t706') || document.body;
+    new MutationObserver(scheduleHide).observe(host, { childList: true, subtree: true });
+    hideStoreOrderError();
   }
-  document.addEventListener('DOMContentLoaded', hideStoreOrderError);
+  document.addEventListener('click', function (e) {
+    if (e.target.closest('a[href="#opencart"], .t706__carticon, .t-menuwidgeticons__link_cart')) attach();
+  }, true);
 })();
 </script>
 
 <script>
-/* Remove legacy fallback catalog sidebar if it appears */
+/* Remove legacy fallback catalog sidebar if it appears. Только на /catalog, и
+   наблюдатель отключается после первичного рендера (8 с) — не висит вечно и не
+   выполняется на главной/товаре/палитре. */
 (function () {
   'use strict';
+  if (location.pathname.indexOf('/catalog') !== 0) return;
 
   function removeFallbackSidebar() {
     document.querySelectorAll('.nx-fallback-sidebar-parts').forEach(function (node) {
@@ -97,66 +101,21 @@ if (location.pathname.indexOf('/tproduct/') !== -1) {
       if (holder && !holder.children.length) holder.remove();
     });
   }
-
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', removeFallbackSidebar);
-  } else {
-    removeFallbackSidebar();
-  }
-
-  var obs = new MutationObserver(function () { removeFallbackSidebar(); });
   function start() {
     if (!document.body) return;
+    removeFallbackSidebar();
+    var obs = new MutationObserver(removeFallbackSidebar);
     obs.observe(document.body, { childList: true, subtree: true });
+    setTimeout(function () { try { obs.disconnect(); } catch (e) {} }, 8000);
   }
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', start);
-  } else {
-    start();
-  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
+  else start();
 })();
 </script>
 
 <script>
-/* ══ 1. Скрытие «Палитры» + ссылка ══ */
-(function () {
-  'use strict';
-  if (location.pathname.indexOf('/catalog') !== 0 && location.pathname !== '/') return;
-  function hidePalette() {
-    document.querySelectorAll('.t-catalog__parts-text-title').forEach(function (el) {
-      if (el.textContent.trim().toLowerCase().indexOf('палитра') !== -1) {
-        var item = el.closest('.t-catalog__parts-tree-item');
-        if (item) item.style.setProperty('display', 'none', 'important');
-      }
-    });
-  }
-  function injectPaletteLink() {
-    if (document.querySelector('.nx-palette-link-wrap')) return;
-    var tree = document.querySelector('.t-catalog__parts-tree');
-    if (!tree) return;
-    var wrap = document.createElement('div');
-    wrap.className = 'nx-palette-link-wrap';
-    wrap.innerHTML = '<a href="/palitra" class="nx-palette-link">🎨 Все цвета палитры</a>';
-    tree.appendChild(wrap);
-  }
-  function init() {
-    var _paletteScheduled = false;
-    function schedulePaletteRefresh() {
-      if (_paletteScheduled) return;
-      _paletteScheduled = true;
-      setTimeout(function () {
-        _paletteScheduled = false;
-        hidePalette();
-        injectPaletteLink();
-      }, 120);
-    }
-    hidePalette();
-    injectPaletteLink();
-    new MutationObserver(schedulePaletteRefresh)
-      .observe(document.body, { childList: true, subtree: true });
-  }
-  document.readyState === 'loading' ? document.addEventListener('DOMContentLoaded', init) : setTimeout(init, 300);
-})();
+/* Общий парсер цены — один на §2 (карточки) и §3 (страница товара). */
+function nxParsePrice(n) { return parseFloat(String(n || 0).replace(/\s/g, '').replace(',', '.')) || 0; }
 
 /* ══ 2. Карточки — унифицированное обогащение (все страницы) ══ */
 (function () {
@@ -165,7 +124,7 @@ if (location.pathname.indexOf('/tproduct/') !== -1) {
     for (var i = 0; i < args.length; i++) { var el = card.querySelector(args[i]); if (el) return el; }
     return null;
   }
-  function parsePrice(n) { return parseFloat(String(n || 0).replace(/\s/g, '').replace(',', '.')) || 0; }
+  var parsePrice = nxParsePrice;
 
   function injectCategoryBadge(card) {
     if (card.querySelector('.nx-cat-badge')) return;
@@ -268,10 +227,26 @@ if (location.pathname.indexOf('/tproduct/') !== -1) {
 
   window._nxProcessCards = processCards;
 
-  if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', function () { scheduleProcessCards(0); }); }
-  else { scheduleProcessCards(0); }
-  scheduleProcessCards(800);
-  scheduleProcessCards(2000);
+  /* Раньше: 3 «слепых» прохода по всему документу (0/800/2000 мс). Теперь: один
+     проход + наблюдатель ТОЛЬКО на грид-контейнерах (childList), который ловит
+     lazy-подгружаемые Tilda-карточки и отключается через 8 с. Если грида ещё нет
+     или нет MutationObserver — подстраховка прежними таймерами. */
+  function initCardEnrichment() {
+    processCards();
+    var grids = document.querySelectorAll('.js-store-grid-cont, .js-catalog-grid-cont, .t-store__card-list, .t-catalog__card-list');
+    if (!window.MutationObserver || !grids.length) {
+      scheduleProcessCards(800); scheduleProcessCards(2000);
+      return;
+    }
+    var _sched = false;
+    function run() { if (_sched) return; _sched = true; setTimeout(function () { _sched = false; processCards(); }, 120); }
+    var obs = new MutationObserver(run);
+    Array.prototype.forEach.call(grids, function (g) { obs.observe(g, { childList: true }); });
+    setTimeout(function () { try { obs.disconnect(); } catch (e) {} }, 8000);
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initCardEnrichment);
+  else initCardEnrichment();
 })();
 
 /* ══ 3. Страница товара /tproduct/ ══ */
@@ -288,7 +263,7 @@ if (location.pathname.indexOf('/tproduct/') !== -1) {
   var _boardLen     = 6;
   var _paletteColor = null;
 
-  function parsePrice(n) { return parseFloat(String(n || 0).replace(/\s/g, '').replace(',', '.')) || 0; }
+  var parsePrice = nxParsePrice;
   function fmt(n) { return parsePrice(n).toLocaleString('ru'); }
 
   function showToast(msg) {
@@ -816,15 +791,14 @@ if (firstEd && firstEd['Покрытие'] === 'Без покрытия') {
       '.t-store__prod-snippet__container', '.t-store__prod-snippet',
       '.t-catalog__prod-snippet__container', '.t-catalog__prod-snippet'
     ];
+    /* Сам сниппет-элемент скрывается CSS-ом (см. inline <style> в начале head).
+       JS нужен только чтобы спрятать РЕК целиком — кроме шапки/футера/популярного/
+       нашего блока, иначе стрелочный сниппет-шаблон утаскивает их за собой. */
     function hideSnippets() {
       SNIPPET_SELS2.forEach(function (sel) {
         document.querySelectorAll(sel).forEach(function (el) {
-          if (el.style.display === 'none') return;
-          el.style.cssText = 'display:none!important';
           var rec = el.closest('[id^="rec"]');
-          /* Никогда не прячем рек целиком, если в нём шапка (.nx-menu) или это
-             рек футера (rec2362175613) — иначе сниппет-шаблон Tilda, случайно
-             оказавшийся внутри их река, утаскивает шапку/футер за собой навсегда. */
+          if (rec && rec.style.display === 'none') return;
           if (rec && rec.id !== 'nx-prod-root' && rec.id !== 'rec2362047083' &&
               rec.id !== 'rec2362175613' && !rec.querySelector('.nx-menu')) {
             rec.style.cssText = 'display:none!important';
@@ -842,10 +816,11 @@ if (firstEd && firstEd['Покрытие'] === 'Без покрытия') {
       }, 120);
     }
 
-    /* Первичное скрытие + наблюдатель (Tilda дорисовывает сниппеты асинхронно) */
+    /* Первичное скрытие + наблюдатель (Tilda дорисовывает сниппеты асинхронно).
+       Наблюдаем #allrecords, а не весь body — меньше срабатываний колбэка. */
     hideSnippets();
     var snippetsObs = new MutationObserver(scheduleHideSnippets);
-    snippetsObs.observe(document.body, { childList: true, subtree: true });
+    snippetsObs.observe(document.getElementById('allrecords') || document.body, { childList: true, subtree: true });
     /* Держим наблюдение только в фазе первичной дорисовки Tilda */
     setTimeout(function () {
       try { snippetsObs.disconnect(); } catch (e) {}
@@ -1320,26 +1295,6 @@ root.addEventListener('change', function (e) {
   });
 })();
 
-/* ══ 4. Мобильное меню + deeplinks ══ */
-(function () {
-  function initMobileMenu() {
-    var btn = document.querySelector('.t-menu__link-item[href="#catalog"]');
-    if (!btn) return;
-    btn.addEventListener('click', function (e) {
-      var t = document.querySelector('#catalog, [data-catalog]');
-      if (t) { e.preventDefault(); t.scrollIntoView({ behavior: 'smooth' }); }
-    });
-  }
-  function initDeeplinks() {
-    var hash = location.hash;
-    if (!hash || hash.length < 2) return;
-    document.querySelectorAll('.nx-filter-chip[data-filter]').forEach(function (chip) {
-      if (chip.dataset.filter === hash.slice(1)) chip.click();
-    });
-  }
-  window.addEventListener('load', function () { setTimeout(function () { initMobileMenu(); initDeeplinks(); }, 500); });
-})();
-
 /* ══ 5. Перехват ошибки оформления → «Заявка отправлена» ══ */
 (function () {
   'use strict';
@@ -1411,23 +1366,23 @@ root.addEventListener('change', function (e) {
     }
   });
 
-  /* document.body может ещё не существовать в момент запуска скрипта из <head> */
-  function startObs() {
-    if (document.body) {
-      _obs.observe(document.body, {
-        childList: true, subtree: true,
-        attributes: true, attributeFilter: ['style', 'class']
-      });
-    } else {
-      document.addEventListener('DOMContentLoaded', function () {
-        _obs.observe(document.body, {
-          childList: true, subtree: true,
-          attributes: true, attributeFilter: ['style', 'class']
-        });
-      });
-    }
+  /* Ошибка оформления появляется ТОЛЬКО после отправки формы заказа в корзине.
+     Поэтому вешаем наблюдатель ЛЕНИВО — на первый клик по корзине — и на
+     контейнер корзины (.t706), а не на весь body с attributes-слежением
+     (самый дорогой наблюдатель раньше висел на каждой странице). */
+  var _attached = false;
+  function attachObs() {
+    if (_attached) return;
+    _attached = true;
+    var host = document.querySelector('.t706') || document.body;
+    _obs.observe(host, {
+      childList: true, subtree: true,
+      attributes: true, attributeFilter: ['style', 'class']
+    });
   }
-  startObs();
+  document.addEventListener('click', function (e) {
+    if (e.target.closest('a[href="#opencart"], .t706__carticon, .t-menuwidgeticons__link_cart, .t706')) attachObs();
+  }, true);
 })();
 
 </script>
