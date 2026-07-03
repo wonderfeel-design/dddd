@@ -114,6 +114,31 @@ if (location.pathname.indexOf('/tproduct/') !== -1) {
 </script>
 
 <script>
+/* Скрыть устаревшие «именные» значения фильтра «Цвет» (беж, белый, бордо…).
+   Раньше цвет вводили названиями; теперь используются коды RAL/Valtti (1004, 5050…)
+   с реальным hex. Именные значения остались в характеристике как «пустые» свотчи.
+   Дискриминатор: код — числовой; оставляем также «без». Прячем кириллические имена. */
+(function () {
+  if (location.pathname.indexOf('/catalog') !== 0 && location.pathname.indexOf('/palitra') !== 0) return;
+  function hideNamedColors() {
+    document.querySelectorAll('.t-catalog__filter__checkbox_color').forEach(function (lbl) {
+      var v = (lbl.getAttribute('data-tooltip') || lbl.getAttribute('aria-label') || '').trim().toLowerCase();
+      if (v && v !== 'без' && /[а-яё]/i.test(v)) lbl.style.setProperty('display', 'none', 'important');
+    });
+  }
+  function start() {
+    if (!document.body) return;
+    hideNamedColors();
+    var obs = new MutationObserver(hideNamedColors);
+    obs.observe(document.getElementById('allrecords') || document.body, { childList: true, subtree: true });
+    setTimeout(function () { try { obs.disconnect(); } catch (e) {} }, 8000);
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
+  else start();
+})();
+</script>
+
+<script>
 /* Общий парсер цены — один на §2 (карточки) и §3 (страница товара). */
 function nxParsePrice(n) { return parseFloat(String(n || 0).replace(/\s/g, '').replace(',', '.')) || 0; }
 
