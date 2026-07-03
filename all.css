@@ -437,19 +437,30 @@ html body .t-product__option-item_active .t-product__option-title {
   box-shadow: 0 0 0 2.5px var(--nx-green) !important;
 }
 
-/* Обычные чекбоксы (не цвет) — фильтры каталога, панель справа, выбор палитры.
-   Активная/выбранная позиция — зелёный скруглённый квадрат. */
-#rec2362174763 .t-catalog__filter__checkbox input:checked + .t-catalog__filter__checkmark,
-#rec2362174763 .t-catalog__filter__checkbox input:checked ~ .t-catalog__filter__checkmark,
-#rec2362172923 .t-catalog__filter__checkbox input:checked + .t-catalog__filter__checkmark,
-#rec2362172923 .t-catalog__filter__checkbox input:checked ~ .t-catalog__filter__checkmark,
-#rec2362174763 .t-checkbox input:checked ~ .t-checkbox__indicator,
-#rec2362172923 .t-checkbox input:checked ~ .t-checkbox__indicator {
+/* Чекбоксы фильтров (каталог, палитра, панель фильтров) — Figma-стиль.
+   Пустой: белый квадрат 20×20 со скруглением 3px и серой рамкой.
+   Отмеченный: сплошной зелёный #4C9E24. Селекторы без привязки к rec —
+   эти классы встречаются только в панелях фильтров. */
+.t-catalog__filter__checkbox .t-catalog__filter__checkmark,
+.t-store__filter__checkbox .t-store__filter__checkmark,
+.t-catalog__filter__checkmark,
+.t-checkbox__indicator {
   box-sizing: border-box !important;
   width: 20px !important;
   height: 20px !important;
-  background: #4C9E24 !important;
   border-radius: 3px !important;
+  border: 1.5px solid #C9C9C9 !important;
+  background: #ffffff !important;
+  transition: background .15s, border-color .15s !important;
+}
+input:checked + .t-catalog__filter__checkmark,
+input:checked ~ .t-catalog__filter__checkmark,
+input:checked + .t-store__filter__checkmark,
+input:checked ~ .t-store__filter__checkmark,
+input:checked + .t-checkbox__indicator,
+input:checked ~ .t-checkbox__indicator {
+  background: #4C9E24 !important;
+  border-color: #4C9E24 !important;
 }
 
 #rec2362174763 {
@@ -1383,6 +1394,28 @@ html body .nx-megamenu-wrap { padding-left: 20px !important; }
     #rec2362175613 .t977__col-inner { flex: 0 0 calc(50% - 8px) !important; width: calc(50% - 8px) !important; }
     #rec2362175613 .t977__col_right { width: 100% !important; max-width: 100% !important; }
     #rec2362047143 .nx-popular-toprow { padding-left: 20px !important; padding-right: 20px !important; }
+}
+
+/* ПАЛИТРА (#rec2362172923): фикс. кол-во колонок — 4 (>960), 3 (601–960), 2 (≤600).
+   Идёт ПОСЛЕ общих правил каталога → переопределяет их (id-специфичность выше
+   безклассовых .t-catalog__card из общих медиа, и позднее по порядку). */
+@media (min-width: 961px) {
+    #rec2362172923 .t-catalog__stretch-col,
+    #rec2362172923 .t-catalog__card {
+        width: calc(25% - 15px) !important; max-width: calc(25% - 15px) !important; flex: 0 0 calc(25% - 15px) !important;
+    }
+}
+@media (min-width: 601px) and (max-width: 960px) {
+    #rec2362172923 .t-catalog__stretch-col,
+    #rec2362172923 .t-catalog__card {
+        width: calc(33.333% - 10px) !important; max-width: calc(33.333% - 10px) !important; flex: 0 0 calc(33.333% - 10px) !important; order: 1 !important;
+    }
+}
+@media (max-width: 600px) {
+    #rec2362172923 .t-catalog__stretch-col,
+    #rec2362172923 .t-catalog__card {
+        width: calc(50% - 6px) !important; max-width: calc(50% - 6px) !important; flex: 0 0 calc(50% - 6px) !important; order: 1 !important;
+    }
 }
 
 @media (max-width: 768px) {
