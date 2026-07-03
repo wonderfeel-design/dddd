@@ -496,11 +496,12 @@ html.nx-pal-hasctx #rec2362172923 {
 .t-catalog__filter__item:has(.js-catalog-filter-tree-container) { display: none !important; }
 
 /* Каталог — отступы, сетка, сайдбар (работает при любом rec-id) */
-/* Крошки лежат внутри .t-catalog-parts-above__container, у которого уже есть
-   grid-padding (ниже). Свой padding-left убираем — иначе двойной отступ и
-   крошки уезжают правее заголовка. Наследуют отступ контейнера → в линию с
-   заголовком и сеткой. */
-#allrecords .t-catalog__breadcrumbs { padding-left: 0 !important; }
+/* Крошки: у каталога и палитры разная обёртка. На палитре крошки уже лежат в
+   контейнере с grid-padding → свой отступ 0 (в линию с заголовком). На каталоге
+   контейнер крошек без grid-padding → даём grid-padding, чтобы встали в линию
+   с заголовком и сайдбаром. Итог одинаков на обеих страницах. */
+#rec2362174763 .t-catalog__breadcrumbs { padding-left: var(--nx-grid-padding) !important; }
+#rec2362172923 .t-catalog__breadcrumbs { padding-left: 0 !important; }
 /* Заголовок каталога/палитры — на одну линию с крошками и сеткой (12 колонок),
    без избыточных вертикальных отступов. */
 #allrecords .t-store__title,
