@@ -459,8 +459,12 @@ input:checked + .t-store__filter__checkmark,
 input:checked ~ .t-store__filter__checkmark,
 input:checked + .t-checkbox__indicator,
 input:checked ~ .t-checkbox__indicator {
-  background: #4C9E24 !important;
+  background-color: #4C9E24 !important;
   border-color: #4C9E24 !important;
+  background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M9.95463 0L11.4286 0.806867L5.03781 8H3.56387L0 4.103L1.47394 3.03004L4.30084 5.09013L9.95463 0Z' fill='white'/%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important;
+  background-position: center !important;
+  background-size: 12px 8px !important;
 }
 
 #rec2362174763 {
