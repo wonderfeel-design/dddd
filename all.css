@@ -439,12 +439,13 @@ html body .t-product__option-item_active .t-product__option-title {
 
 /* Чекбоксы фильтров (каталог, палитра, панель фильтров) — Figma-стиль.
    Пустой: белый квадрат 20×20 со скруглением 3px и серой рамкой.
-   Отмеченный: сплошной зелёный #4C9E24. Селекторы без привязки к rec —
-   эти классы встречаются только в панелях фильтров. */
-/* :not([class*="_color"]) — НЕ трогаем свотчи цвета (они остаются круглыми,
-   стилизуются правилом .t-catalog__filter__checkmark_color выше). */
-.t-catalog__filter__checkmark:not([class*="_color"]),
-.t-store__filter__checkmark:not([class*="_color"]),
+   Отмеченный: сплошной зелёный #4C9E24 с белой галочкой.
+   ВАЖНО: цветовые свотчи (Цвет) НЕ трогаем — у них и контейнер, и метка
+   содержат «_color»; они остаются круглыми (правило ..._color выше).
+   Поэтому таргетим только чекбоксы ВНУТРИ НЕ-цветового контейнера + сам
+   .t-checkbox__indicator (обычный нативный чекбокс без цвета). */
+.t-catalog__filter__checkbox:not([class*="_color"]) .t-catalog__filter__checkmark:not([class*="_color"]),
+.t-store__filter__checkbox:not([class*="_color"]) .t-store__filter__checkmark:not([class*="_color"]),
 .t-checkbox__indicator {
   box-sizing: border-box !important;
   width: 20px !important;
@@ -454,10 +455,8 @@ html body .t-product__option-item_active .t-product__option-title {
   background: #ffffff !important;
   transition: background .15s, border-color .15s !important;
 }
-input:checked + .t-catalog__filter__checkmark:not([class*="_color"]),
-input:checked ~ .t-catalog__filter__checkmark:not([class*="_color"]),
-input:checked + .t-store__filter__checkmark:not([class*="_color"]),
-input:checked ~ .t-store__filter__checkmark:not([class*="_color"]),
+.t-catalog__filter__checkbox:not([class*="_color"]) input:checked ~ .t-catalog__filter__checkmark:not([class*="_color"]),
+.t-store__filter__checkbox:not([class*="_color"]) input:checked ~ .t-store__filter__checkmark:not([class*="_color"]),
 input:checked + .t-checkbox__indicator,
 input:checked ~ .t-checkbox__indicator {
   background-color: #4C9E24 !important;
@@ -488,7 +487,11 @@ html.nx-pal-hasctx #rec2362172923 {
 .t-catalog__filter__item:has(.js-catalog-filter-tree-container) { display: none !important; }
 
 /* Каталог — отступы, сетка, сайдбар (работает при любом rec-id) */
-#allrecords .t-catalog__breadcrumbs { padding-left: var(--nx-grid-padding) !important; }
+/* Крошки лежат внутри .t-catalog-parts-above__container, у которого уже есть
+   grid-padding (ниже). Свой padding-left убираем — иначе двойной отступ и
+   крошки уезжают правее заголовка. Наследуют отступ контейнера → в линию с
+   заголовком и сеткой. */
+#allrecords .t-catalog__breadcrumbs { padding-left: 0 !important; }
 /* Заголовок каталога/палитры — на одну линию с крошками и сеткой (12 колонок),
    без избыточных вертикальных отступов. */
 #allrecords .t-store__title,
@@ -1349,9 +1352,10 @@ html body .nx-megamenu-wrap { padding-left: 20px !important; }
     #rec2362174763 .t-catalog__stretch-col,
     #rec2362172923 .t-catalog__stretch-col { width: 100% !important; max-width: 100% !important; flex: 0 0 100% !important; order: 1 !important; }
     #rec2362174763 .t-catalog-parts-above__container,
+    #rec2362172923 .t-catalog-parts-above__container { padding-left: var(--nx-grid-padding) !important; }
+    /* крошки — 0, наследуют отступ контейнера (без двойного) */
     #rec2362174763 .t-catalog__breadcrumbs,
-    #rec2362172923 .t-catalog-parts-above__container,
-    #rec2362172923 .t-catalog__breadcrumbs { padding-left: var(--nx-grid-padding) !important; }
+    #rec2362172923 .t-catalog__breadcrumbs { padding-left: 0 !important; }
 
     /* ГЛАВНЫЙ ФИКС мобильной пустоты: грид-контейнер — КОЛОНКА, а не ряд.
        Иначе полноширинная панель «Найдено/Сбросить» (chosen-bar, flex:0 0 100%)
