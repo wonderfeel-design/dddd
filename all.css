@@ -415,25 +415,34 @@ html body .t-product__option-item_active .t-product__option-title {
   }
 }
 
-/* Свотчи фильтра «Цвет» (каталог + палитра) — как кружки на карточке товара:
-   крупный круг с белой рамкой и серым кольцом, зелёное кольцо при выборе */
-.t-catalog__filter__checkmark_color {
-  width: 34px !important;
-  height: 34px !important;
+/* Свотчи фильтра «Цвет» (каталог + палитра) — как кнопки цвета на карточке
+   товара (.nx-p-color-btn): круглый цветной свотч в белом кольце с серой
+   обводкой, зелёная обводка у выбранного. Сам цвет — из инлайнового
+   background-color (Tilda ставит style="background-color:rgb(...) !important"
+   на .t-checkbox__indicator); фон/цвет НЕ переопределяем, только оформление. */
+.t-catalog__filter__checkmark_color,
+.t-catalog__filter__checkmark_color.t-checkbox__indicator,
+label.t-catalog__filter__checkbox_color .t-checkbox__indicator {
+  width: 40px !important;
+  height: 40px !important;
   border-radius: 50% !important;
-  border: 4px solid #fff !important;
+  border: 3px solid #fff !important;
   box-shadow: 0 0 0 2px #e8e8e8 !important;
+  padding: 0 !important;
+  cursor: pointer !important;
   background-clip: padding-box !important;
   background-size: cover !important;
   background-position: center !important;
-  transition: box-shadow .15s, transform .15s !important;
+  background-image: none !important;
+  transition: box-shadow .15s, transform .1s !important;
 }
-.t-catalog__filter__checkbox_color:hover .t-catalog__filter__checkmark_color {
+.t-catalog__filter__checkbox_color:hover .t-checkbox__indicator {
   transform: scale(1.08) !important;
   box-shadow: 0 0 0 2px #ccc !important;
 }
 .t-catalog__filter__checkbox_color input:checked + .t-catalog__filter__checkmark_color,
-.t-catalog__filter__checkbox_color input:checked ~ .t-catalog__filter__checkmark_color {
+.t-catalog__filter__checkbox_color input:checked ~ .t-catalog__filter__checkmark_color,
+.t-catalog__filter__checkbox_color input:checked ~ .t-checkbox__indicator {
   box-shadow: 0 0 0 2.5px var(--nx-green) !important;
 }
 
