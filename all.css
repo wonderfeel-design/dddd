@@ -468,12 +468,15 @@ input:checked ~ .t-checkbox__indicator {
     padding-bottom: 60px !important;
 }
 
-/* Палитра (rec2362172923): у блока padding-top=0 → заголовок «ПАЛИТРЫ ЦВЕТОВ»
-   и хлебные крошки уезжали под фикс. шапку+меню (низ меню ≈126px).
-   Даём такой же верхний отступ, как у каталога. */
+/* Палитра (rec2362172923): при ПРЯМОМ заходе (без контекстной панели) блок стоит
+   под фикс-шапкой → нужен верхний отступ. При переходе с карточки товара показана
+   контекстная панель (её margin-top уже отодвигает контент) → убираем дубль. */
 #rec2362172923 {
     padding-top: 90px !important;
     padding-bottom: 45px !important;
+}
+html.nx-pal-hasctx #rec2362172923 {
+    padding-top: 8px !important;
 }
 
 /* Скрыть фильтр-дубль дерева разделов */
@@ -481,6 +484,18 @@ input:checked ~ .t-checkbox__indicator {
 
 /* Каталог — отступы, сетка, сайдбар (работает при любом rec-id) */
 #allrecords .t-catalog__breadcrumbs { padding-left: var(--nx-grid-padding) !important; }
+/* Заголовок каталога/палитры — на одну линию с крошками и сеткой (12 колонок),
+   без избыточных вертикальных отступов. */
+#allrecords .t-store__title,
+#allrecords .t-catalog__title,
+#rec2362172923 .t-store__title,
+#rec2362172923 .t-catalog__title {
+    padding-left: var(--nx-grid-padding) !important;
+    padding-right: var(--nx-grid-padding) !important;
+    box-sizing: border-box !important;
+    margin-top: 4px !important;
+    margin-bottom: 16px !important;
+}
 #allrecords .t-section__container:has(.t-catalog__cont-w-filter) {
     padding-left: var(--nx-grid-padding) !important;
     padding-right: var(--nx-grid-padding) !important;

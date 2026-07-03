@@ -67,8 +67,9 @@
   background: #F2F7EE;
   border: 1.5px solid #d0e8c4;
   border-radius: 12px;
-  /* desktop: bar's top is hidden under the fixed header+nav → clear it */
-  margin: 120px auto 16px;
+  /* desktop: bar's top is hidden under the fixed header+nav → clear it ровно
+     на высоту шапки+меню (измеряется скриптом), без лишнего пустого места */
+  margin: calc(var(--nx-header-h, 86px) + 48px) auto 16px;
   max-width: 1200px;               /* стандартная сетка Tilda (12 колонок) */
   box-sizing: border-box;
   font-family: 'GothamPro','Gotham Pro',sans-serif;
@@ -455,6 +456,9 @@ body.nx-palitra .t-catalog__parts-text-title {
       });
     }
     ctx.style.display = '';
+    /* Пометка: контекстная панель показана — она уже даёт отступ от фикс-шапки,
+       поэтому CSS убирает дублирующий padding-top у каталога палитры. */
+    document.documentElement.classList.add('nx-pal-hasctx');
   })();
 
   /* ══ 0b. Фильтр по бренду палитры ══ */
