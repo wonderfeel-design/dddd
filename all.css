@@ -22,29 +22,19 @@
     fill: var(--nx-green) !important;
     stroke: var(--nx-green) !important;
 }
-/* >900px: карточка корзины шире (70%), по центру; крестик — в её правом
-   верхнем углу (right:15% = правый край центрированной карточки 70%). */
+/* >900px: карточка корзины шире (70%), по центру; крестик — у правого края
+   карточки. Оверлей .t706__cartwin НЕ трогаем (flex ломал раскладку и прятал
+   крестик) — только расширяем контент и двигаем absolute-крестик к его краю. */
 @media (min-width: 901px) {
-    .t706__cartwin {
-        display: flex !important;
-        justify-content: center !important;
-        align-items: flex-start !important;
-        padding: 48px 0 60px !important;
-        box-sizing: border-box !important;
-        overflow-y: auto !important;
-    }
     .t706__cartwin-content {
         width: 70% !important;
         max-width: 70% !important;
-        margin: 0 auto !important;
-        position: relative !important;
-        border-radius: 12px !important;
+        margin-left: auto !important;
+        margin-right: auto !important;
     }
     .t706__cartwin-close {
-        position: fixed !important;
-        top: 56px !important;
+        top: 24px !important;
         right: 15% !important;
-        transform: translateX(-16px) !important;
     }
 }
 
@@ -529,11 +519,20 @@ html.nx-pal-hasctx #rec2362172923 {
 .t-catalog__filter__item:has(.js-catalog-filter-tree-container) { display: none !important; }
 
 /* Каталог — отступы, сетка, сайдбар (работает при любом rec-id) */
-/* БЕНЧМАРК — палитра: крошки И заголовок лежат в нативном .t-container (1200,
-   по центру) и выравниваются по его левому краю без кастомных отступов. Держим
-   так же на всех страницах — свои padding НЕ добавляем, только обнуляем чужие,
-   чтобы ничего не «уезжало» за край сетки. */
-#allrecords .t-catalog__breadcrumbs { padding-left: 0 !important; }
+/* Крошки: заголовок лежит в .t-section__container.t-container (1200, по центру),
+   а крошки — прямой ребёнок grid-cont. На палитре grid-cont сам .t-container
+   (1200), а на каталоге — .t-catalog__grid-cont_indent (на всю ширину, padding
+   0 40px) → крошки уезжали к краю (40px), не в линию с заголовком. Решение,
+   единое для всех страниц: центрируем крошки как .t-container (max-width 1200,
+   margin auto) → их левый край совпадает с заголовком (тоже 1200-центрированным)
+   на любой обёртке. */
+#allrecords .t-catalog__breadcrumbs {
+    max-width: 1200px !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+    padding-left: 0 !important;
+    box-sizing: border-box !important;
+}
 /* Заголовок каталога/палитры — только вертикальный ритм; горизонтальный отступ
    даёт нативный .t-container (как на палитре), сами НЕ сдвигаем. */
 #allrecords .t-store__title,
