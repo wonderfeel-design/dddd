@@ -940,9 +940,13 @@ body > #nx-prod-root ~ *,
    и наследуются обеими строками через subgrid → колонки выровнены вертикально */
 #nx-prod-root .nx-p-pricing {
     display: grid;
-    grid-template-columns: minmax(0, 149px) 40px minmax(0, 149px);
+    /* Две РАВНЫЕ колонки + 40px в середине под 🔗/разделитель. Один и тот же
+       трек-шаблон и max-width, что и у .nx-p-selects → колонки совпадают по всем
+       рядам (цена / счётчики / ширина-длина). */
+    grid-template-columns: minmax(0, 1fr) 40px minmax(0, 1fr);
     justify-content: start;
     width: 100% !important;
+    max-width: 420px;
     row-gap: 16px;
     margin-bottom: 24px;
 }
@@ -1008,9 +1012,22 @@ body > #nx-prod-root ~ *,
 }
 #nx-prod-root .nx-p-btn:hover { background: var(--nx-green-dk); color: #fff;}
 
-/* Селекты */
-#nx-prod-root .nx-p-selects { display: flex; flex-wrap: wrap; gap: 16px; margin: 16px 0; align-items: flex-end; }
-#nx-prod-root .nx-p-select-wrap { display: flex; flex-direction: column; gap: 6px; flex: 1; min-width: 120px; max-width: 200px; }
+/* Селекты — тот же 2-колоночный грид, что и .nx-p-pricing: Ширина = кол.1
+   (под «Цена за шт.»/«Единицы»), Длина = кол.3 (под «Цена за кв.м.»/«Погонные
+   метры»), Тип покрытия — во всю ширину строкой ниже. */
+#nx-prod-root .nx-p-selects {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 40px minmax(0, 1fr);
+    column-gap: 0;
+    row-gap: 16px;
+    margin: 16px 0;
+    max-width: 420px;
+    align-items: end;
+}
+#nx-prod-root .nx-p-select-wrap { display: flex; flex-direction: column; gap: 6px; min-width: 0; max-width: none; }
+#nx-prod-root .nx-p-select-wrap[data-prop="Ширина (мм)"] { grid-column: 1; }
+#nx-prod-root .nx-p-select-wrap[data-prop="Длина"] { grid-column: 3; }
+#nx-prod-root .nx-p-select-wrap[data-prop="Тип покрытия"] { grid-column: 1 / -1; }
 #nx-prod-root .nx-p-select {
     width: 100%;
     padding: 10px 32px 10px 14px;
@@ -1509,11 +1526,10 @@ html body .nx-megamenu-wrap { padding-left: 20px !important; }
     #nx-prod-root .nx-p-thumb { flex-shrink: 0 !important; width: 60px !important; height: 60px !important; }
     #nx-prod-root .nx-p-title { font-size: 20px; }
     #nx-prod-root .nx-p-pop__grid { grid-template-columns: repeat(2, 1fr); }
-    #nx-prod-root .nx-p-select-wrap { max-width: calc(50% - 8px); }
-    /* Тип покрытия — отдельная строка */
-    #nx-prod-root .nx-p-select-wrap[data-prop="Тип покрытия"] {
-        flex-basis: 100% !important; max-width: 100% !important;
-    }
+    /* Селекты и цены на мобайле — те же 2 колонки, но узкий средний столбец
+       и на всю ширину (placement Ширина/Длина/Тип покрытия — из десктоп-правил). */
+    #nx-prod-root .nx-p-pricing,
+    #nx-prod-root .nx-p-selects { grid-template-columns: minmax(0,1fr) 12px minmax(0,1fr) !important; max-width: 100% !important; }
 }
 
 @media (max-width: 640px) {

@@ -429,7 +429,7 @@ function nxParsePrice(n) { return parseFloat(String(n || 0).replace(/\s/g, '').r
         return '<option value="' + l + '"' + (_selected['Длина'] === l ? ' selected' : '') + '>' + display + '</option>';
       }).join('');
       selects.splice(1, 0,
-        '<div class="nx-p-select-wrap">' +
+        '<div class="nx-p-select-wrap" data-prop="Длина">' +
           '<span class="nx-p-opt-lbl">Длина:</span>' +
           '<select class="nx-p-select" data-prop="Длина">' + lenOptions + '</select>' +
         '</div>'
@@ -628,7 +628,10 @@ var coatLabel = (ed && ed['Покрытие'] && ed['Покрытие'] !== 'Б�
 var widthLabel = (ed && ed.pack_y) ? ('Ширина: ' + ed.pack_y + ' мм') : '';
 var lengthVal  = ed && ed.pack_x ? parseFloat(ed.pack_x) : 0;
 var lengthLabel = lengthVal ? ('Длина: ' + (lengthVal >= 1000 ? (lengthVal / 1000) + ' м' : lengthVal + ' мм')) : '';
-var nameSuffix = [colorLabel, coatLabel, widthLabel, lengthLabel].filter(Boolean).join(' · ');
+/* Вычисленные погонные метры = кол-во единиц × длина доски (как в счётчике на карточке) */
+var metersTotal = _qty * _boardLen;
+var metersLabel = metersTotal ? ('Погонные метры: ' + (Math.round(metersTotal * 100) / 100) + ' м') : '';
+var nameSuffix = [colorLabel, coatLabel, widthLabel, lengthLabel, metersLabel].filter(Boolean).join(' · ');
 
 var propParts = [];
 if (ed) {
