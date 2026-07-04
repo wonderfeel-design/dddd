@@ -1010,6 +1010,16 @@ body > #nx-prod-root ~ *,
 #nx-btn-sample {
   transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease; background-image: none !important;
 }
+/* Кнопка «Заказать пробный выкрас» — иконка-кисть вместо корзины.
+   По умолчанию зелёная (аутлайн); при наведении кнопка зеленеет → иконка белая. */
+#nx-btn-sample::before {
+    background-image: url("data:image/svg+xml,%3Csvg width='25' height='25' viewBox='0 0 25 25' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M16.2645 11.7166C16.2645 11.7166 23.2917 5.19201 23.296 5.19201C24.3154 4.17186 24.3154 2.51792 23.296 1.50212C22.2766 0.486313 20.5979 0.512359 19.6089 1.50212L13.0892 8.53896L11.9614 7.41029C11.1415 6.58983 9.81419 6.58983 8.99435 7.41029L1.06055 15.3457L5.25952 19.5479L9.45849 23.75L17.388 15.8146C18.2078 14.9941 18.2078 13.6657 17.388 12.8453L16.2601 11.7166H16.2645Z' stroke='%234C9E24' stroke-width='1.5' stroke-miterlimit='10'/%3E%3Cpath d='M7.06055 9.75L15.0605 18.75' stroke='%234C9E24' stroke-width='1.5' stroke-miterlimit='10'/%3E%3Cpath d='M6.81487 15.2135L3.5293 18.4991' stroke='%234C9E24' stroke-width='1.5' stroke-miterlimit='10'/%3E%3Cpath d='M9.7973 18.196L6.51172 21.4816' stroke='%234C9E24' stroke-width='1.5' stroke-miterlimit='10'/%3E%3C/svg%3E") !important;
+    width: 20px !important;
+    height: 20px !important;
+}
+#nx-btn-sample:hover::before {
+    background-image: url("data:image/svg+xml,%3Csvg width='25' height='25' viewBox='0 0 25 25' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M16.2645 11.7166C16.2645 11.7166 23.2917 5.19201 23.296 5.19201C24.3154 4.17186 24.3154 2.51792 23.296 1.50212C22.2766 0.486313 20.5979 0.512359 19.6089 1.50212L13.0892 8.53896L11.9614 7.41029C11.1415 6.58983 9.81419 6.58983 8.99435 7.41029L1.06055 15.3457L5.25952 19.5479L9.45849 23.75L17.388 15.8146C18.2078 14.9941 18.2078 13.6657 17.388 12.8453L16.2601 11.7166H16.2645Z' stroke='white' stroke-width='1.5' stroke-miterlimit='10'/%3E%3Cpath d='M7.06055 9.75L15.0605 18.75' stroke='white' stroke-width='1.5' stroke-miterlimit='10'/%3E%3Cpath d='M6.81487 15.2135L3.5293 18.4991' stroke='white' stroke-width='1.5' stroke-miterlimit='10'/%3E%3Cpath d='M9.7973 18.196L6.51172 21.4816' stroke='white' stroke-width='1.5' stroke-miterlimit='10'/%3E%3C/svg%3E") !important;
+}
 #nx-prod-root .nx-p-btn:hover { background: var(--nx-green-dk); color: #fff;}
 
 /* Селекты — тот же 2-колоночный грид, что и .nx-p-pricing: Ширина = кол.1
