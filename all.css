@@ -532,12 +532,44 @@ html.nx-pal-hasctx #rec2362172923 {
     margin-right: auto !important;
     padding-left: 0 !important;
     box-sizing: border-box !important;
+    /* стиль как в карточке товара (.nx-p-bc) */
+    display: flex !important;
+    align-items: center !important;
+    flex-wrap: wrap !important;
+    gap: 6px !important;
+    font-size: 13px !important;
+    color: #888 !important;
 }
-/* Иконка «домик» в крошках — единый размер на всех страницах (как на палитре:
-   height:calc(1em-4px), ширина по пропорции). На каталоге она рендерилась мельче. */
-#allrecords .t-catalog__breadcrumbs-item svg {
-    height: calc(1em - 4px) !important;
-    width: auto !important;
+/* Пункты-ссылки — серые, без обрезки; наведение — зелёное */
+#allrecords .t-catalog__breadcrumbs-item,
+#allrecords .t-catalog__breadcrumbs-item-text {
+    color: #888 !important;
+    font-weight: 400 !important;
+    max-width: none !important;
+}
+#allrecords .t-catalog__breadcrumbs-item_clickable:hover,
+#allrecords .t-catalog__breadcrumbs-item_clickable:hover .t-catalog__breadcrumbs-item-text {
+    color: var(--nx-green) !important;
+}
+/* Текущий (активный) пункт — тёмный, чуть жирнее */
+#allrecords .t-catalog__breadcrumbs-item_active,
+#allrecords .t-catalog__breadcrumbs-item_active .t-catalog__breadcrumbs-item-text {
+    color: #222 !important;
+    font-weight: 500 !important;
+}
+/* Иконка «домик» — тем же серым, компактная */
+#allrecords .t-catalog__breadcrumbs-item svg { height: calc(1em - 4px) !important; width: auto !important; }
+/* Разделитель — символ › вместо нативной SVG-иконки (как в .nx-p-bc__sep) */
+#allrecords .t-catalog__breadcrumbs-divider svg { display: none !important; }
+#allrecords .t-catalog__breadcrumbs-divider {
+    color: #bbb !important;
+    gap: 0 !important;
+}
+#allrecords .t-catalog__breadcrumbs-divider::before {
+    content: '›' !important;
+    color: #bbb !important;
+    font-size: 15px !important;
+    line-height: 1 !important;
 }
 /* Заголовок каталога/палитры — только вертикальный ритм; горизонтальный отступ
    даёт нативный .t-container (как на палитре), сами НЕ сдвигаем. */
