@@ -52,14 +52,11 @@
   .artm-nav-link:hover { color: #fff !important; }
   .artm-nav-link.active { color: #fff !important; border-bottom-color: #4C9E24; }
 
-  /* ── PANEL (оверлей под баром) ── */
+  /* ── PANEL (постоянно видна, в потоке под баром) ── */
   .artm-panel {
-    display: none; position: absolute; top: 44px; left: 0; right: 0;
-    border: 1px solid #ddd; border-top: none; background: #fff;
-    box-shadow: 0 8px 28px rgba(0,0,0,.13); z-index: 50;
-    max-height: calc(100vh - 120px); overflow-y: auto;
+    display: flex;
+    border: 1px solid #e5e5e5; border-top: none; background: #fff;
   }
-  .artm-panel.open { display: flex; }
 
   /* ── SIDEBAR ── */
   .artm-sidebar { width: 188px; flex-shrink: 0; background: #f2f2f2; border-right: 1px solid #e0e0e0; }
@@ -449,28 +446,15 @@
     return wrap;
   }
 
-  /* ── Десктоп: открыть / закрыть ── */
-  function openMenu() {
-    menuOpen = true; panel.classList.add('open'); updateNavActive();
-  }
-  function closeMenu() {
-    menuOpen = false; panel.classList.remove('open'); updateNavActive();
-  }
+  /* ── Десктоп: панель всегда открыта; наведение переключает раздел ── */
+  function openMenu() { updateNavActive(); }
   function updateNavActive() {
     navLinks.querySelectorAll('.artm-nav-link').forEach(function(b) {
-      b.classList.toggle('active', menuOpen && b.dataset.key === activePanel);
+      b.classList.toggle('active', b.dataset.key === activePanel);
     });
   }
-  catalogBtn.addEventListener('click', function() { menuOpen ? closeMenu() : openMenu(); });
-  /* Закрытие при уходе мыши со всего меню */
-  root.addEventListener('mouseleave', function() {
-    clearTimeout(closeTimer);
-    closeTimer = setTimeout(closeMenu, 150);
-  });
-  root.addEventListener('mouseenter', function() { clearTimeout(closeTimer); });
-  document.addEventListener('click', function(e) {
-    if (menuOpen && !e.target.closest('.artm')) closeMenu();
-  });
+  /* КАТАЛОГ — переход на страницу каталога */
+  catalogBtn.addEventListener('click', function() { window.location.href = '/catalog'; });
 
   /* ── Мобайл: табы ── */
   function renderMobTabs() {
@@ -521,6 +505,7 @@
   /* ── Init ── */
   renderSidebar();
   renderContent();
+  updateNavActive();
 
   /* ── Sticky (прокрутка): в покое бар В ПОТОКЕ — стоит своим блоком под
      шапкой сайта и физически не может её перекрыть. При прокрутке, когда
