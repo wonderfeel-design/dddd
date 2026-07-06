@@ -10,18 +10,21 @@
   .artm-wrap *::before,
   .artm-wrap *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-  /* Обёртка. Бар виден (z-index выше контента), но НЕ должен перекрывать
-     верхнюю шапку сайта. Шапка Tilda (#rec2362175413) плавающая/закреплённая
-     и висит поверх потока, поэтому этот блок нужно СМЕСТИТЬ ВНИЗ на её высоту.
-     --artm-header-h — высота верхней шапки сайта; подстройте под свой сайт
-     (у Tilda обычно 60–80px; сейчас 70px по данным меню). Если бар стоит НЕ
-     сразу под плавающей шапкой (между ними есть блок) — поставьте 0. */
+  /* Обёртка. Архитектура позиционирования — как у основного меню (header.html):
+     в покое бар в НОРМАЛЬНОМ потоке (стоит своим блоком под шапкой сайта, без
+     жёстких отступов), а при прокрутке JS фиксирует его РОВНО под плавающей
+     шапкой Tilda через класс .artm-sticky и top:var(--artm-header-h). Высота
+     шапки определяется скриптом автоматически (не хардкод). */
   .artm-wrap {
     font-family: 'GothamPro','Gotham Pro',sans-serif;
     position: relative;   /* якорь для absolute-панели */
     width: 100%;
-    z-index: 900;         /* виден над контентом, ниже модалок Tilda */
-    margin-top: var(--artm-header-h, 70px);
+    z-index: 1000;
+  }
+  .artm-wrap.artm-sticky {
+    position: fixed !important;
+    top: var(--artm-header-h, 80px);
+    left: 0; right: 0; width: 100%;
   }
 
   /* ── Тёмная навигация ── */
@@ -390,5 +393,70 @@
 
   renderSidebar();
   renderContent();
+
+  /* ── Sticky: как в основном меню (header.html) ──────────────
+     В покое бар в потоке; при прокрутке фиксируем его ровно под плавающей
+     шапкой Tilda. Высоту шапки определяем автоматически. Спейсер (display:none
+     пока не sticky) не даёт контенту прыгнуть. */
+  (function initSticky() {
+    var wrap = document.getElementById('artmWrap');
+    if (!wrap) return;
+
+    function getHeaderH() {
+      var h = 0;
+      ['.tmenu-mobile_positionfixed', '.t-menu-base_positionfixed'].forEach(function (sel) {
+        var el = document.querySelector(sel);
+        if (el && getComputedStyle(el).position === 'fixed' && el.offsetHeight > 0)
+          h = Math.max(h, el.offsetHeight);
+      });
+      if (h > 0) return h;
+      document.querySelectorAll('.t-rec').forEach(function (rec) {
+        var st = getComputedStyle(rec);
+        if (st.position === 'fixed' && parseFloat(st.top) <= 0 && rec.offsetHeight > 0)
+          h = Math.max(h, rec.offsetHeight);
+      });
+      if (h > 0) return h;
+      try {
+        var els = (document.getElementById('allrecords') || document.body).querySelectorAll('*');
+        for (var i = 0; i < els.length; i++) {
+          var el = els[i];
+          if (el === wrap || wrap.contains(el)) continue;
+          var st = getComputedStyle(el);
+          if (st.position !== 'fixed' || el.offsetHeight < 6 || el.offsetHeight > 250) continue;
+          var rect = el.getBoundingClientRect();
+          if (rect.top >= -5 && rect.top <= 5) h = Math.max(h, el.offsetHeight);
+        }
+      } catch (err) {}
+      return h || 80;
+    }
+
+    var spacer = document.createElement('div');
+    spacer.style.cssText = 'display:none;height:' + wrap.offsetHeight + 'px;';
+    wrap.parentNode.insertBefore(spacer, wrap);
+
+    function applySticky() {
+      var hdrH = getHeaderH();
+      document.documentElement.style.setProperty('--artm-header-h', hdrH + 'px');
+      var offsetTop = spacer.getBoundingClientRect().top + window.scrollY;
+      var shouldStick = window.scrollY >= offsetTop - hdrH;
+      if (shouldStick && !wrap.classList.contains('artm-sticky')) {
+        wrap.classList.add('artm-sticky');
+        spacer.style.display = 'block';
+      } else if (!shouldStick && wrap.classList.contains('artm-sticky')) {
+        wrap.classList.remove('artm-sticky');
+        spacer.style.display = 'none';
+      }
+    }
+
+    window.addEventListener('scroll', applySticky, { passive: true });
+    var rt = null;
+    window.addEventListener('resize', function () {
+      clearTimeout(rt);
+      rt = setTimeout(function () { spacer.style.height = wrap.offsetHeight + 'px'; applySticky(); }, 150);
+    });
+    applySticky();
+    setTimeout(applySticky, 300);
+    setTimeout(applySticky, 800);
+  })();
 })();
 </script>
