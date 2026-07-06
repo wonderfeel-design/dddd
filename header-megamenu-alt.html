@@ -1,0 +1,388 @@
+<!-- ==========================================
+     АРТ ДОСКА — Альтернативное мегаменю (диагональные фото-полосы)
+     Вставить в Tilda → HTML-блок (T123 / Zero Block) вместо/рядом с текущим меню.
+     Самодостаточно: разметка + стили + скрипт. Ссылки — реальные пермалинки
+     каталога (/catalog/<uid>-<slug>). Фото-заглушки IMGS можно заменить.
+     ========================================== -->
+
+<style>
+  .artm-wrap *,
+  .artm-wrap *::before,
+  .artm-wrap *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  /* Обёртка — поднимаем над блоками Tilda, чтобы панель перекрывала контент */
+  .artm-wrap {
+    font-family: 'GothamPro','Gotham Pro',sans-serif;
+    position: relative;
+    width: 100%;
+    z-index: 10000;
+  }
+
+  /* ── Тёмная навигация ── */
+  .artm-nav {
+    display: flex;
+    align-items: stretch;
+    background: #1A1B25;
+    width: 100%;
+  }
+  .artm-catalog-btn {
+    background: #4C9E24;
+    color: #fff;
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.09em;
+    padding: 0 28px;
+    height: 44px;
+    border: none;
+    cursor: pointer;
+    white-space: nowrap;
+    flex-shrink: 0;
+    text-transform: uppercase;
+    transition: background 0.15s;
+  }
+  .artm-catalog-btn:hover { background: #3d8a1c; }
+
+  .artm-nav-links { display: flex; align-items: stretch; }
+  .artm-nav-link {
+    color: rgba(255,255,255,0.85);
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.07em;
+    padding: 0 18px;
+    height: 44px;
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    cursor: pointer;
+    white-space: nowrap;
+    text-transform: uppercase;
+    transition: color 0.15s, border-color 0.15s;
+    display: flex;
+    align-items: center;
+  }
+  .artm-nav-link:hover { color: #fff; }
+  .artm-nav-link.active { border-bottom-color: #4C9E24; }
+
+  /* ── Панель (оверлей поверх страницы) ── */
+  .artm-panel {
+    display: none;
+    position: absolute;
+    top: 44px;            /* высота nav */
+    left: 0;
+    width: 100%;
+    z-index: 9999;
+    border: 1px solid #ddd;
+    border-top: none;
+    background: #fff;
+    box-shadow: 0 6px 24px rgba(0,0,0,0.12);
+    max-height: 80vh;
+    overflow-y: auto;
+  }
+  .artm-panel.open { display: flex; }
+
+  /* ── Сайдбар ── */
+  .artm-sidebar { width: 188px; flex-shrink: 0; background: #f2f2f2; border-right: 1px solid #e0e0e0; }
+  .artm-sidebar-btn {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding: 14px 16px;
+    font-family: inherit;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    color: #333;
+    background: none;
+    border: none;
+    border-left: 3px solid transparent;
+    cursor: pointer;
+    text-align: left;
+    text-transform: uppercase;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
+  }
+  .artm-sidebar-btn:hover { background: #E5F5E2; color: #4C9E24; }
+  .artm-sidebar-btn.active { background: #E5F5E2; color: #4C9E24; border-left-color: #4C9E24; }
+  .artm-sidebar-btn svg { flex-shrink: 0; color: #bbb; transition: color 0.15s; }
+  .artm-sidebar-btn.active svg,
+  .artm-sidebar-btn:hover svg { color: #4C9E24; }
+
+  /* ── Контент ── */
+  .artm-content { flex: 1; padding: 20px 22px 16px; min-width: 0; }
+
+  /* ── Ряд с ромбами ── */
+  .artm-row-label {
+    font-size: 10px; font-weight: 700; letter-spacing: 0.12em; color: #888;
+    margin-bottom: 4px; padding-left: 2px; text-transform: uppercase; font-family: inherit;
+  }
+  .artm-row-heading { text-decoration: none; color: inherit; }
+  .artm-row-heading:hover .artm-row-label { color: #4C9E24; }
+
+  .artm-row-strip {
+    position: relative; height: 90px; background: #0a0a0a;
+    border-radius: 3px; overflow: hidden; margin-bottom: 7px;
+  }
+
+  .artm-seg { position: absolute; inset: 0; cursor: pointer; z-index: 1; text-decoration: none; display: block; }
+  .artm-seg:hover { z-index: 2; }
+  .artm-seg-bg {
+    position: absolute; inset: 0; background-size: cover; background-position: center;
+    filter: brightness(0.55); transition: filter 0.25s, transform 0.25s;
+  }
+  .artm-seg:hover .artm-seg-bg { filter: brightness(0.9); transform: scale(1.04); }
+  .artm-seg-tint {
+    position: absolute; inset: 0; background: rgba(76,158,36,0.13);
+    opacity: 0; transition: opacity 0.25s; pointer-events: none;
+  }
+  .artm-seg:hover .artm-seg-tint { opacity: 1; }
+  .artm-seg-label {
+    position: absolute; bottom: 9px; width: 108px; text-align: center;
+    font-size: 10px; font-weight: 600; color: rgba(255,255,255,0.88);
+    text-shadow: 0 1px 6px rgba(0,0,0,0.9); letter-spacing: 0.03em; line-height: 1.25;
+    pointer-events: none; font-family: inherit; transition: color 0.15s, font-weight 0.15s;
+  }
+  .artm-seg:hover .artm-seg-label { color: #fff; font-weight: 700; }
+
+  .artm-svg-lines { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 3; }
+
+  /* ── Подложка ── */
+  .artm-backdrop { display: none; position: fixed; inset: 0; z-index: 9998; background: rgba(0,0,0,0.35); }
+  .artm-backdrop.open { display: block; }
+
+  /* ── Адаптив ── */
+  @media (max-width: 900px) {
+    .artm-nav-links { overflow-x: auto; }
+    .artm-sidebar { width: 140px; }
+    .artm-seg-label { width: 84px; font-size: 9px; }
+  }
+</style>
+
+<div class="artm-wrap" id="artmWrap">
+  <nav class="artm-nav">
+    <button class="artm-catalog-btn" id="artmCatalogBtn">КАТАЛОГ</button>
+    <div class="artm-nav-links" id="artmNavLinks"></div>
+  </nav>
+  <div class="artm-panel" id="artmPanel">
+    <div class="artm-sidebar" id="artmSidebar"></div>
+    <div class="artm-content" id="artmContent"></div>
+  </div>
+  <div class="artm-backdrop" id="artmBackdrop"></div>
+</div>
+
+<script>
+(function () {
+  var SKEW = 5;    /* наклон диагонали, % ширины ряда */
+  var GAP  = 0.35; /* зазор между сегментами, %       */
+
+  /* Фото-заглушки по типам — замените на реальные категории при желании */
+  var IMGS = {
+    ceiling: 'https://optim.tildacdn.com/tild3430-3463-4963-b734-633130646361/-/resize/800x/-/format/webp/photo-1761778371592-.jpg.webp',
+    wall:    'https://images.unsplash.com/photo-1596830762262-7b5e55dd821c?w=1000&q=80',
+    floor:   'https://images.unsplash.com/photo-1573869908170-64b53a60d8da?w=1000&q=80',
+    deck:    'https://images.unsplash.com/photo-1488441200229-6a4be8f4013d?w=1000&q=80',
+    veneer:  'https://images.unsplash.com/photo-1700809887581-c41c239e808e?w=1000&q=80',
+    plank:   'https://images.unsplash.com/photo-1515713519566-6f9bf3b4a07a?w=1000&q=80'
+  };
+
+  /* Реальные пермалинки каталога */
+  var CATALOG = [
+    { key: 'interier', label: 'ДЛЯ ИНТЕРЬЕРА', href: '/catalog/810291631742-dlya-interera',
+      subCats: [
+        { heading: 'ПОТОЛОК', href: '/catalog/565173393412-potolok', image: IMGS.ceiling, items: [
+          { n: 'Вагонка', h: '/catalog/752465215952-vagonka' },
+          { n: 'Имитация бруса', h: '/catalog/586794862262-imitatsiya-brusa' },
+          { n: 'Шпонированная доска', h: '/catalog/997756288252-shponirovannaya-doska' },
+          { n: 'Доска потолочная', h: '/catalog/596951118782-doska-potolochnaya' },
+          { n: 'Планкен', h: '/catalog/228699182612-planken' } ] },
+        { heading: 'СТЕНЫ', href: '/catalog/786215589522-steni', image: IMGS.wall, items: [
+          { n: 'Вагонка', h: '/catalog/727322905002-vagonka' },
+          { n: 'Имитация бруса', h: '/catalog/979626884442-imitatsiya-brusa' },
+          { n: 'Шпонированная доска', h: '/catalog/512449107972-shponirovannaya-doska' },
+          { n: 'Доска стеновая', h: '/catalog/319239141522-doska-stenovaya' },
+          { n: 'Стеновые панели', h: '/catalog/598653134492-stenovie-paneli' },
+          { n: 'Слэбы', h: '/catalog/565136830622-slebi' } ] },
+        { heading: 'ПОЛ', href: '/catalog/168434912242-pol', image: IMGS.floor, items: [
+          { n: 'Террасная доска', h: '/catalog/872722103702-terrasnaya-doska' },
+          { n: 'Палубная доска', h: '/catalog/374112886602-palubnaya-doska' },
+          { n: 'Слэбы напольные', h: '/catalog/549701901002-slebi-napolnie' },
+          { n: 'Доска пола', h: '/catalog/382387938172-doska-pola' } ] },
+        { heading: 'ОКНА / ДВЕРИ', href: '/catalog/662542174522-okna-dveri', image: IMGS.plank, items: [
+          { n: 'Вагонка', h: '/catalog/563319022162-vagonka' },
+          { n: 'Имитация бруса', h: '/catalog/477014464882-imitatsiya-brusa' },
+          { n: 'Шпонированная доска', h: '/catalog/631180345282-shponirovannaya-doska' },
+          { n: 'Слэбы', h: '/catalog/811096281772-slebi' },
+          { n: 'Доска', h: '/catalog/564436745372-doska' },
+          { n: 'Стеновые панели', h: '/catalog/911008845352-stenovie-paneli' } ] },
+        { heading: 'ДЕКОР', href: '/catalog/597495000982-dekor', image: IMGS.veneer, items: [
+          { n: 'Декоративные панели', h: '/catalog/922401543332-dekorativnie-paneli' },
+          { n: 'Молдинги', h: '/catalog/529584857882-moldingi' },
+          { n: 'Плинтусы', h: '/catalog/449922635632-plintusi' } ] }
+      ] },
+    { key: 'fasad', label: 'ДЛЯ ФАСАДА', href: '/catalog/799009129752-dlya-fasada',
+      subCats: [
+        { heading: 'ФАСАДНЫЕ ПАНЕЛИ', href: '/catalog/813806349812-fasadnie-paneli', image: IMGS.plank, items: [
+          { n: 'Фасадная доска', h: '/catalog/546702251802-fasadnaya-doska' },
+          { n: 'Блок-хаус', h: '/catalog/165489477212-blok-haus' },
+          { n: 'Имитация бруса', h: '/catalog/533189585232-imitatsiya-brusa' },
+          { n: 'Вагонка', h: '/catalog/613544423522-vagonka' } ] },
+        { heading: 'ТЕРРАСНЫЕ ДОСКИ', href: '/catalog/640717199452-terrasnie-doski', image: IMGS.deck, items: [
+          { n: 'Палубная доска', h: '/catalog/311305480882-palubnaya-doska' },
+          { n: 'Слэбы', h: '/catalog/297627384262-slebi' } ] }
+      ] },
+    { key: 'pilo', label: 'ПИЛОМАТЕРИАЛЫ', href: '/catalog/929460929152-pilomateriali',
+      subCats: [
+        { heading: 'ПИЛОМАТЕРИАЛЫ', href: '/catalog/929460929152-pilomateriali', image: IMGS.plank, items: [
+          { n: 'Брус', h: '/catalog/528547846822-brus' },
+          { n: 'Доска обрезная', h: '/catalog/140001465242-doska-obreznaya' },
+          { n: 'Доска необрезная', h: '/catalog/757858842962-doska-neobreznaya' },
+          { n: 'Рейка', h: '/catalog/682086185842-reika' },
+          { n: 'Шпунтованная доска', h: '/catalog/484308463392-shpuntovannaya-doska' } ] }
+      ] },
+    { key: 'krepezh', label: 'КРЕПЕЖ', href: '/catalog/559088613632-krepezh',
+      subCats: [
+        { heading: 'КРЕПЕЖ', href: '/catalog/559088613632-krepezh', image: IMGS.wall, items: [
+          { n: 'Саморезы', h: '/catalog/819626010462-samorezi' },
+          { n: 'Скобы', h: '/catalog/254591601132-skobi' },
+          { n: 'Гвозди', h: '/catalog/677218539812-gvozdi' },
+          { n: 'Клипсы', h: '/catalog/958351966462-klipsi' } ] }
+      ] },
+    { key: 'kraski', label: 'КРАСКИ', href: '/catalog/807847057542-kraski',
+      subCats: [
+        { heading: 'КРАСКИ И ЛАКИ', href: '/catalog/807847057542-kraski', image: IMGS.veneer, items: [
+          { n: 'Масло для дерева', h: '/catalog/775950412632-maslo-dlya-dereva' },
+          { n: 'Лаки', h: '/catalog/443883645832-laki' },
+          { n: 'Антисептики', h: '/catalog/424637688572-antiseptiki' },
+          { n: 'Краски фасадные', h: '/catalog/478948993422-kraski-fasadnie' },
+          { n: 'Краски для интерьера', h: '/catalog/980859624572-kraski-dlya-interera' } ] }
+      ] }
+  ];
+
+  var activePanel = 'interier';
+  var menuOpen    = false;
+
+  var panel      = document.getElementById('artmPanel');
+  var backdrop   = document.getElementById('artmBackdrop');
+  var sidebar    = document.getElementById('artmSidebar');
+  var content    = document.getElementById('artmContent');
+  var navLinks   = document.getElementById('artmNavLinks');
+  var catalogBtn = document.getElementById('artmCatalogBtn');
+
+  function svgEl(tag) { return document.createElementNS('http://www.w3.org/2000/svg', tag); }
+
+  /* Верхние ссылки навигации — наведение открывает панель, клик ведёт в раздел */
+  CATALOG.forEach(function (cat) {
+    var a = document.createElement('a');
+    a.className = 'artm-nav-link';
+    a.textContent = cat.label;
+    a.href = cat.href;
+    a.dataset.key = cat.key;
+    a.addEventListener('mouseenter', function () { activePanel = cat.key; openMenu(); renderSidebar(); renderContent(); });
+    navLinks.appendChild(a);
+  });
+
+  function renderSidebar() {
+    sidebar.innerHTML = '';
+    CATALOG.forEach(function (cat) {
+      var btn = document.createElement('button');
+      btn.className = 'artm-sidebar-btn' + (cat.key === activePanel ? ' active' : '');
+      btn.dataset.key = cat.key;
+      var span = document.createElement('span'); span.textContent = cat.label; btn.appendChild(span);
+      var svg = svgEl('svg');
+      svg.setAttribute('width', '13'); svg.setAttribute('height', '13'); svg.setAttribute('viewBox', '0 0 24 24');
+      svg.setAttribute('fill', 'none'); svg.setAttribute('stroke', 'currentColor'); svg.setAttribute('stroke-width', '2.5');
+      svg.setAttribute('stroke-linecap', 'round'); svg.setAttribute('stroke-linejoin', 'round');
+      var poly = svgEl('polyline'); poly.setAttribute('points', '9 18 15 12 9 6'); svg.appendChild(poly);
+      btn.appendChild(svg);
+      btn.addEventListener('mouseenter', function () { activePanel = cat.key; renderSidebar(); renderContent(); updateNavActive(); });
+      btn.addEventListener('click', function () { activePanel = cat.key; renderSidebar(); renderContent(); updateNavActive(); });
+      sidebar.appendChild(btn);
+    });
+  }
+
+  function renderContent() {
+    content.innerHTML = '';
+    var cat = CATALOG.find(function (c) { return c.key === activePanel; });
+    if (!cat) return;
+    cat.subCats.forEach(function (sub) { content.appendChild(buildRow(sub)); });
+  }
+
+  function buildRow(sub) {
+    var N = sub.items.length;
+    var segW = 100 / N;
+    var wrapper = document.createElement('div');
+
+    var headingLink = document.createElement('a');
+    headingLink.className = 'artm-row-heading';
+    headingLink.href = sub.href;
+    var rowLabel = document.createElement('div');
+    rowLabel.className = 'artm-row-label';
+    rowLabel.textContent = sub.heading;
+    headingLink.appendChild(rowLabel);
+    wrapper.appendChild(headingLink);
+
+    var strip = document.createElement('div');
+    strip.className = 'artm-row-strip';
+    wrapper.appendChild(strip);
+
+    sub.items.forEach(function (item, i) {
+      var isFirst = i === 0, isLast = i === N - 1;
+      var tL = isFirst ? 0 : i * segW + GAP;
+      var tR = isLast  ? 100 : (i + 1) * segW - GAP;
+      var bL = isFirst ? 0 : tL - SKEW;
+      var bR = isLast  ? 100 : tR - SKEW;
+      var clip = 'polygon(' + tL + '% 0%, ' + tR + '% 0%, ' + bR + '% 100%, ' + bL + '% 100%)';
+
+      var seg = document.createElement('a');
+      seg.className = 'artm-seg';
+      seg.href = item.h;
+      seg.style.clipPath = clip;
+
+      var bg = document.createElement('div');
+      bg.className = 'artm-seg-bg';
+      bg.style.backgroundImage = 'url(' + sub.image + ')';
+      seg.appendChild(bg);
+
+      var tint = document.createElement('div'); tint.className = 'artm-seg-tint'; seg.appendChild(tint);
+
+      var labelCenter = (bL + bR) / 2;
+      var lbl = document.createElement('div');
+      lbl.className = 'artm-seg-label';
+      lbl.style.left = 'calc(' + labelCenter + '% - 54px)';
+      lbl.textContent = item.n;
+      seg.appendChild(lbl);
+
+      strip.appendChild(seg);
+    });
+
+    var svg = svgEl('svg'); svg.setAttribute('class', 'artm-svg-lines');
+    for (var i = 0; i < N - 1; i++) {
+      var x1 = (i + 1) * segW, x2 = x1 - SKEW;
+      var line = svgEl('line');
+      line.setAttribute('x1', x1 + '%'); line.setAttribute('y1', '0%');
+      line.setAttribute('x2', x2 + '%'); line.setAttribute('y2', '100%');
+      line.setAttribute('stroke', 'rgba(255,255,255,0.3)'); line.setAttribute('stroke-width', '1');
+      svg.appendChild(line);
+    }
+    strip.appendChild(svg);
+    return wrapper;
+  }
+
+  function openMenu()  { menuOpen = true;  panel.classList.add('open');    backdrop.classList.add('open');    updateNavActive(); }
+  function closeMenu() { menuOpen = false; panel.classList.remove('open'); backdrop.classList.remove('open'); updateNavActive(); }
+  function updateNavActive() {
+    navLinks.querySelectorAll('.artm-nav-link').forEach(function (a) {
+      a.classList.toggle('active', menuOpen && a.dataset.key === activePanel);
+    });
+  }
+
+  catalogBtn.addEventListener('click', function () { menuOpen ? closeMenu() : openMenu(); });
+  backdrop.addEventListener('click', closeMenu);
+  /* Закрытие при уходе мыши со всего меню */
+  document.getElementById('artmWrap').addEventListener('mouseleave', function () { closeMenu(); });
+
+  renderSidebar();
+  renderContent();
+})();
+</script>
