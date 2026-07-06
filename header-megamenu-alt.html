@@ -16,6 +16,13 @@
     font-family: 'GothamPro','Gotham Pro',sans-serif;
     position: relative; width: 100%; z-index: 1000;
   }
+  /* Сброс: Tilda перекрашивает ссылки — гасим её глобальный цвет/подчёркивание.
+     Цвет каждого пункта задаём ниже явно (наследуется потомками ссылки). */
+  html body .artm a,
+  html body .artm a:link,
+  html body .artm a:visited,
+  html body .artm a:hover,
+  html body .artm a:active { text-decoration: none !important; }
   /* Липкость: при прокрутке фиксируем ровно под шапкой Tilda */
   .artm.artm-sticky {
     position: fixed !important;
@@ -35,15 +42,15 @@
   .artm-nav-links { display: flex; align-items: stretch; overflow-x: auto; flex: 1; scrollbar-width: none; }
   .artm-nav-links::-webkit-scrollbar { display: none; }
   .artm-nav-link {
-    color: rgba(255,255,255,.82); font-family: inherit; font-size: 12px;
+    color: rgba(255,255,255,.82) !important; font-family: inherit; font-size: 12px;
     font-weight: 600; letter-spacing: .07em; padding: 0 16px; height: 44px;
     display: flex; align-items: center; background: none; border: none;
     border-bottom: 2px solid transparent; cursor: pointer; white-space: nowrap;
     text-transform: uppercase; text-decoration: none;
     transition: color .15s, border-color .15s; flex-shrink: 0;
   }
-  .artm-nav-link:hover { color: #fff; }
-  .artm-nav-link.active { color: #fff; border-bottom-color: #4C9E24; }
+  .artm-nav-link:hover { color: #fff !important; }
+  .artm-nav-link.active { color: #fff !important; border-bottom-color: #4C9E24; }
 
   /* ── PANEL (оверлей под баром) ── */
   .artm-panel {
@@ -59,13 +66,13 @@
   .artm-sidebar-btn {
     display: flex; align-items: center; justify-content: space-between;
     width: 100%; padding: 14px 16px; font-family: inherit; font-size: 11px;
-    font-weight: 700; letter-spacing: .07em; color: #333; background: none;
+    font-weight: 700; letter-spacing: .07em; color: #333 !important; background: none;
     border: none; border-left: 3px solid transparent; cursor: pointer;
     text-align: left; text-transform: uppercase; text-decoration: none;
     transition: background .15s, color .15s, border-color .15s;
   }
-  .artm-sidebar-btn:hover { background: #E5F5E2; color: #4C9E24; }
-  .artm-sidebar-btn.active { background: #E5F5E2; color: #4C9E24; border-left-color: #4C9E24; }
+  .artm-sidebar-btn:hover { background: #E5F5E2; color: #4C9E24 !important; }
+  .artm-sidebar-btn.active { background: #E5F5E2; color: #4C9E24 !important; border-left-color: #4C9E24; }
   .artm-sidebar-btn svg { flex-shrink: 0; color: #bbb; transition: color .15s; }
   .artm-sidebar-btn.active svg, .artm-sidebar-btn:hover svg { color: #4C9E24; }
 
@@ -134,7 +141,7 @@
   .artm-mob-tab.active { background: #4C9E24; }
   .artm-mob-content { padding: 14px 12px 24px; flex: 1; }
   .artm-mob-section-label {
-    font-size: 9px; font-weight: 700; letter-spacing: .13em; color: #666;
+    font-size: 9px; font-weight: 700; letter-spacing: .13em; color: #666 !important;
     margin-bottom: 6px; text-transform: uppercase; text-decoration: none; display: block;
   }
   .artm-mob-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 5px; margin-bottom: 14px; }
