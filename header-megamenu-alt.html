@@ -145,11 +145,23 @@
     margin-bottom: 6px; text-transform: uppercase; text-decoration: none; display: block;
   }
   .artm-mob-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 5px; margin-bottom: 14px; }
-  /* Карточки с теми же диагональными углами, что и десктоп-ромбы */
+  /* Карточки с теми же диагональными углами, что и десктоп-ромбы.
+     Внешние грани пары — прямые, внутренний шов — диагональ. */
   .artm-mob-card {
     position: relative; height: 74px; border-radius: 3px; overflow: hidden;
     cursor: pointer; display: block; text-decoration: none;
-    clip-path: polygon(13px 0, 100% 0, calc(100% - 13px) 100%, 0 100%);
+  }
+  /* Левый столбец: левая грань прямая, правая — диагональ (шов) */
+  .artm-mob-grid .artm-mob-card:nth-child(odd) {
+    clip-path: polygon(0 0, 100% 0, calc(100% - 13px) 100%, 0 100%);
+  }
+  /* Правый столбец: левая грань — диагональ, правая прямая */
+  .artm-mob-grid .artm-mob-card:nth-child(even) {
+    clip-path: polygon(13px 0, 100% 0, 100% 100%, 0 100%);
+  }
+  /* Одинокая последняя карточка (нечётное число) — обе грани прямые */
+  .artm-mob-grid .artm-mob-card:nth-child(odd):last-child {
+    clip-path: none;
   }
   .artm-mob-card-bg {
     position: absolute; inset: 0; background-size: cover; background-position: center; filter: brightness(.6);
