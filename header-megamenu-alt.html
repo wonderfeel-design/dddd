@@ -112,54 +112,23 @@
   .artm-seg:hover .artm-seg-label { color: #fff; font-weight: 700; }
   .artm-svg-lines { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 3; }
 
-  /* ── MOBILE ── */
-  .artm-mob-bar { display: none; align-items: center; background: #1A1B25; padding: 0 14px; height: 50px; }
-  .artm-mob-logo { color: #fff; font-size: 13px; font-weight: 700; letter-spacing: .06em; flex: 1; }
-  .artm-mob-btn {
-    background: #4C9E24; border: none; color: #fff; cursor: pointer;
-    padding: 8px 13px; font-size: 10px; font-weight: 700; letter-spacing: .08em;
-    display: flex; align-items: center; gap: 5px; border-radius: 2px; font-family: inherit;
-  }
-  .artm-mob-panel {
-    display: none; position: fixed; top: 50px; left: 0; right: 0; bottom: 0;
-    background: #fff; z-index: 1200; flex-direction: column; overflow-y: auto;
-  }
-  .artm-mob-panel.open { display: flex; }
-  .artm-mob-tabs {
-    display: flex; overflow-x: auto; background: #1A1B25; gap: 4px; padding: 8px 10px;
-    flex-shrink: 0; -webkit-overflow-scrolling: touch; scrollbar-width: none;
-  }
-  .artm-mob-tabs::-webkit-scrollbar { display: none; }
-  .artm-mob-tab {
-    background: rgba(255,255,255,.1); color: #fff; border: none; border-radius: 3px;
-    padding: 7px 11px; font-size: 10px; font-weight: 700; letter-spacing: .07em;
-    cursor: pointer; white-space: nowrap; font-family: inherit; flex-shrink: 0;
-  }
-  .artm-mob-tab.active { background: #4C9E24; }
-  .artm-mob-content { padding: 14px 12px 24px; flex: 1; }
-  .artm-mob-section-label {
-    font-size: 9px; font-weight: 700; letter-spacing: .13em; color: #666 !important;
-    margin-bottom: 6px; text-transform: uppercase; text-decoration: none; display: block;
-  }
-  .artm-mob-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 5px; margin-bottom: 14px; }
+  /* ── MOBILE: фото-сетка категорий (лента) ── */
+  .artm-mobg { display: none; }
+  .artm-mob-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 5px; }
   /* Карточки с теми же диагональными углами, что и десктоп-ромбы.
      Внешние грани пары — прямые, внутренний шов — диагональ. */
   .artm-mob-card {
     position: relative; height: 74px; border-radius: 3px; overflow: hidden;
     cursor: pointer; display: block; text-decoration: none;
   }
-  /* Левый столбец: левая грань прямая, правая — диагональ (шов) */
   .artm-mob-grid .artm-mob-card:nth-child(odd) {
     clip-path: polygon(0 0, 100% 0, calc(100% - 13px) 100%, 0 100%);
   }
-  /* Правый столбец: левая грань — диагональ, правая прямая */
   .artm-mob-grid .artm-mob-card:nth-child(even) {
     clip-path: polygon(13px 0, 100% 0, 100% 100%, 0 100%);
   }
-  /* Одинокая карточка в ряду (нечётное число) — на всю ширину, грани прямые */
   .artm-mob-grid .artm-mob-card:nth-child(odd):last-child {
-    clip-path: none;
-    grid-column: 1 / -1;
+    clip-path: none; grid-column: 1 / -1;
   }
   .artm-mob-card-bg {
     position: absolute; inset: 0; background-size: cover; background-position: center; filter: brightness(.6);
@@ -172,15 +141,17 @@
     font-size: 9px; font-weight: 700; color: #fff;
     text-shadow: 0 1px 4px rgba(0,0,0,.9); line-height: 1.25; letter-spacing: .02em;
   }
+  .artm-sub { margin-bottom: 10px; }
 
+  /* Десктоп: скрываем мобильную сетку. Мобайл: складываем панель в столбец,
+     прячем сайдбар (первый уровень доступен в баре сверху) и ромбы → карточки. */
+  @media (min-width: 768px) { .artm-mobg { display: none; } }
   @media (max-width: 767px) {
-    .artm-nav { display: none; }
-    .artm-panel { display: none !important; }
-    .artm-mob-bar { display: flex; }
-  }
-  @media (min-width: 768px) {
-    .artm-mob-bar { display: none; }
-    .artm-mob-panel { display: none !important; }
+    .artm-panel { flex-direction: column; }
+    .artm-sidebar { display: none; }
+    .artm-content { padding: 12px 12px 18px; }
+    .artm-desk { display: none; }
+    .artm-mobg { display: block; }
   }
 </style>
 
@@ -193,22 +164,6 @@
   <div class="artm-panel" id="artmPanel">
     <div class="artm-sidebar" id="artmSidebar"></div>
     <div class="artm-content" id="artmContent"></div>
-  </div>
-
-  <!-- Мобайл -->
-  <div class="artm-mob-bar">
-    <span class="artm-mob-logo">АРТ ДОСКА</span>
-    <button class="artm-mob-btn" id="artmMobBtn">
-      <svg id="artmMobIcon" width="13" height="13" viewBox="0 0 24 24" fill="none"
-        stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-        <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
-      </svg>
-      КАТАЛОГ
-    </button>
-  </div>
-  <div class="artm-mob-panel" id="artmMobPanel">
-    <div class="artm-mob-tabs" id="artmMobTabs"></div>
-    <div class="artm-mob-content" id="artmMobContent"></div>
   </div>
 </div>
 
@@ -325,23 +280,14 @@
   ];
 
   var activePanel = 'interier';
-  var menuOpen = false, mobOpen = false, closeTimer = null;
 
   var root       = document.getElementById('artmRoot');
-  var panel      = document.getElementById('artmPanel');
   var sidebar    = document.getElementById('artmSidebar');
   var content    = document.getElementById('artmContent');
   var navLinks   = document.getElementById('artmNavLinks');
   var catalogBtn = document.getElementById('artmCatalogBtn');
-  var mobBtn     = document.getElementById('artmMobBtn');
-  var mobPanel   = document.getElementById('artmMobPanel');
-  var mobTabs    = document.getElementById('artmMobTabs');
-  var mobContent = document.getElementById('artmMobContent');
-  var mobIcon    = document.getElementById('artmMobIcon');
 
-  var ICON_MENU = '<line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>';
-  var ICON_X    = '<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>';
-
+  function isMobile() { return window.matchMedia('(max-width: 767px)').matches; }
   function svgEl(tag) { return document.createElementNS('http://www.w3.org/2000/svg', tag); }
   function chevron() {
     var svg = svgEl('svg');
@@ -353,17 +299,17 @@
     svg.appendChild(poly); return svg;
   }
 
-  /* ── Десктоп: пункты навигации (наведение — открыть панель, клик — перейти) ── */
+  /* ── Первый уровень (бар). Десктоп: наведение переключает раздел, клик — переход.
+     Мобайл: тап переключает раздел (лента ниже обновляется), без перехода. ── */
+  function switchTo(key) { activePanel = key; renderSidebar(); renderContent(); updateNavActive(); }
   CATALOG.forEach(function(cat) {
     var a = document.createElement('a');
     a.className = 'artm-nav-link';
     a.textContent = cat.label;
     a.href = cat.href;
     a.dataset.key = cat.key;
-    a.addEventListener('mouseenter', function() {
-      clearTimeout(closeTimer);
-      activePanel = cat.key; openMenu(); renderSidebar(); renderContent();
-    });
+    a.addEventListener('mouseenter', function() { if (!isMobile()) switchTo(cat.key); });
+    a.addEventListener('click', function(e) { if (isMobile()) { e.preventDefault(); switchTo(cat.key); } });
     navLinks.appendChild(a);
   });
 
@@ -383,17 +329,17 @@
     });
   }
 
-  /* ── Десктоп: ряды-ромбы ── */
+  /* ── Контент: на каждую подкатегорию — заголовок + десктоп-ромбы + мобайл-сетка ── */
   function renderContent() {
     content.innerHTML = '';
     var cat = CATALOG.find(function(c){ return c.key === activePanel; });
     if (!cat) return;
-    cat.subCats.forEach(function(sub) { content.appendChild(buildRow(sub)); });
+    cat.subCats.forEach(function(sub) { content.appendChild(buildSub(sub)); });
   }
 
-  function buildRow(sub) {
-    var N = sub.items.length, segW = 100 / N;
+  function buildSub(sub) {
     var wrap = document.createElement('div');
+    wrap.className = 'artm-sub';
 
     var head = document.createElement('a');
     head.className = 'artm-row-heading'; head.href = sub.href;
@@ -401,8 +347,19 @@
     lbl.className = 'artm-row-label'; lbl.textContent = sub.heading;
     head.appendChild(lbl); wrap.appendChild(head);
 
+    var desk = document.createElement('div'); desk.className = 'artm-desk';
+    desk.appendChild(buildStrip(sub)); wrap.appendChild(desk);
+
+    var mobg = document.createElement('div'); mobg.className = 'artm-mobg';
+    mobg.appendChild(buildGrid(sub)); wrap.appendChild(mobg);
+    return wrap;
+  }
+
+  /* Десктоп: диагональные ромбы */
+  function buildStrip(sub) {
+    var N = sub.items.length, segW = 100 / N;
     var strip = document.createElement('div');
-    strip.className = 'artm-row-strip'; wrap.appendChild(strip);
+    strip.className = 'artm-row-strip';
 
     sub.items.forEach(function(item, i) {
       var isFirst = i === 0, isLast = i === N - 1;
@@ -443,11 +400,27 @@
       svg.appendChild(line);
     }
     strip.appendChild(svg);
-    return wrap;
+    return strip;
   }
 
-  /* ── Десктоп: панель всегда открыта; наведение переключает раздел ── */
-  function openMenu() { updateNavActive(); }
+  /* Мобайл: сетка фото-карточек */
+  function buildGrid(sub) {
+    var grid = document.createElement('div'); grid.className = 'artm-mob-grid';
+    sub.items.forEach(function(item) {
+      var card = document.createElement('a');
+      card.className = 'artm-mob-card'; card.href = item.h;
+      var cbg = document.createElement('div');
+      cbg.className = 'artm-mob-card-bg';
+      cbg.style.backgroundImage = 'url('+item.image+')';
+      var cgrad = document.createElement('div'); cgrad.className = 'artm-mob-card-grad';
+      var clbl = document.createElement('div');
+      clbl.className = 'artm-mob-card-label'; clbl.textContent = item.name;
+      card.appendChild(cbg); card.appendChild(cgrad); card.appendChild(clbl);
+      grid.appendChild(card);
+    });
+    return grid;
+  }
+
   function updateNavActive() {
     navLinks.querySelectorAll('.artm-nav-link').forEach(function(b) {
       b.classList.toggle('active', b.dataset.key === activePanel);
@@ -456,51 +429,8 @@
   /* КАТАЛОГ — переход на страницу каталога */
   catalogBtn.addEventListener('click', function() { window.location.href = '/catalog'; });
 
-  /* ── Мобайл: табы ── */
-  function renderMobTabs() {
-    mobTabs.innerHTML = '';
-    CATALOG.forEach(function(cat) {
-      var btn = document.createElement('button');
-      btn.className = 'artm-mob-tab' + (cat.key === activePanel ? ' active' : '');
-      btn.textContent = cat.label; btn.dataset.key = cat.key;
-      btn.addEventListener('click', function() {
-        activePanel = cat.key; renderMobTabs(); renderMobContent();
-      });
-      mobTabs.appendChild(btn);
-    });
-  }
-  function renderMobContent() {
-    mobContent.innerHTML = '';
-    var cat = CATALOG.find(function(c){ return c.key === activePanel; });
-    if (!cat) return;
-    cat.subCats.forEach(function(sub) {
-      var secLbl = document.createElement('a');
-      secLbl.className = 'artm-mob-section-label';
-      secLbl.href = sub.href; secLbl.textContent = sub.heading;
-      mobContent.appendChild(secLbl);
-
-      var grid = document.createElement('div'); grid.className = 'artm-mob-grid';
-      sub.items.forEach(function(item) {
-        var card = document.createElement('a');
-        card.className = 'artm-mob-card'; card.href = item.h;
-        var cbg = document.createElement('div');
-        cbg.className = 'artm-mob-card-bg';
-        cbg.style.backgroundImage = 'url('+item.image+')';
-        var cgrad = document.createElement('div'); cgrad.className = 'artm-mob-card-grad';
-        var clbl = document.createElement('div');
-        clbl.className = 'artm-mob-card-label'; clbl.textContent = item.name;
-        card.appendChild(cbg); card.appendChild(cgrad); card.appendChild(clbl);
-        grid.appendChild(card);
-      });
-      mobContent.appendChild(grid);
-    });
-  }
-  mobBtn.addEventListener('click', function() {
-    mobOpen = !mobOpen;
-    mobPanel.classList.toggle('open', mobOpen);
-    mobIcon.innerHTML = mobOpen ? ICON_X : ICON_MENU;
-    if (mobOpen) { renderMobTabs(); renderMobContent(); }
-  });
+  /* Пересчёт при смене ширины (десктоп↔мобайл) не требует перерендера —
+     ромбы/сетка переключаются через CSS media. */
 
   /* ── Init ── */
   renderSidebar();
