@@ -10,12 +10,13 @@
   .artm-wrap *::before,
   .artm-wrap *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-  /* Обёртка — поднимаем над блоками Tilda, чтобы панель перекрывала контент */
+  /* Обёртка — в нормальном потоке (не поднимаем весь бар над сайтом),
+     чтобы навигация стояла РОВНО под шапкой сайта, а не поверх неё.
+     Высокий z-index несёт только выпадающая панель/подложка (см. ниже). */
   .artm-wrap {
     font-family: 'GothamPro','Gotham Pro',sans-serif;
-    position: relative;
+    position: relative;   /* якорь для absolute-панели, без своего z-index */
     width: 100%;
-    z-index: 10000;
   }
 
   /* ── Тёмная навигация ── */
