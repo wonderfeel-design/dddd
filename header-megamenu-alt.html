@@ -15,6 +15,9 @@
   .artm {
     font-family: 'GothamPro','Gotham Pro',sans-serif;
     position: relative; width: 100%; z-index: 1000;
+    /* Отступ до сетки 1200 (как у шапки/крошек). Тёмный бар — во всю ширину,
+       содержимое выровнено по контейнеру. Меняйте 1200px под ширину шапки. */
+    --artm-gap: max(16px, calc((100vw - 1200px) / 2));
   }
   /* Сброс: Tilda перекрашивает ссылки — гасим её глобальный цвет/подчёркивание.
      Цвет каждого пункта задаём ниже явно (наследуется потомками ссылки). */
@@ -31,7 +34,10 @@
   }
 
   /* ── NAV (десктоп) ── */
-  .artm-nav { display: flex; align-items: stretch; background: #1A1B25; width: 100%; }
+  .artm-nav {
+    display: flex; align-items: stretch; background: #1A1B25; width: 100%;
+    padding-left: var(--artm-gap); padding-right: var(--artm-gap);
+  }
   .artm-catalog-btn {
     background: #4C9E24; color: #fff; font-family: inherit;
     font-size: 12px; font-weight: 700; letter-spacing: .09em;
@@ -58,6 +64,7 @@
     border: 1px solid #ddd; border-top: none; background: #fff;
     box-shadow: 0 8px 28px rgba(0,0,0,.13); z-index: 50;
     max-height: calc(100vh - 120px); overflow-y: auto;
+    padding-left: var(--artm-gap); padding-right: var(--artm-gap);
   }
   .artm-panel.open { display: flex; }
 
