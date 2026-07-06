@@ -1,174 +1,174 @@
 <!-- ==========================================
-     АРТ ДОСКА — Альтернативное мегаменю (диагональные фото-полосы)
-     Вставить в Tilda → HTML-блок (T123 / Zero Block) вместо/рядом с текущим меню.
-     Самодостаточно: разметка + стили + скрипт. Ссылки — реальные пермалинки
-     каталога (/catalog/<uid>-<slug>). Фото-заглушки IMGS можно заменить.
+     АРТ ДОСКА — Альтернативное мегаменю v2 (фото-ромбы, адаптив)
+     Вставить в Tilda → HTML-блок (T123 / Zero Block).
+     - Своё фото у каждого пункта (сегмента)
+     - Адаптив: десктоп — диагональные ромбы, мобайл — сетка карточек
+       с теми же диагональными углами
+     - Ссылки — реальные пермалинки каталога (/catalog/<uid>-<slug>)
+     - Липкое позиционирование: в покое в потоке, при прокрутке фиксируется
+       ровно под плавающей шапкой сайта (высота шапки определяется скриптом)
+     - Фото IMGS — заглушки, замените на реальные фото категорий
      ========================================== -->
 
 <style>
-  .artm-wrap *,
-  .artm-wrap *::before,
-  .artm-wrap *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-  /* Обёртка. Архитектура позиционирования — как у основного меню (header.html):
-     в покое бар в НОРМАЛЬНОМ потоке (стоит своим блоком под шапкой сайта, без
-     жёстких отступов), а при прокрутке JS фиксирует его РОВНО под плавающей
-     шапкой Tilda через класс .artm-sticky и top:var(--artm-header-h). Высота
-     шапки определяется скриптом автоматически (не хардкод). */
-  .artm-wrap {
+  .artm * { box-sizing: border-box; margin: 0; padding: 0; }
+  .artm {
     font-family: 'GothamPro','Gotham Pro',sans-serif;
-    position: relative;   /* якорь для absolute-панели */
-    width: 100%;
-    z-index: 1000;
+    position: relative; width: 100%; z-index: 1000;
   }
-  .artm-wrap.artm-sticky {
+  /* Липкость: при прокрутке фиксируем ровно под шапкой Tilda */
+  .artm.artm-sticky {
     position: fixed !important;
     top: var(--artm-header-h, 80px);
     left: 0; right: 0; width: 100%;
   }
 
-  /* ── Тёмная навигация ── */
-  .artm-nav {
-    display: flex;
-    align-items: stretch;
-    background: #1A1B25;
-    width: 100%;
-  }
+  /* ── NAV (десктоп) ── */
+  .artm-nav { display: flex; align-items: stretch; background: #1A1B25; width: 100%; }
   .artm-catalog-btn {
-    background: #4C9E24;
-    color: #fff;
-    font-family: inherit;
-    font-size: 12px;
-    font-weight: 700;
-    letter-spacing: 0.09em;
-    padding: 0 28px;
-    height: 44px;
-    border: none;
-    cursor: pointer;
-    white-space: nowrap;
-    flex-shrink: 0;
-    text-transform: uppercase;
-    transition: background 0.15s;
+    background: #4C9E24; color: #fff; font-family: inherit;
+    font-size: 12px; font-weight: 700; letter-spacing: .09em;
+    padding: 0 24px; height: 44px; border: none; cursor: pointer;
+    white-space: nowrap; flex-shrink: 0; text-transform: uppercase; transition: background .15s;
   }
   .artm-catalog-btn:hover { background: #3d8a1c; }
-
-  .artm-nav-links { display: flex; align-items: stretch; }
+  .artm-nav-links { display: flex; align-items: stretch; overflow-x: auto; flex: 1; scrollbar-width: none; }
+  .artm-nav-links::-webkit-scrollbar { display: none; }
   .artm-nav-link {
-    color: rgba(255,255,255,0.85);
-    font-family: inherit;
-    font-size: 12px;
-    font-weight: 600;
-    letter-spacing: 0.07em;
-    padding: 0 18px;
-    height: 44px;
-    background: none;
-    border: none;
-    border-bottom: 2px solid transparent;
-    cursor: pointer;
-    white-space: nowrap;
-    text-transform: uppercase;
-    transition: color 0.15s, border-color 0.15s;
-    display: flex;
-    align-items: center;
+    color: rgba(255,255,255,.82); font-family: inherit; font-size: 12px;
+    font-weight: 600; letter-spacing: .07em; padding: 0 16px; height: 44px;
+    display: flex; align-items: center; background: none; border: none;
+    border-bottom: 2px solid transparent; cursor: pointer; white-space: nowrap;
+    text-transform: uppercase; text-decoration: none;
+    transition: color .15s, border-color .15s; flex-shrink: 0;
   }
   .artm-nav-link:hover { color: #fff; }
-  .artm-nav-link.active { border-bottom-color: #4C9E24; }
+  .artm-nav-link.active { color: #fff; border-bottom-color: #4C9E24; }
 
-  /* ── Панель (оверлей поверх страницы) ── */
+  /* ── PANEL (оверлей под баром) ── */
   .artm-panel {
-    display: none;
-    position: absolute;
-    top: 44px;            /* высота nav */
-    left: 0;
-    width: 100%;
-    z-index: 9999;
-    border: 1px solid #ddd;
-    border-top: none;
-    background: #fff;
-    box-shadow: 0 6px 24px rgba(0,0,0,0.12);
-    max-height: 80vh;
-    overflow-y: auto;
+    display: none; position: absolute; top: 44px; left: 0; right: 0;
+    border: 1px solid #ddd; border-top: none; background: #fff;
+    box-shadow: 0 8px 28px rgba(0,0,0,.13); z-index: 50;
+    max-height: calc(100vh - 120px); overflow-y: auto;
   }
   .artm-panel.open { display: flex; }
 
-  /* ── Сайдбар ── */
+  /* ── SIDEBAR ── */
   .artm-sidebar { width: 188px; flex-shrink: 0; background: #f2f2f2; border-right: 1px solid #e0e0e0; }
   .artm-sidebar-btn {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    width: 100%;
-    padding: 14px 16px;
-    font-family: inherit;
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 0.06em;
-    color: #333;
-    background: none;
-    border: none;
-    border-left: 3px solid transparent;
-    cursor: pointer;
-    text-align: left;
-    text-transform: uppercase;
-    transition: background 0.15s, color 0.15s, border-color 0.15s;
+    display: flex; align-items: center; justify-content: space-between;
+    width: 100%; padding: 14px 16px; font-family: inherit; font-size: 11px;
+    font-weight: 700; letter-spacing: .07em; color: #333; background: none;
+    border: none; border-left: 3px solid transparent; cursor: pointer;
+    text-align: left; text-transform: uppercase; text-decoration: none;
+    transition: background .15s, color .15s, border-color .15s;
   }
   .artm-sidebar-btn:hover { background: #E5F5E2; color: #4C9E24; }
   .artm-sidebar-btn.active { background: #E5F5E2; color: #4C9E24; border-left-color: #4C9E24; }
-  .artm-sidebar-btn svg { flex-shrink: 0; color: #bbb; transition: color 0.15s; }
-  .artm-sidebar-btn.active svg,
-  .artm-sidebar-btn:hover svg { color: #4C9E24; }
+  .artm-sidebar-btn svg { flex-shrink: 0; color: #bbb; transition: color .15s; }
+  .artm-sidebar-btn.active svg, .artm-sidebar-btn:hover svg { color: #4C9E24; }
 
-  /* ── Контент ── */
-  .artm-content { flex: 1; padding: 20px 22px 16px; min-width: 0; }
+  /* ── CONTENT ── */
+  .artm-content { flex: 1; padding: 18px 20px 14px; min-width: 0; }
 
-  /* ── Ряд с ромбами ── */
+  /* ── ROW ── */
+  .artm-row-heading { text-decoration: none; color: inherit; display: block; }
   .artm-row-label {
-    font-size: 10px; font-weight: 700; letter-spacing: 0.12em; color: #888;
+    font-size: 10px; font-weight: 700; letter-spacing: .12em; color: #888;
     margin-bottom: 4px; padding-left: 2px; text-transform: uppercase; font-family: inherit;
+    transition: color .15s;
   }
-  .artm-row-heading { text-decoration: none; color: inherit; }
   .artm-row-heading:hover .artm-row-label { color: #4C9E24; }
-
   .artm-row-strip {
     position: relative; height: 90px; background: #0a0a0a;
     border-radius: 3px; overflow: hidden; margin-bottom: 7px;
   }
 
-  .artm-seg { position: absolute; inset: 0; cursor: pointer; z-index: 1; text-decoration: none; display: block; }
+  /* ── SEGMENTS (ромбы) ── */
+  .artm-seg { position: absolute; inset: 0; cursor: pointer; z-index: 1; display: block; text-decoration: none; }
   .artm-seg:hover { z-index: 2; }
   .artm-seg-bg {
     position: absolute; inset: 0; background-size: cover; background-position: center;
-    filter: brightness(0.55); transition: filter 0.25s, transform 0.25s;
+    filter: brightness(.58); transition: filter .25s, transform .3s;
   }
-  .artm-seg:hover .artm-seg-bg { filter: brightness(0.9); transform: scale(1.04); }
+  .artm-seg:hover .artm-seg-bg { filter: brightness(.88); transform: scale(1.05); }
   .artm-seg-tint {
-    position: absolute; inset: 0; background: rgba(76,158,36,0.13);
-    opacity: 0; transition: opacity 0.25s; pointer-events: none;
+    position: absolute; inset: 0; background: rgba(76,158,36,.15);
+    opacity: 0; pointer-events: none; transition: opacity .25s;
   }
   .artm-seg:hover .artm-seg-tint { opacity: 1; }
   .artm-seg-label {
     position: absolute; bottom: 9px; width: 108px; text-align: center;
-    font-size: 10px; font-weight: 600; color: rgba(255,255,255,0.88);
-    text-shadow: 0 1px 6px rgba(0,0,0,0.9); letter-spacing: 0.03em; line-height: 1.25;
-    pointer-events: none; font-family: inherit; transition: color 0.15s, font-weight 0.15s;
+    font-size: 10px; font-weight: 600; color: rgba(255,255,255,.9);
+    text-shadow: 0 1px 6px rgba(0,0,0,.95); letter-spacing: .03em;
+    line-height: 1.25; pointer-events: none; font-family: inherit;
+    transition: font-weight .15s, color .15s;
   }
   .artm-seg:hover .artm-seg-label { color: #fff; font-weight: 700; }
-
   .artm-svg-lines { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 3; }
 
-  /* ── Подложка ── */
-  .artm-backdrop { display: none; position: fixed; inset: 0; z-index: 9998; background: rgba(0,0,0,0.35); }
-  .artm-backdrop.open { display: block; }
+  /* ── MOBILE ── */
+  .artm-mob-bar { display: none; align-items: center; background: #1A1B25; padding: 0 14px; height: 50px; }
+  .artm-mob-logo { color: #fff; font-size: 13px; font-weight: 700; letter-spacing: .06em; flex: 1; }
+  .artm-mob-btn {
+    background: #4C9E24; border: none; color: #fff; cursor: pointer;
+    padding: 8px 13px; font-size: 10px; font-weight: 700; letter-spacing: .08em;
+    display: flex; align-items: center; gap: 5px; border-radius: 2px; font-family: inherit;
+  }
+  .artm-mob-panel {
+    display: none; position: fixed; top: 50px; left: 0; right: 0; bottom: 0;
+    background: #fff; z-index: 1200; flex-direction: column; overflow-y: auto;
+  }
+  .artm-mob-panel.open { display: flex; }
+  .artm-mob-tabs {
+    display: flex; overflow-x: auto; background: #1A1B25; gap: 4px; padding: 8px 10px;
+    flex-shrink: 0; -webkit-overflow-scrolling: touch; scrollbar-width: none;
+  }
+  .artm-mob-tabs::-webkit-scrollbar { display: none; }
+  .artm-mob-tab {
+    background: rgba(255,255,255,.1); color: #fff; border: none; border-radius: 3px;
+    padding: 7px 11px; font-size: 10px; font-weight: 700; letter-spacing: .07em;
+    cursor: pointer; white-space: nowrap; font-family: inherit; flex-shrink: 0;
+  }
+  .artm-mob-tab.active { background: #4C9E24; }
+  .artm-mob-content { padding: 14px 12px 24px; flex: 1; }
+  .artm-mob-section-label {
+    font-size: 9px; font-weight: 700; letter-spacing: .13em; color: #666;
+    margin-bottom: 6px; text-transform: uppercase; text-decoration: none; display: block;
+  }
+  .artm-mob-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 5px; margin-bottom: 14px; }
+  /* Карточки с теми же диагональными углами, что и десктоп-ромбы */
+  .artm-mob-card {
+    position: relative; height: 74px; border-radius: 3px; overflow: hidden;
+    cursor: pointer; display: block; text-decoration: none;
+    clip-path: polygon(13px 0, 100% 0, calc(100% - 13px) 100%, 0 100%);
+  }
+  .artm-mob-card-bg {
+    position: absolute; inset: 0; background-size: cover; background-position: center; filter: brightness(.6);
+  }
+  .artm-mob-card-grad {
+    position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,.6) 0%, transparent 62%);
+  }
+  .artm-mob-card-label {
+    position: absolute; bottom: 6px; left: 15px; right: 12px;
+    font-size: 9px; font-weight: 700; color: #fff;
+    text-shadow: 0 1px 4px rgba(0,0,0,.9); line-height: 1.25; letter-spacing: .02em;
+  }
 
-  /* ── Адаптив ── */
-  @media (max-width: 900px) {
-    .artm-nav-links { overflow-x: auto; }
-    .artm-sidebar { width: 140px; }
-    .artm-seg-label { width: 84px; font-size: 9px; }
+  @media (max-width: 767px) {
+    .artm-nav { display: none; }
+    .artm-panel { display: none !important; }
+    .artm-mob-bar { display: flex; }
+  }
+  @media (min-width: 768px) {
+    .artm-mob-bar { display: none; }
+    .artm-mob-panel { display: none !important; }
   }
 </style>
 
-<div class="artm-wrap" id="artmWrap">
+<div class="artm" id="artmRoot">
+  <!-- Десктоп -->
   <nav class="artm-nav">
     <button class="artm-catalog-btn" id="artmCatalogBtn">КАТАЛОГ</button>
     <div class="artm-nav-links" id="artmNavLinks"></div>
@@ -177,231 +177,336 @@
     <div class="artm-sidebar" id="artmSidebar"></div>
     <div class="artm-content" id="artmContent"></div>
   </div>
-  <div class="artm-backdrop" id="artmBackdrop"></div>
+
+  <!-- Мобайл -->
+  <div class="artm-mob-bar">
+    <span class="artm-mob-logo">АРТ ДОСКА</span>
+    <button class="artm-mob-btn" id="artmMobBtn">
+      <svg id="artmMobIcon" width="13" height="13" viewBox="0 0 24 24" fill="none"
+        stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>
+      </svg>
+      КАТАЛОГ
+    </button>
+  </div>
+  <div class="artm-mob-panel" id="artmMobPanel">
+    <div class="artm-mob-tabs" id="artmMobTabs"></div>
+    <div class="artm-mob-content" id="artmMobContent"></div>
+  </div>
 </div>
 
 <script>
 (function () {
-  var SKEW = 5;    /* наклон диагонали, % ширины ряда */
-  var GAP  = 0.35; /* зазор между сегментами, %       */
+  var SKEW = 5, GAP = 0.4;
 
-  /* Фото-заглушки по типам — замените на реальные категории при желании */
-  var IMGS = {
-    ceiling: 'https://optim.tildacdn.com/tild3430-3463-4963-b734-633130646361/-/resize/800x/-/format/webp/photo-1761778371592-.jpg.webp',
-    wall:    'https://images.unsplash.com/photo-1596830762262-7b5e55dd821c?w=1000&q=80',
-    floor:   'https://images.unsplash.com/photo-1573869908170-64b53a60d8da?w=1000&q=80',
-    deck:    'https://images.unsplash.com/photo-1488441200229-6a4be8f4013d?w=1000&q=80',
-    veneer:  'https://images.unsplash.com/photo-1700809887581-c41c239e808e?w=1000&q=80',
-    plank:   'https://images.unsplash.com/photo-1515713519566-6f9bf3b4a07a?w=1000&q=80'
+  /* Фото-заглушки — замените на реальные фото категорий */
+  var I = {
+    ceilVagonka:  'https://images.unsplash.com/photo-1764301718410-b50ea80fd0dd?w=600&q=80',
+    ceilBrus:     'https://images.unsplash.com/photo-1572852515703-596a50742d44?w=600&q=80',
+    ceilShpon:    'https://images.unsplash.com/photo-1644925757334-d0397c01518c?w=600&q=80',
+    ceilDoska:    'https://images.unsplash.com/photo-1551770873-897f127385d5?w=600&q=80',
+    ceilPlanken:  'https://images.unsplash.com/photo-1675528030748-d463ab87e8d5?w=600&q=80',
+    wallVagonka:  'https://images.unsplash.com/photo-1596830762262-7b5e55dd821c?w=600&q=80',
+    wallBrus:     'https://images.unsplash.com/photo-1523034572918-be25535ca417?w=600&q=80',
+    wallShpon:    'https://images.unsplash.com/photo-1621295693450-080546d2ec8e?w=600&q=80',
+    wallDoska:    'https://images.unsplash.com/photo-1700809887581-c41c239e808e?w=600&q=80',
+    wallPaneli:   'https://images.unsplash.com/photo-1701422052139-e72ee5e67249?w=600&q=80',
+    slab:         'https://images.unsplash.com/photo-1777370504743-c009e0d92465?w=600&q=80',
+    terrasa:      'https://images.unsplash.com/photo-1635348291497-8c28ef034996?w=600&q=80',
+    paluba:       'https://images.unsplash.com/photo-1763709279010-cc6c5801c633?w=600&q=80',
+    parquet:      'https://images.unsplash.com/photo-1607403219525-6c60fa4f20fa?w=600&q=80',
+    floorDoska:   'https://images.unsplash.com/photo-1548268364-3acee266b695?w=600&q=80',
+    facadeDoska:  'https://images.unsplash.com/photo-1780510158774-7e82e69bae4f?w=600&q=80',
+    blokhous:     'https://images.unsplash.com/photo-1770306924460-b0ff6c3719ae?w=600&q=80',
+    facadeSlats:  'https://images.unsplash.com/photo-1515713519566-6f9bf3b4a07a?w=600&q=80',
+    frostPlanks:  'https://images.unsplash.com/photo-1760873586038-3d40d19e4ca5?w=600&q=80',
+    molding:      'https://images.unsplash.com/photo-1764283824453-02cd00e49143?w=600&q=80',
+    dekorPaneli:  'https://images.unsplash.com/photo-1701421052582-9f6935aff566?w=600&q=80',
+    plintus:      'https://images.unsplash.com/photo-1546727483-398533902b75?w=600&q=80',
+    brus:         'https://images.unsplash.com/photo-1583095117095-adaeabc401ab?w=600&q=80',
+    doskaOb:      'https://images.unsplash.com/photo-1523034572918-be25535ca417?w=600&q=80',
+    doskaNeob:    'https://images.unsplash.com/photo-1634672652995-ee7525bce595?w=600&q=80',
+    rejka:        'https://images.unsplash.com/photo-1675528030748-d463ab87e8d5?w=600&q=80',
+    shpunt:       'https://images.unsplash.com/photo-1548268364-3acee266b695?w=600&q=80',
+    hw1:          'https://images.unsplash.com/photo-1572852515703-596a50742d44?w=600&q=80',
+    hw2:          'https://images.unsplash.com/photo-1523034572918-be25535ca417?w=600&q=80',
+    hw3:          'https://images.unsplash.com/photo-1644925757334-d0397c01518c?w=600&q=80',
+    hw4:          'https://images.unsplash.com/photo-1621295693450-080546d2ec8e?w=600&q=80',
+    paint1:       'https://images.unsplash.com/photo-1621295693450-080546d2ec8e?w=600&q=80',
+    paint2:       'https://images.unsplash.com/photo-1644925757334-d0397c01518c?w=600&q=80',
+    paint3:       'https://images.unsplash.com/photo-1572852515703-596a50742d44?w=600&q=80',
+    paint4:       'https://images.unsplash.com/photo-1780510158774-7e82e69bae4f?w=600&q=80',
+    paint5:       'https://images.unsplash.com/photo-1701422052139-e72ee5e67249?w=600&q=80'
   };
 
-  /* Реальные пермалинки каталога */
+  /* Данные каталога с реальными пермалинками (h = href) */
   var CATALOG = [
-    { key: 'interier', label: 'ДЛЯ ИНТЕРЬЕРА', href: '/catalog/810291631742-dlya-interera',
-      subCats: [
-        { heading: 'ПОТОЛОК', href: '/catalog/565173393412-potolok', image: IMGS.ceiling, items: [
-          { n: 'Вагонка', h: '/catalog/752465215952-vagonka' },
-          { n: 'Имитация бруса', h: '/catalog/586794862262-imitatsiya-brusa' },
-          { n: 'Шпонированная доска', h: '/catalog/997756288252-shponirovannaya-doska' },
-          { n: 'Доска потолочная', h: '/catalog/596951118782-doska-potolochnaya' },
-          { n: 'Планкен', h: '/catalog/228699182612-planken' } ] },
-        { heading: 'СТЕНЫ', href: '/catalog/786215589522-steni', image: IMGS.wall, items: [
-          { n: 'Вагонка', h: '/catalog/727322905002-vagonka' },
-          { n: 'Имитация бруса', h: '/catalog/979626884442-imitatsiya-brusa' },
-          { n: 'Шпонированная доска', h: '/catalog/512449107972-shponirovannaya-doska' },
-          { n: 'Доска стеновая', h: '/catalog/319239141522-doska-stenovaya' },
-          { n: 'Стеновые панели', h: '/catalog/598653134492-stenovie-paneli' },
-          { n: 'Слэбы', h: '/catalog/565136830622-slebi' } ] },
-        { heading: 'ПОЛ', href: '/catalog/168434912242-pol', image: IMGS.floor, items: [
-          { n: 'Террасная доска', h: '/catalog/872722103702-terrasnaya-doska' },
-          { n: 'Палубная доска', h: '/catalog/374112886602-palubnaya-doska' },
-          { n: 'Слэбы напольные', h: '/catalog/549701901002-slebi-napolnie' },
-          { n: 'Доска пола', h: '/catalog/382387938172-doska-pola' } ] },
-        { heading: 'ОКНА / ДВЕРИ', href: '/catalog/662542174522-okna-dveri', image: IMGS.plank, items: [
-          { n: 'Вагонка', h: '/catalog/563319022162-vagonka' },
-          { n: 'Имитация бруса', h: '/catalog/477014464882-imitatsiya-brusa' },
-          { n: 'Шпонированная доска', h: '/catalog/631180345282-shponirovannaya-doska' },
-          { n: 'Слэбы', h: '/catalog/811096281772-slebi' },
-          { n: 'Доска', h: '/catalog/564436745372-doska' },
-          { n: 'Стеновые панели', h: '/catalog/911008845352-stenovie-paneli' } ] },
-        { heading: 'ДЕКОР', href: '/catalog/597495000982-dekor', image: IMGS.veneer, items: [
-          { n: 'Декоративные панели', h: '/catalog/922401543332-dekorativnie-paneli' },
-          { n: 'Молдинги', h: '/catalog/529584857882-moldingi' },
-          { n: 'Плинтусы', h: '/catalog/449922635632-plintusi' } ] }
-      ] },
-    { key: 'fasad', label: 'ДЛЯ ФАСАДА', href: '/catalog/799009129752-dlya-fasada',
-      subCats: [
-        { heading: 'ФАСАДНЫЕ ПАНЕЛИ', href: '/catalog/813806349812-fasadnie-paneli', image: IMGS.plank, items: [
-          { n: 'Фасадная доска', h: '/catalog/546702251802-fasadnaya-doska' },
-          { n: 'Блок-хаус', h: '/catalog/165489477212-blok-haus' },
-          { n: 'Имитация бруса', h: '/catalog/533189585232-imitatsiya-brusa' },
-          { n: 'Вагонка', h: '/catalog/613544423522-vagonka' } ] },
-        { heading: 'ТЕРРАСНЫЕ ДОСКИ', href: '/catalog/640717199452-terrasnie-doski', image: IMGS.deck, items: [
-          { n: 'Палубная доска', h: '/catalog/311305480882-palubnaya-doska' },
-          { n: 'Слэбы', h: '/catalog/297627384262-slebi' } ] }
-      ] },
-    { key: 'pilo', label: 'ПИЛОМАТЕРИАЛЫ', href: '/catalog/929460929152-pilomateriali',
-      subCats: [
-        { heading: 'ПИЛОМАТЕРИАЛЫ', href: '/catalog/929460929152-pilomateriali', image: IMGS.plank, items: [
-          { n: 'Брус', h: '/catalog/528547846822-brus' },
-          { n: 'Доска обрезная', h: '/catalog/140001465242-doska-obreznaya' },
-          { n: 'Доска необрезная', h: '/catalog/757858842962-doska-neobreznaya' },
-          { n: 'Рейка', h: '/catalog/682086185842-reika' },
-          { n: 'Шпунтованная доска', h: '/catalog/484308463392-shpuntovannaya-doska' } ] }
-      ] },
-    { key: 'krepezh', label: 'КРЕПЕЖ', href: '/catalog/559088613632-krepezh',
-      subCats: [
-        { heading: 'КРЕПЕЖ', href: '/catalog/559088613632-krepezh', image: IMGS.wall, items: [
-          { n: 'Саморезы', h: '/catalog/819626010462-samorezi' },
-          { n: 'Скобы', h: '/catalog/254591601132-skobi' },
-          { n: 'Гвозди', h: '/catalog/677218539812-gvozdi' },
-          { n: 'Клипсы', h: '/catalog/958351966462-klipsi' } ] }
-      ] },
-    { key: 'kraski', label: 'КРАСКИ', href: '/catalog/807847057542-kraski',
-      subCats: [
-        { heading: 'КРАСКИ И ЛАКИ', href: '/catalog/807847057542-kraski', image: IMGS.veneer, items: [
-          { n: 'Масло для дерева', h: '/catalog/775950412632-maslo-dlya-dereva' },
-          { n: 'Лаки', h: '/catalog/443883645832-laki' },
-          { n: 'Антисептики', h: '/catalog/424637688572-antiseptiki' },
-          { n: 'Краски фасадные', h: '/catalog/478948993422-kraski-fasadnie' },
-          { n: 'Краски для интерьера', h: '/catalog/980859624572-kraski-dlya-interera' } ] }
-      ] }
+    { key: 'interier', label: 'ДЛЯ ИНТЕРЬЕРА', href: '/catalog/810291631742-dlya-interera', subCats: [
+      { heading: 'ПОТОЛОК', href: '/catalog/565173393412-potolok', items: [
+        {name:'Вагонка',image:I.ceilVagonka,h:'/catalog/752465215952-vagonka'},
+        {name:'Имитация бруса',image:I.ceilBrus,h:'/catalog/586794862262-imitatsiya-brusa'},
+        {name:'Шпонированная доска',image:I.ceilShpon,h:'/catalog/997756288252-shponirovannaya-doska'},
+        {name:'Доска потолочная',image:I.ceilDoska,h:'/catalog/596951118782-doska-potolochnaya'},
+        {name:'Планкен',image:I.ceilPlanken,h:'/catalog/228699182612-planken'} ]},
+      { heading: 'СТЕНЫ', href: '/catalog/786215589522-steni', items: [
+        {name:'Вагонка',image:I.wallVagonka,h:'/catalog/727322905002-vagonka'},
+        {name:'Имитация бруса',image:I.wallBrus,h:'/catalog/979626884442-imitatsiya-brusa'},
+        {name:'Шпонированная доска',image:I.wallShpon,h:'/catalog/512449107972-shponirovannaya-doska'},
+        {name:'Доска стеновая',image:I.wallDoska,h:'/catalog/319239141522-doska-stenovaya'},
+        {name:'Стеновые панели',image:I.wallPaneli,h:'/catalog/598653134492-stenovie-paneli'},
+        {name:'Слэбы',image:I.slab,h:'/catalog/565136830622-slebi'} ]},
+      { heading: 'ПОЛ', href: '/catalog/168434912242-pol', items: [
+        {name:'Террасная доска',image:I.terrasa,h:'/catalog/872722103702-terrasnaya-doska'},
+        {name:'Палубная доска',image:I.paluba,h:'/catalog/374112886602-palubnaya-doska'},
+        {name:'Слэбы напольные',image:I.parquet,h:'/catalog/549701901002-slebi-napolnie'},
+        {name:'Доска пола',image:I.floorDoska,h:'/catalog/382387938172-doska-pola'} ]},
+      { heading: 'ОКНА / ДВЕРИ', href: '/catalog/662542174522-okna-dveri', items: [
+        {name:'Вагонка',image:I.wallBrus,h:'/catalog/563319022162-vagonka'},
+        {name:'Имитация бруса',image:I.ceilBrus,h:'/catalog/477014464882-imitatsiya-brusa'},
+        {name:'Шпонированная доска',image:I.wallShpon,h:'/catalog/631180345282-shponirovannaya-doska'},
+        {name:'Слэбы',image:I.slab,h:'/catalog/811096281772-slebi'},
+        {name:'Доска',image:I.floorDoska,h:'/catalog/564436745372-doska'},
+        {name:'Стеновые панели',image:I.wallPaneli,h:'/catalog/911008845352-stenovie-paneli'} ]},
+      { heading: 'ДЕКОР', href: '/catalog/597495000982-dekor', items: [
+        {name:'Декоративные панели',image:I.dekorPaneli,h:'/catalog/922401543332-dekorativnie-paneli'},
+        {name:'Молдинги',image:I.molding,h:'/catalog/529584857882-moldingi'},
+        {name:'Плинтусы',image:I.plintus,h:'/catalog/449922635632-plintusi'} ]}
+    ]},
+    { key: 'fasad', label: 'ДЛЯ ФАСАДА', href: '/catalog/799009129752-dlya-fasada', subCats: [
+      { heading: 'ФАСАДНЫЕ ПАНЕЛИ', href: '/catalog/813806349812-fasadnie-paneli', items: [
+        {name:'Фасадная доска',image:I.facadeDoska,h:'/catalog/546702251802-fasadnaya-doska'},
+        {name:'Блок-хаус',image:I.blokhous,h:'/catalog/165489477212-blok-haus'},
+        {name:'Имитация бруса',image:I.ceilBrus,h:'/catalog/533189585232-imitatsiya-brusa'},
+        {name:'Вагонка',image:I.facadeSlats,h:'/catalog/613544423522-vagonka'} ]},
+      { heading: 'ТЕРРАСНЫЕ ДОСКИ', href: '/catalog/640717199452-terrasnie-doski', items: [
+        {name:'Палубная доска',image:I.paluba,h:'/catalog/311305480882-palubnaya-doska'},
+        {name:'Слэбы',image:I.frostPlanks,h:'/catalog/297627384262-slebi'} ]}
+    ]},
+    { key: 'pilo', label: 'ПИЛОМАТЕРИАЛЫ', href: '/catalog/929460929152-pilomateriali', subCats: [
+      { heading: 'ПИЛОМАТЕРИАЛЫ', href: '/catalog/929460929152-pilomateriali', items: [
+        {name:'Брус',image:I.brus,h:'/catalog/528547846822-brus'},
+        {name:'Доска обрезная',image:I.doskaOb,h:'/catalog/140001465242-doska-obreznaya'},
+        {name:'Доска необрезная',image:I.doskaNeob,h:'/catalog/757858842962-doska-neobreznaya'},
+        {name:'Рейка',image:I.rejka,h:'/catalog/682086185842-reika'},
+        {name:'Шпунтованная доска',image:I.shpunt,h:'/catalog/484308463392-shpuntovannaya-doska'} ]}
+    ]},
+    { key: 'krepezh', label: 'КРЕПЕЖ', href: '/catalog/559088613632-krepezh', subCats: [
+      { heading: 'КРЕПЕЖ', href: '/catalog/559088613632-krepezh', items: [
+        {name:'Саморезы',image:I.hw1,h:'/catalog/819626010462-samorezi'},
+        {name:'Скобы',image:I.hw2,h:'/catalog/254591601132-skobi'},
+        {name:'Гвозди',image:I.hw3,h:'/catalog/677218539812-gvozdi'},
+        {name:'Клипсы',image:I.hw4,h:'/catalog/958351966462-klipsi'} ]}
+    ]},
+    { key: 'kraski', label: 'КРАСКИ', href: '/catalog/807847057542-kraski', subCats: [
+      { heading: 'КРАСКИ И ЛАКИ', href: '/catalog/807847057542-kraski', items: [
+        {name:'Масло для дерева',image:I.paint1,h:'/catalog/775950412632-maslo-dlya-dereva'},
+        {name:'Лаки',image:I.paint2,h:'/catalog/443883645832-laki'},
+        {name:'Антисептики',image:I.paint3,h:'/catalog/424637688572-antiseptiki'},
+        {name:'Краски фасадные',image:I.paint4,h:'/catalog/478948993422-kraski-fasadnie'},
+        {name:'Краски для интерьера',image:I.paint5,h:'/catalog/980859624572-kraski-dlya-interera'} ]}
+    ]}
   ];
 
   var activePanel = 'interier';
-  var menuOpen    = false;
+  var menuOpen = false, mobOpen = false, closeTimer = null;
 
+  var root       = document.getElementById('artmRoot');
   var panel      = document.getElementById('artmPanel');
-  var backdrop   = document.getElementById('artmBackdrop');
   var sidebar    = document.getElementById('artmSidebar');
   var content    = document.getElementById('artmContent');
   var navLinks   = document.getElementById('artmNavLinks');
   var catalogBtn = document.getElementById('artmCatalogBtn');
+  var mobBtn     = document.getElementById('artmMobBtn');
+  var mobPanel   = document.getElementById('artmMobPanel');
+  var mobTabs    = document.getElementById('artmMobTabs');
+  var mobContent = document.getElementById('artmMobContent');
+  var mobIcon    = document.getElementById('artmMobIcon');
+
+  var ICON_MENU = '<line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>';
+  var ICON_X    = '<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>';
 
   function svgEl(tag) { return document.createElementNS('http://www.w3.org/2000/svg', tag); }
+  function chevron() {
+    var svg = svgEl('svg');
+    svg.setAttribute('width','13'); svg.setAttribute('height','13');
+    svg.setAttribute('viewBox','0 0 24 24'); svg.setAttribute('fill','none');
+    svg.setAttribute('stroke','currentColor'); svg.setAttribute('stroke-width','2.5');
+    svg.setAttribute('stroke-linecap','round'); svg.setAttribute('stroke-linejoin','round');
+    var poly = svgEl('polyline'); poly.setAttribute('points','9 18 15 12 9 6');
+    svg.appendChild(poly); return svg;
+  }
 
-  /* Верхние ссылки навигации — наведение открывает панель, клик ведёт в раздел */
-  CATALOG.forEach(function (cat) {
+  /* ── Десктоп: пункты навигации (наведение — открыть панель, клик — перейти) ── */
+  CATALOG.forEach(function(cat) {
     var a = document.createElement('a');
     a.className = 'artm-nav-link';
     a.textContent = cat.label;
     a.href = cat.href;
     a.dataset.key = cat.key;
-    a.addEventListener('mouseenter', function () { activePanel = cat.key; openMenu(); renderSidebar(); renderContent(); });
+    a.addEventListener('mouseenter', function() {
+      clearTimeout(closeTimer);
+      activePanel = cat.key; openMenu(); renderSidebar(); renderContent();
+    });
     navLinks.appendChild(a);
   });
 
+  /* ── Десктоп: сайдбар ── */
   function renderSidebar() {
     sidebar.innerHTML = '';
-    CATALOG.forEach(function (cat) {
-      var btn = document.createElement('button');
-      btn.className = 'artm-sidebar-btn' + (cat.key === activePanel ? ' active' : '');
-      btn.dataset.key = cat.key;
-      var span = document.createElement('span'); span.textContent = cat.label; btn.appendChild(span);
-      var svg = svgEl('svg');
-      svg.setAttribute('width', '13'); svg.setAttribute('height', '13'); svg.setAttribute('viewBox', '0 0 24 24');
-      svg.setAttribute('fill', 'none'); svg.setAttribute('stroke', 'currentColor'); svg.setAttribute('stroke-width', '2.5');
-      svg.setAttribute('stroke-linecap', 'round'); svg.setAttribute('stroke-linejoin', 'round');
-      var poly = svgEl('polyline'); poly.setAttribute('points', '9 18 15 12 9 6'); svg.appendChild(poly);
-      btn.appendChild(svg);
-      btn.addEventListener('mouseenter', function () { activePanel = cat.key; renderSidebar(); renderContent(); updateNavActive(); });
-      btn.addEventListener('click', function () { activePanel = cat.key; renderSidebar(); renderContent(); updateNavActive(); });
-      sidebar.appendChild(btn);
+    CATALOG.forEach(function(cat) {
+      var a = document.createElement('a');
+      a.className = 'artm-sidebar-btn' + (cat.key === activePanel ? ' active' : '');
+      a.href = cat.href;
+      var span = document.createElement('span'); span.textContent = cat.label;
+      a.appendChild(span); a.appendChild(chevron());
+      a.addEventListener('mouseenter', function() {
+        activePanel = cat.key; renderSidebar(); renderContent(); updateNavActive();
+      });
+      sidebar.appendChild(a);
     });
   }
 
+  /* ── Десктоп: ряды-ромбы ── */
   function renderContent() {
     content.innerHTML = '';
-    var cat = CATALOG.find(function (c) { return c.key === activePanel; });
+    var cat = CATALOG.find(function(c){ return c.key === activePanel; });
     if (!cat) return;
-    cat.subCats.forEach(function (sub) { content.appendChild(buildRow(sub)); });
+    cat.subCats.forEach(function(sub) { content.appendChild(buildRow(sub)); });
   }
 
   function buildRow(sub) {
-    var N = sub.items.length;
-    var segW = 100 / N;
-    var wrapper = document.createElement('div');
+    var N = sub.items.length, segW = 100 / N;
+    var wrap = document.createElement('div');
 
-    var headingLink = document.createElement('a');
-    headingLink.className = 'artm-row-heading';
-    headingLink.href = sub.href;
-    var rowLabel = document.createElement('div');
-    rowLabel.className = 'artm-row-label';
-    rowLabel.textContent = sub.heading;
-    headingLink.appendChild(rowLabel);
-    wrapper.appendChild(headingLink);
+    var head = document.createElement('a');
+    head.className = 'artm-row-heading'; head.href = sub.href;
+    var lbl = document.createElement('div');
+    lbl.className = 'artm-row-label'; lbl.textContent = sub.heading;
+    head.appendChild(lbl); wrap.appendChild(head);
 
     var strip = document.createElement('div');
-    strip.className = 'artm-row-strip';
-    wrapper.appendChild(strip);
+    strip.className = 'artm-row-strip'; wrap.appendChild(strip);
 
-    sub.items.forEach(function (item, i) {
+    sub.items.forEach(function(item, i) {
       var isFirst = i === 0, isLast = i === N - 1;
       var tL = isFirst ? 0 : i * segW + GAP;
       var tR = isLast  ? 100 : (i + 1) * segW - GAP;
       var bL = isFirst ? 0 : tL - SKEW;
       var bR = isLast  ? 100 : tR - SKEW;
-      var clip = 'polygon(' + tL + '% 0%, ' + tR + '% 0%, ' + bR + '% 100%, ' + bL + '% 100%)';
+      var clip = 'polygon('+tL+'% 0%,'+tR+'% 0%,'+bR+'% 100%,'+bL+'% 100%)';
+      var cx = (bL + bR) / 2;
 
       var seg = document.createElement('a');
-      seg.className = 'artm-seg';
-      seg.href = item.h;
+      seg.className = 'artm-seg'; seg.href = item.h;
       seg.style.clipPath = clip;
 
       var bg = document.createElement('div');
       bg.className = 'artm-seg-bg';
-      bg.style.backgroundImage = 'url(' + sub.image + ')';
+      bg.style.backgroundImage = 'url('+item.image+')';
       seg.appendChild(bg);
 
-      var tint = document.createElement('div'); tint.className = 'artm-seg-tint'; seg.appendChild(tint);
+      var tint = document.createElement('div');
+      tint.className = 'artm-seg-tint'; seg.appendChild(tint);
 
-      var labelCenter = (bL + bR) / 2;
-      var lbl = document.createElement('div');
-      lbl.className = 'artm-seg-label';
-      lbl.style.left = 'calc(' + labelCenter + '% - 54px)';
-      lbl.textContent = item.n;
-      seg.appendChild(lbl);
+      var lbl2 = document.createElement('div');
+      lbl2.className = 'artm-seg-label';
+      lbl2.style.left = 'calc('+cx+'% - 54px)';
+      lbl2.textContent = item.name; seg.appendChild(lbl2);
 
       strip.appendChild(seg);
     });
 
-    var svg = svgEl('svg'); svg.setAttribute('class', 'artm-svg-lines');
+    var svg = svgEl('svg'); svg.setAttribute('class','artm-svg-lines');
     for (var i = 0; i < N - 1; i++) {
       var x1 = (i + 1) * segW, x2 = x1 - SKEW;
       var line = svgEl('line');
-      line.setAttribute('x1', x1 + '%'); line.setAttribute('y1', '0%');
-      line.setAttribute('x2', x2 + '%'); line.setAttribute('y2', '100%');
-      line.setAttribute('stroke', 'rgba(255,255,255,0.3)'); line.setAttribute('stroke-width', '1');
+      line.setAttribute('x1', x1+'%'); line.setAttribute('y1','0%');
+      line.setAttribute('x2', x2+'%'); line.setAttribute('y2','100%');
+      line.setAttribute('stroke','rgba(255,255,255,.22)'); line.setAttribute('stroke-width','1');
       svg.appendChild(line);
     }
     strip.appendChild(svg);
-    return wrapper;
+    return wrap;
   }
 
-  function openMenu()  { menuOpen = true;  panel.classList.add('open');    backdrop.classList.add('open');    updateNavActive(); }
-  function closeMenu() { menuOpen = false; panel.classList.remove('open'); backdrop.classList.remove('open'); updateNavActive(); }
+  /* ── Десктоп: открыть / закрыть ── */
+  function openMenu() {
+    menuOpen = true; panel.classList.add('open'); updateNavActive();
+  }
+  function closeMenu() {
+    menuOpen = false; panel.classList.remove('open'); updateNavActive();
+  }
   function updateNavActive() {
-    navLinks.querySelectorAll('.artm-nav-link').forEach(function (a) {
-      a.classList.toggle('active', menuOpen && a.dataset.key === activePanel);
+    navLinks.querySelectorAll('.artm-nav-link').forEach(function(b) {
+      b.classList.toggle('active', menuOpen && b.dataset.key === activePanel);
     });
   }
-
-  catalogBtn.addEventListener('click', function () { menuOpen ? closeMenu() : openMenu(); });
-  backdrop.addEventListener('click', closeMenu);
+  catalogBtn.addEventListener('click', function() { menuOpen ? closeMenu() : openMenu(); });
   /* Закрытие при уходе мыши со всего меню */
-  document.getElementById('artmWrap').addEventListener('mouseleave', function () { closeMenu(); });
+  root.addEventListener('mouseleave', function() {
+    clearTimeout(closeTimer);
+    closeTimer = setTimeout(closeMenu, 150);
+  });
+  root.addEventListener('mouseenter', function() { clearTimeout(closeTimer); });
+  document.addEventListener('click', function(e) {
+    if (menuOpen && !e.target.closest('.artm')) closeMenu();
+  });
 
+  /* ── Мобайл: табы ── */
+  function renderMobTabs() {
+    mobTabs.innerHTML = '';
+    CATALOG.forEach(function(cat) {
+      var btn = document.createElement('button');
+      btn.className = 'artm-mob-tab' + (cat.key === activePanel ? ' active' : '');
+      btn.textContent = cat.label; btn.dataset.key = cat.key;
+      btn.addEventListener('click', function() {
+        activePanel = cat.key; renderMobTabs(); renderMobContent();
+      });
+      mobTabs.appendChild(btn);
+    });
+  }
+  function renderMobContent() {
+    mobContent.innerHTML = '';
+    var cat = CATALOG.find(function(c){ return c.key === activePanel; });
+    if (!cat) return;
+    cat.subCats.forEach(function(sub) {
+      var secLbl = document.createElement('a');
+      secLbl.className = 'artm-mob-section-label';
+      secLbl.href = sub.href; secLbl.textContent = sub.heading;
+      mobContent.appendChild(secLbl);
+
+      var grid = document.createElement('div'); grid.className = 'artm-mob-grid';
+      sub.items.forEach(function(item) {
+        var card = document.createElement('a');
+        card.className = 'artm-mob-card'; card.href = item.h;
+        var cbg = document.createElement('div');
+        cbg.className = 'artm-mob-card-bg';
+        cbg.style.backgroundImage = 'url('+item.image+')';
+        var cgrad = document.createElement('div'); cgrad.className = 'artm-mob-card-grad';
+        var clbl = document.createElement('div');
+        clbl.className = 'artm-mob-card-label'; clbl.textContent = item.name;
+        card.appendChild(cbg); card.appendChild(cgrad); card.appendChild(clbl);
+        grid.appendChild(card);
+      });
+      mobContent.appendChild(grid);
+    });
+  }
+  mobBtn.addEventListener('click', function() {
+    mobOpen = !mobOpen;
+    mobPanel.classList.toggle('open', mobOpen);
+    mobIcon.innerHTML = mobOpen ? ICON_X : ICON_MENU;
+    if (mobOpen) { renderMobTabs(); renderMobContent(); }
+  });
+
+  /* ── Init ── */
   renderSidebar();
   renderContent();
 
   /* ── Sticky: как в основном меню (header.html) ──────────────
      В покое бар в потоке; при прокрутке фиксируем его ровно под плавающей
-     шапкой Tilda. Высоту шапки определяем автоматически. Спейсер (display:none
-     пока не sticky) не даёт контенту прыгнуть. */
+     шапкой Tilda. Высоту шапки определяем автоматически. */
   (function initSticky() {
-    var wrap = document.getElementById('artmWrap');
-    if (!wrap) return;
-
+    if (!root) return;
     function getHeaderH() {
       var h = 0;
       ['.tmenu-mobile_positionfixed', '.t-menu-base_positionfixed'].forEach(function (sel) {
@@ -420,7 +525,7 @@
         var els = (document.getElementById('allrecords') || document.body).querySelectorAll('*');
         for (var i = 0; i < els.length; i++) {
           var el = els[i];
-          if (el === wrap || wrap.contains(el)) continue;
+          if (el === root || root.contains(el)) continue;
           var st = getComputedStyle(el);
           if (st.position !== 'fixed' || el.offsetHeight < 6 || el.offsetHeight > 250) continue;
           var rect = el.getBoundingClientRect();
@@ -429,30 +534,25 @@
       } catch (err) {}
       return h || 80;
     }
-
     var spacer = document.createElement('div');
-    spacer.style.cssText = 'display:none;height:' + wrap.offsetHeight + 'px;';
-    wrap.parentNode.insertBefore(spacer, wrap);
-
+    spacer.style.cssText = 'display:none;height:' + root.offsetHeight + 'px;';
+    root.parentNode.insertBefore(spacer, root);
     function applySticky() {
       var hdrH = getHeaderH();
       document.documentElement.style.setProperty('--artm-header-h', hdrH + 'px');
       var offsetTop = spacer.getBoundingClientRect().top + window.scrollY;
       var shouldStick = window.scrollY >= offsetTop - hdrH;
-      if (shouldStick && !wrap.classList.contains('artm-sticky')) {
-        wrap.classList.add('artm-sticky');
-        spacer.style.display = 'block';
-      } else if (!shouldStick && wrap.classList.contains('artm-sticky')) {
-        wrap.classList.remove('artm-sticky');
-        spacer.style.display = 'none';
+      if (shouldStick && !root.classList.contains('artm-sticky')) {
+        root.classList.add('artm-sticky'); spacer.style.display = 'block';
+      } else if (!shouldStick && root.classList.contains('artm-sticky')) {
+        root.classList.remove('artm-sticky'); spacer.style.display = 'none';
       }
     }
-
     window.addEventListener('scroll', applySticky, { passive: true });
     var rt = null;
     window.addEventListener('resize', function () {
       clearTimeout(rt);
-      rt = setTimeout(function () { spacer.style.height = wrap.offsetHeight + 'px'; applySticky(); }, 150);
+      rt = setTimeout(function () { spacer.style.height = root.offsetHeight + 'px'; applySticky(); }, 150);
     });
     applySticky();
     setTimeout(applySticky, 300);
