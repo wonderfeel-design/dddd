@@ -159,9 +159,10 @@
   .artm-mob-grid .artm-mob-card:nth-child(even) {
     clip-path: polygon(13px 0, 100% 0, 100% 100%, 0 100%);
   }
-  /* Одинокая последняя карточка (нечётное число) — обе грани прямые */
+  /* Одинокая карточка в ряду (нечётное число) — на всю ширину, грани прямые */
   .artm-mob-grid .artm-mob-card:nth-child(odd):last-child {
     clip-path: none;
+    grid-column: 1 / -1;
   }
   .artm-mob-card-bg {
     position: absolute; inset: 0; background-size: cover; background-position: center; filter: brightness(.6);
@@ -521,9 +522,10 @@
   renderSidebar();
   renderContent();
 
-  /* ── Sticky: как в основном меню (header.html) ──────────────
-     В покое бар в потоке; при прокрутке фиксируем его ровно под плавающей
-     шапкой Tilda. Высоту шапки определяем автоматически. */
+  /* ── Sticky (прокрутка): в покое бар В ПОТОКЕ — стоит своим блоком под
+     шапкой сайта и физически не может её перекрыть. При прокрутке, когда
+     верх бара уходит под плавающую шапку Tilda, фиксируем его ровно под ней
+     (высота шапки определяется автоматически). Спейсер держит место. */
   (function initSticky() {
     if (!root) return;
     function getHeaderH() {
@@ -536,7 +538,7 @@
       if (h > 0) return h;
       document.querySelectorAll('.t-rec').forEach(function (rec) {
         var st = getComputedStyle(rec);
-        if (st.position === 'fixed' && parseFloat(st.top) <= 0 && rec.offsetHeight > 0)
+        if ((st.position === 'fixed' || st.position === 'sticky') && parseFloat(st.top || 0) <= 0 && rec.offsetHeight > 0)
           h = Math.max(h, rec.offsetHeight);
       });
       if (h > 0) return h;
@@ -546,36 +548,48 @@
           var el = els[i];
           if (el === root || root.contains(el)) continue;
           var st = getComputedStyle(el);
-          if (st.position !== 'fixed' || el.offsetHeight < 6 || el.offsetHeight > 250) continue;
+          if (st.position !== 'fixed' && st.position !== 'sticky') continue;
+          if (el.offsetHeight < 6 || el.offsetHeight > 250) continue;
           var rect = el.getBoundingClientRect();
           if (rect.top >= -5 && rect.top <= 5) h = Math.max(h, el.offsetHeight);
         }
       } catch (err) {}
-      return h || 80;
+      return h || 0;
     }
+
+    var stuck = false;
     var spacer = document.createElement('div');
-    spacer.style.cssText = 'display:none;height:' + root.offsetHeight + 'px;';
+    spacer.style.cssText = 'display:none;';
     root.parentNode.insertBefore(spacer, root);
+
     function applySticky() {
       var hdrH = getHeaderH();
       document.documentElement.style.setProperty('--artm-header-h', hdrH + 'px');
-      var offsetTop = spacer.getBoundingClientRect().top + window.scrollY;
-      var shouldStick = window.scrollY >= offsetTop - hdrH;
-      if (shouldStick && !root.classList.contains('artm-sticky')) {
-        root.classList.add('artm-sticky'); spacer.style.display = 'block';
-      } else if (!shouldStick && root.classList.contains('artm-sticky')) {
-        root.classList.remove('artm-sticky'); spacer.style.display = 'none';
+      /* Док-координата верха бара: в покое — сам бар, в приклеенном — спейсер. */
+      var anchor = stuck ? spacer : root;
+      var topDoc = anchor.getBoundingClientRect().top + window.scrollY;
+      var shouldStick = window.scrollY + hdrH >= topDoc;
+      if (shouldStick && !stuck) {
+        spacer.style.height = root.offsetHeight + 'px';
+        spacer.style.display = 'block';
+        root.classList.add('artm-sticky');
+        stuck = true;
+      } else if (!shouldStick && stuck) {
+        root.classList.remove('artm-sticky');
+        spacer.style.display = 'none';
+        stuck = false;
       }
     }
     window.addEventListener('scroll', applySticky, { passive: true });
     var rt = null;
     window.addEventListener('resize', function () {
       clearTimeout(rt);
-      rt = setTimeout(function () { spacer.style.height = root.offsetHeight + 'px'; applySticky(); }, 150);
+      rt = setTimeout(function () { if (stuck) spacer.style.height = root.offsetHeight + 'px'; applySticky(); }, 150);
     });
     applySticky();
     setTimeout(applySticky, 300);
     setTimeout(applySticky, 800);
+    setTimeout(applySticky, 1500);
   })();
 })();
 </script>
