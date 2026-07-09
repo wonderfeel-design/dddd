@@ -1471,3 +1471,31 @@ root.addEventListener('change', function (e) {
   }
 })();
 </script>
+
+<script>
+/* ══ Кликабельный баннер Telegram (блок T368) ══
+   Картинка banner_tg.png не имеет ссылки в стандартном блоке — оборачиваем её
+   в ссылку на канал. Привязка по имени файла, чтобы не задеть другие T368. */
+(function () {
+  var TG_URL = 'https://t.me/artdoska';
+  function linkTgBanner() {
+    var imgs = document.querySelectorAll('img.t368__img');
+    for (var i = 0; i < imgs.length; i++) {
+      var img = imgs[i];
+      if ((img.getAttribute('src') || '').indexOf('banner_tg') === -1) continue;
+      if (img.closest('a.nx-tg-link')) continue;
+      var a = document.createElement('a');
+      a.className = 'nx-tg-link';
+      a.href = TG_URL; a.target = '_blank'; a.rel = 'noopener';
+      a.style.cssText = 'display:block;cursor:pointer;';
+      img.parentNode.insertBefore(a, img);
+      a.appendChild(img);
+    }
+  }
+  if (document.readyState === 'loading')
+    document.addEventListener('DOMContentLoaded', linkTgBanner);
+  else linkTgBanner();
+  setTimeout(linkTgBanner, 600);
+  setTimeout(linkTgBanner, 1500);
+})();
+</script>
