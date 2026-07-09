@@ -1362,8 +1362,8 @@ html body .nx-megamenu-wrap { padding-left: 20px !important; }
 #rec2362047153 .t404__col { flex: 0 0 280px !important; width: 280px !important; max-width: 280px !important; min-width: 280px !important; margin: 0 !important; padding: 0 !important; display: flex !important; flex-direction: column !important; }
 #rec2362047153 .t404__link { display: flex !important; flex-direction: column !important; flex: 1 !important; height: 100% !important; text-decoration: none !important; background: #ffffff !important; border-radius: 8px !important; border: 1px solid var(--nx-border) !important; box-shadow: 0 2px 12px rgba(0,0,0,.05) !important; overflow: hidden !important; transition: box-shadow .2s, transform .15s !important; }
 #rec2362047153 .t404__link:hover { box-shadow: 0 6px 24px rgba(0,0,0,.10) !important; transform: translateY(-2px) !important; }
-#rec2362047153 .t404__imgbox { flex-shrink: 0 !important; overflow: hidden !important; background: #F7F7F7 !important; }
-#rec2362047153 .t404__img { width: 100% !important; aspect-ratio: 4 / 3 !important; background-size: cover !important; background-position: center !important; display: block !important; }
+#rec2362047153 .t404__imgbox { flex-shrink: 0 !important; overflow: hidden !important; background: #F7F7F7 !important; height: 180px !important; }
+#rec2362047153 .t404__img { width: 100% !important; height: 180px !important; min-height: 180px !important; background-size: cover !important; background-position: center !important; display: block !important; }
 #rec2362047153 .t404__separator { display: none !important; }
 #rec2362047153 .t404__textwrapper { padding: 16px 20px 20px !important; box-sizing: border-box !important; flex: 1 1 auto !important; display: flex !important; flex-direction: column !important; width: 100% !important; }
 #rec2362047153 .t404__date, #rec2362047153 .t404__uptitle { font-family: var(--nx-font) !important; font-size: 12px !important; color: #AAAAAA !important; margin-bottom: 8px !important; display: block !important; letter-spacing: .5px !important; }
