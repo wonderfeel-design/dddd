@@ -95,7 +95,7 @@
   }
   .artm-row-heading:hover .artm-row-label { color: #4C9E24; }
   .artm-row-strip {
-    position: relative; height: 90px; background: #0a0a0a;
+    position: relative; height: 74px; background: #0a0a0a;
     border-radius: 3px; overflow: hidden; margin-bottom: 7px;
   }
 
@@ -104,9 +104,9 @@
   .artm-seg:hover { z-index: 2; }
   .artm-seg-bg {
     position: absolute; inset: 0; background-size: cover; background-position: center;
-    filter: brightness(.58); transition: filter .25s, transform .3s;
+    filter: brightness(.72); transition: filter .25s, transform .3s;
   }
-  .artm-seg:hover .artm-seg-bg { filter: brightness(.88); transform: scale(1.05); }
+  .artm-seg:hover .artm-seg-bg { filter: brightness(.95); transform: scale(1.05); }
   .artm-seg-tint {
     position: absolute; inset: 0; background: rgba(76,158,36,.15);
     opacity: 0; pointer-events: none; transition: opacity .25s;
@@ -128,7 +128,7 @@
   /* Карточки с теми же диагональными углами, что и десктоп-ромбы.
      Внешние грани пары — прямые, внутренний шов — диагональ. */
   .artm-mob-card {
-    position: relative; height: 74px; border-radius: 3px; overflow: hidden;
+    position: relative; height: 62px; border-radius: 3px; overflow: hidden;
     cursor: pointer; display: block; text-decoration: none;
   }
   .artm-mob-grid .artm-mob-card:nth-child(odd) {
@@ -141,7 +141,7 @@
     clip-path: none; grid-column: 1 / -1;
   }
   .artm-mob-card-bg {
-    position: absolute; inset: 0; background-size: cover; background-position: center; filter: brightness(.6);
+    position: absolute; inset: 0; background-size: cover; background-position: center; filter: brightness(.72);
   }
   .artm-mob-card-grad {
     position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,.6) 0%, transparent 62%);
