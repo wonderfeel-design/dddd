@@ -181,111 +181,142 @@
 (function () {
   var SKEW = 5, GAP = 0.4;
 
-  /* Фото-заглушки — замените на реальные фото категорий */
-  var I = {
-    ceilVagonka:  'https://images.unsplash.com/photo-1764301718410-b50ea80fd0dd?w=600&q=80',
-    ceilBrus:     'https://images.unsplash.com/photo-1572852515703-596a50742d44?w=600&q=80',
-    ceilShpon:    'https://images.unsplash.com/photo-1644925757334-d0397c01518c?w=600&q=80',
-    ceilDoska:    'https://images.unsplash.com/photo-1551770873-897f127385d5?w=600&q=80',
-    ceilPlanken:  'https://images.unsplash.com/photo-1675528030748-d463ab87e8d5?w=600&q=80',
-    wallVagonka:  'https://images.unsplash.com/photo-1596830762262-7b5e55dd821c?w=600&q=80',
-    wallBrus:     'https://images.unsplash.com/photo-1523034572918-be25535ca417?w=600&q=80',
-    wallShpon:    'https://images.unsplash.com/photo-1621295693450-080546d2ec8e?w=600&q=80',
-    wallDoska:    'https://images.unsplash.com/photo-1700809887581-c41c239e808e?w=600&q=80',
-    wallPaneli:   'https://images.unsplash.com/photo-1701422052139-e72ee5e67249?w=600&q=80',
-    slab:         'https://images.unsplash.com/photo-1777370504743-c009e0d92465?w=600&q=80',
-    terrasa:      'https://images.unsplash.com/photo-1635348291497-8c28ef034996?w=600&q=80',
-    paluba:       'https://images.unsplash.com/photo-1763709279010-cc6c5801c633?w=600&q=80',
-    parquet:      'https://images.unsplash.com/photo-1607403219525-6c60fa4f20fa?w=600&q=80',
-    floorDoska:   'https://images.unsplash.com/photo-1548268364-3acee266b695?w=600&q=80',
-    facadeDoska:  'https://images.unsplash.com/photo-1780510158774-7e82e69bae4f?w=600&q=80',
-    blokhous:     'https://images.unsplash.com/photo-1770306924460-b0ff6c3719ae?w=600&q=80',
-    facadeSlats:  'https://images.unsplash.com/photo-1515713519566-6f9bf3b4a07a?w=600&q=80',
-    frostPlanks:  'https://images.unsplash.com/photo-1760873586038-3d40d19e4ca5?w=600&q=80',
-    molding:      'https://images.unsplash.com/photo-1764283824453-02cd00e49143?w=600&q=80',
-    dekorPaneli:  'https://images.unsplash.com/photo-1701421052582-9f6935aff566?w=600&q=80',
-    plintus:      'https://images.unsplash.com/photo-1546727483-398533902b75?w=600&q=80',
-    brus:         'https://images.unsplash.com/photo-1583095117095-adaeabc401ab?w=600&q=80',
-    doskaOb:      'https://images.unsplash.com/photo-1523034572918-be25535ca417?w=600&q=80',
-    doskaNeob:    'https://images.unsplash.com/photo-1634672652995-ee7525bce595?w=600&q=80',
-    rejka:        'https://images.unsplash.com/photo-1675528030748-d463ab87e8d5?w=600&q=80',
-    shpunt:       'https://images.unsplash.com/photo-1548268364-3acee266b695?w=600&q=80',
-    hw1:          'https://images.unsplash.com/photo-1572852515703-596a50742d44?w=600&q=80',
-    hw2:          'https://images.unsplash.com/photo-1523034572918-be25535ca417?w=600&q=80',
-    hw3:          'https://images.unsplash.com/photo-1644925757334-d0397c01518c?w=600&q=80',
-    hw4:          'https://images.unsplash.com/photo-1621295693450-080546d2ec8e?w=600&q=80',
-    paint1:       'https://images.unsplash.com/photo-1621295693450-080546d2ec8e?w=600&q=80',
-    paint2:       'https://images.unsplash.com/photo-1644925757334-d0397c01518c?w=600&q=80',
-    paint3:       'https://images.unsplash.com/photo-1572852515703-596a50742d44?w=600&q=80',
-    paint4:       'https://images.unsplash.com/photo-1780510158774-7e82e69bae4f?w=600&q=80',
-    paint5:       'https://images.unsplash.com/photo-1701422052139-e72ee5e67249?w=600&q=80'
-  };
+  /* Фото — реальные (tildacdn), из таблицы клиента. Несколько мест без фото
+     в таблице временно используют фото соседнего похожего пункта — см.
+     список "нужно уточнить" в чате/инструкции. */
+  var IMG_TERRASA_POL   = 'https://static.tildacdn.com/stor3338-3339-4137-b164-363861333061/ce55c3eb6e3bdca5621961c0c50deede.jpg';
+  var IMG_SLEBI_STENI   = 'https://static.tildacdn.com/stor6361-6361-4730-a135-3633336313163/7fd6aa087e1949ed450bd5b653441567.jpg';
+  var IMG_DOSKA_NEOBR   = 'https://static.tildacdn.com/stor6261-6338-4262-a135-386532303962/ef446bd4e2b4b61918fd365f375a26cb.jpg';
 
-  /* Данные каталога с реальными пермалинками (h = href) */
+  /* Данные каталога с реальными пермалинками (h = href) и реальными фото (image) */
   var CATALOG = [
     { key: 'interier', label: 'ДЛЯ ИНТЕРЬЕРА', href: '/catalog/810291631742-dlya-interera', subCats: [
       { heading: 'ПОТОЛОК', href: '/catalog/565173393412-potolok', items: [
-        {name:'Вагонка',image:I.ceilVagonka,h:'/catalog/752465215952-vagonka'},
-        {name:'Имитация бруса',image:I.ceilBrus,h:'/catalog/586794862262-imitatsiya-brusa'},
-        {name:'Шпонированная доска',image:I.ceilShpon,h:'/catalog/997756288252-shponirovannaya-doska'},
-        {name:'Доска потолочная',image:I.ceilDoska,h:'/catalog/596951118782-doska-potolochnaya'},
-        {name:'Планкен',image:I.ceilPlanken,h:'/catalog/228699182612-planken'} ]},
+        {name:'Вагонка', h:'/catalog/752465215952-vagonka',
+          image:'https://static.tildacdn.com/stor3661-6332-4632-b131-363662363634/fda1dfd9d1c5a726f4cb022ec350b5a2.jpg'},
+        {name:'Планкен', h:'/catalog/228699182612-planken',
+          image:'https://static.tildacdn.com/stor3562-6133-4235-b162-306333343039/e122a926de4c79273e8ded26e6db06d7.jpg'},
+        {name:'Имитация бруса', h:'/catalog/586794862262-imitatsiya-brusa',
+          image:'https://static.tildacdn.com/stor3437-6666-4866-b062-626463393339/5d73673ad9436022a67bad30622e8ef9.jpg'}
+      ]},
       { heading: 'СТЕНЫ', href: '/catalog/786215589522-steni', items: [
-        {name:'Вагонка',image:I.wallVagonka,h:'/catalog/727322905002-vagonka'},
-        {name:'Имитация бруса',image:I.wallBrus,h:'/catalog/979626884442-imitatsiya-brusa'},
-        {name:'Шпонированная доска',image:I.wallShpon,h:'/catalog/512449107972-shponirovannaya-doska'},
-        {name:'Доска стеновая',image:I.wallDoska,h:'/catalog/319239141522-doska-stenovaya'},
-        {name:'Стеновые панели',image:I.wallPaneli,h:'/catalog/598653134492-stenovie-paneli'},
-        {name:'Слэбы',image:I.slab,h:'/catalog/565136830622-slebi'} ]},
+        {name:'Вагонка', h:'/catalog/727322905002-vagonka',
+          image:'https://static.tildacdn.com/stor3238-3739-4338-b034-343134383964/3b69764dd44550e5a5205e67c3ea0f0f.webp'},
+        {name:'Имитация бруса', h:'/catalog/979626884442-imitatsiya-brusa',
+          image:'https://static.tildacdn.com/stor6464-3033-4666-a333-635353661346/979e1ef7260150cf4a571bde15a0c654.jpg'},
+        {name:'Планкен', h:'/catalog/510832188923-planken',
+          image:'https://static.tildacdn.com/stor3562-6133-4235-b162-306333343039/e122a926de4c79273e8ded26e6db06d7.jpg'},
+        {name:'Стеновые панели', h:'/catalog/598653134492-stenovie-paneli',
+          image:'https://static.tildacdn.com/stor3238-3739-4338-b034-343134383964/3b69764dd44550e5a5205e67c3ea0f0f.webp'},
+        {name:'Слэбы', h:'/catalog/565136830622-slebi', image: IMG_SLEBI_STENI}
+      ]},
       { heading: 'ПОЛ', href: '/catalog/168434912242-pol', items: [
-        {name:'Террасная доска',image:I.terrasa,h:'/catalog/872722103702-terrasnaya-doska'},
-        {name:'Палубная доска',image:I.paluba,h:'/catalog/374112886602-palubnaya-doska'},
-        {name:'Слэбы напольные',image:I.parquet,h:'/catalog/549701901002-slebi-napolnie'},
-        {name:'Доска пола',image:I.floorDoska,h:'/catalog/382387938172-doska-pola'} ]},
+        {name:'Доска пола', h:'/catalog/382387938172-doska-pola',
+          image:'https://static.tildacdn.com/stor3438-3938-4332-b735-343037303031/b8518d5c00dcec48dae422429c6db850.webp'},
+        {name:'Террасная доска', h:'/catalog/872722103702-terrasnaya-doska', image: IMG_TERRASA_POL},
+        {name:'Паркетная доска', h:'/catalog/241663827833-parketnaya-doska',
+          image:'https://static.tildacdn.com/stor3864-6637-4463-a264-626464643139/f9b1ae5eaa09f7e9675a1228de515be6.jpg'}
+      ]},
       { heading: 'ОКНА / ДВЕРИ', href: '/catalog/662542174522-okna-dveri', items: [
-        {name:'Вагонка',image:I.wallBrus,h:'/catalog/563319022162-vagonka'},
-        {name:'Имитация бруса',image:I.ceilBrus,h:'/catalog/477014464882-imitatsiya-brusa'},
-        {name:'Шпонированная доска',image:I.wallShpon,h:'/catalog/631180345282-shponirovannaya-doska'},
-        {name:'Слэбы',image:I.slab,h:'/catalog/811096281772-slebi'},
-        {name:'Доска',image:I.floorDoska,h:'/catalog/564436745372-doska'},
-        {name:'Стеновые панели',image:I.wallPaneli,h:'/catalog/911008845352-stenovie-paneli'} ]},
+        /* ⚠ ссылка не указана в таблице — временно ведёт на раздел целиком, уточнить */
+        {name:'Планкен', h:'/catalog/662542174522-okna-dveri',
+          image:'https://static.tildacdn.com/stor6137-3934-4565-b135-353666633735/e14d6f80c1453158865a26070bf0666b.jpg'},
+        {name:'Шпонированная доска', h:'/catalog/631180345282-shponirovannaya-doska',
+          image:'https://static.tildacdn.com/stor3934-3064-4938-b139-313965633330/f837c4f7d107487602206c9a56c78354.jpg'},
+        {name:'Клееный щит', h:'/catalog/564436745372-kleenii-schit',
+          image:'https://static.tildacdn.com/stor3239-3139-4263-a464-666665343765/3e15f373871ced43c1dbbe5d6a37136c.jpg'},
+        {name:'Слэбы', h:'/catalog/811096281772-slebi', image: IMG_SLEBI_STENI}
+      ]},
       { heading: 'ДЕКОР', href: '/catalog/597495000982-dekor', items: [
-        {name:'Декоративные панели',image:I.dekorPaneli,h:'/catalog/922401543332-dekorativnie-paneli'},
-        {name:'Молдинги',image:I.molding,h:'/catalog/529584857882-moldingi'},
-        {name:'Плинтусы',image:I.plintus,h:'/catalog/449922635632-plintusi'} ]}
+        {name:'Декоративные панели', h:'/catalog/922401543332-dekorativnie-paneli',
+          image:'https://static.tildacdn.com/stor6235-3832-4937-a332-636664303531/0f520ca197b52973b7f1eaf57194a3e2.jpg'},
+        {name:'Плинтусы и молдинги', h:'/catalog/449922635632-plintusi-i-moldingi',
+          image:'https://static.tildacdn.com/stor3363-6361-4163-b530-343735363766/b13752f08ec689473fc121761653a1d9.jpg'},
+        {name:'Столешницы', h:'/catalog/536762412473-stoleshnitsi',
+          image:'https://static.tildacdn.com/stor3639-6530-4234-b538-396439396538/8b4010f067fe65ec1b42c89848ee9896.jpg'}
+      ]}
     ]},
     { key: 'fasad', label: 'ДЛЯ ФАСАДА', href: '/catalog/799009129752-dlya-fasada', subCats: [
-      { heading: 'ФАСАДНЫЕ ПАНЕЛИ', href: '/catalog/813806349812-fasadnie-paneli', items: [
-        {name:'Фасадная доска',image:I.facadeDoska,h:'/catalog/546702251802-fasadnaya-doska'},
-        {name:'Блок-хаус',image:I.blokhous,h:'/catalog/165489477212-blok-haus'},
-        {name:'Имитация бруса',image:I.ceilBrus,h:'/catalog/533189585232-imitatsiya-brusa'},
-        {name:'Вагонка',image:I.facadeSlats,h:'/catalog/613544423522-vagonka'} ]},
-      { heading: 'ТЕРРАСНЫЕ ДОСКИ', href: '/catalog/640717199452-terrasnie-doski', items: [
-        {name:'Палубная доска',image:I.paluba,h:'/catalog/311305480882-palubnaya-doska'},
-        {name:'Слэбы',image:I.frostPlanks,h:'/catalog/297627384262-slebi'} ]}
+      { heading: 'ПОТОЛОК / СВЕСЫ', href: '/catalog/497342353443-potolok-svesi', items: [
+        {name:'Подшивная доска', h:'/catalog/309949690223-podshivnaya-doska',
+          image:'https://static.tildacdn.com/stor3166-3232-4434-b636-323439363336/c2a12084fe9facc3ef47bfc07d673c7a.jpg'},
+        {name:'Планкен', h:'/catalog/228699182612-planken',
+          image:'https://static.tildacdn.com/stor3562-6133-4235-b162-306333343039/e122a926de4c79273e8ded26e6db06d7.jpg'},
+        {name:'Вагонка', h:'/catalog/752465215952-vagonka',
+          image:'https://static.tildacdn.com/stor3661-6332-4632-b131-363662363634/fda1dfd9d1c5a726f4cb022ec350b5a2.jpg'}
+      ]},
+      { heading: 'СТЕНЫ', href: '/catalog/813806349812-steni', items: [
+        {name:'Скандинавская доска', h:'/catalog/546702251802-skandinavskaya-doska',
+          image:'https://static.tildacdn.com/stor3966-6130-4763-b830-616335313165/402d85f1e42f2ef5bb1a74b10e70e622.jpg'},
+        {name:'Имитация бруса', h:'/catalog/533189585232-imitatsiya-brusa',
+          image:'https://static.tildacdn.com/stor6464-3033-4666-a333-635353661346/979e1ef7260150cf4a571bde15a0c654.jpg'},
+        {name:'Планкен', h:'/catalog/499164654253-planken',
+          image:'https://static.tildacdn.com/stor6263-6462-4165-a236-353939363335/f8f22c7214bdb6feda9aadd72b51467e.jpg'},
+        {name:'Реечные панели', h:'/catalog/888259432802-reechnie-paneli',
+          image:'https://static.tildacdn.com/stor6365-6234-4637-a264-393065313637/db8ed1aa62ee40fed184c13f369e7018.jpg'}
+      ]},
+      { heading: 'ТЕРРАСА', href: '/catalog/799009129752-dlya-fasada', items: [
+        {name:'Террасная доска', h:'/catalog/618483200693-terrasnaya-doska', image: IMG_TERRASA_POL},
+        {name:'Ограждение', h:'/catalog/750936322173-ograzhdenie',
+          image:'https://static.tildacdn.com/stor3434-3263-4637-a136-313537343537/2d9619530b2e57732a8456db7b3d25ad.jpg'},
+        {name:'Планкен', h:'/catalog/311305480882-plankenn',
+          image:'https://static.tildacdn.com/stor6263-6462-4165-a236-353939363335/f8f22c7214bdb6feda9aadd72b51467e.jpg'}
+      ]},
+      { heading: 'ОКНА / ДВЕРИ', href: '/catalog/896275229953-okna-dveri', items: [
+        {name:'Планкен', h:'/catalog/697928604253-planken',
+          image:'https://static.tildacdn.com/stor3562-6133-4235-b162-306333343039/e122a926de4c79273e8ded26e6db06d7.jpg'},
+        {name:'Наличники', h:'/catalog/865939833633-nalichniki',
+          image:'https://static.tildacdn.com/stor3035-3965-4062-b232-646463613832/8cbadcfdd33c834b7e092dfb11c25c07.jpg'},
+        {name:'Слэбы', h:'/catalog/366321627883-slebi', image: IMG_SLEBI_STENI}
+      ]}
     ]},
     { key: 'pilo', label: 'ПИЛОМАТЕРИАЛЫ', href: '/catalog/929460929152-pilomateriali', subCats: [
       { heading: 'ПИЛОМАТЕРИАЛЫ', href: '/catalog/929460929152-pilomateriali', items: [
-        {name:'Брус',image:I.brus,h:'/catalog/528547846822-brus'},
-        {name:'Доска обрезная',image:I.doskaOb,h:'/catalog/140001465242-doska-obreznaya'},
-        {name:'Доска необрезная',image:I.doskaNeob,h:'/catalog/757858842962-doska-neobreznaya'},
-        {name:'Рейка',image:I.rejka,h:'/catalog/682086185842-reika'},
-        {name:'Шпунтованная доска',image:I.shpunt,h:'/catalog/484308463392-shpuntovannaya-doska'} ]}
+        {name:'Бруски', h:'/catalog/528547846822-bruski',
+          image:'https://static.tildacdn.com/stor3532-6638-4539-b961-306665616531/3aead17d2a453799ac3a730c5623d3a5.png'},
+        {name:'Доска сухая строганная', h:'/catalog/140001465242-doska-suhaya-strogannaya', image: IMG_DOSKA_NEOBR},
+        {name:'Доска необрезная', h:'/catalog/757858842962-doska-neobreznaya', image: IMG_DOSKA_NEOBR},
+        {name:'Рейки', h:'/catalog/682086185842-reiki',
+          image:'https://static.tildacdn.com/stor6235-6139-4537-a366-613133386135/fdb2f2fc8f606036d8262aee61191db2.jpg'},
+        {name:'Импрегнированная доска', h:'/catalog/150077960783-impregnirovannaya-doska',
+          image:'https://static.tildacdn.com/stor3832-6434-4835-b463-653661313339/2efe208e3cb5cbe665cbe6d161db01b5.jpg'},
+        {name:'Плитные материалы', h:'/catalog/434700592923-plitnie-materiali',
+          image:'https://static.tildacdn.com/stor3832-6134-4339-a262-623932316139/808c346bc5e5d61b04a7b9b569be9eda.jpg'}
+      ]}
     ]},
     { key: 'krepezh', label: 'КРЕПЕЖ', href: '/catalog/559088613632-krepezh', subCats: [
-      { heading: 'КРЕПЕЖ', href: '/catalog/559088613632-krepezh', items: [
-        {name:'Саморезы',image:I.hw1,h:'/catalog/819626010462-samorezi'},
-        {name:'Скобы',image:I.hw2,h:'/catalog/254591601132-skobi'},
-        {name:'Гвозди',image:I.hw3,h:'/catalog/677218539812-gvozdi'},
-        {name:'Клипсы',image:I.hw4,h:'/catalog/958351966462-klipsi'} ]}
+      { heading: 'КРЕПЁЖ', href: '/catalog/559088613632-krepezh', items: [
+        {name:'Для вагонки', h:'/catalog/958351966462-dlya-vagonki',
+          image:'https://static.tildacdn.com/stor3366-3236-4238-b366-663134396134/b2b7a334bd4ac0c4c38b6de9a43ef38d.jpg'},
+        {name:'Для имитации бруса', h:'/catalog/254591601132-dlya-imitatsii-brusa',
+          image:'https://static.tildacdn.com/stor6261-3236-4164-b666-356564393366/eb691f656de7b5571502816a4058d50b.webp'},
+        {name:'Для террасной доски', h:'/catalog/819626010462-dlya-terrasnoi-doski',
+          image:'https://static.tildacdn.com/stor3664-6234-4534-a166-633861313376/7233783434d19be2e3f9553af72f2882.jpg'},
+        {name:'Для планкена', h:'/catalog/677218539812-dlya-plankena',
+          image:'https://static.tildacdn.com/stor6265-3533-4134-a164-393935613834/0684dde7904cdce4b864d92b865d931.jpg'},
+        {name:'Для половой доски', h:'/catalog/421223750203-dlya-polovoi-doski',
+          image:'https://static.tildacdn.com/stor3836-6336-4565-a336-663336333391/ef9d0c95ddd455fc30ad0947ebe1189e.jpg'},
+        {name:'Для фасадной доски', h:'/catalog/464313704813-dlya-fasadnoi-doski',
+          image:'https://static.tildacdn.com/stor3861-3430-4930-b166-393139626235/f894ebdcd9e29bd0f691d3781a1c0da7.jpg'},
+        {name:'Для каркасной доски', h:'/catalog/353892678243-dlya-karkasnoi-doski',
+          image:'https://static.tildacdn.com/stor3032-3866-4461-b430-323634324639/16fb3ff215c55d14ea5fff7b05e1eb75.jpg'}
+      ]}
     ]},
     { key: 'kraski', label: 'КРАСКИ', href: '/catalog/807847057542-kraski', subCats: [
       { heading: 'КРАСКИ И ЛАКИ', href: '/catalog/807847057542-kraski', items: [
-        {name:'Масло для дерева',image:I.paint1,h:'/catalog/775950412632-maslo-dlya-dereva'},
-        {name:'Лаки',image:I.paint2,h:'/catalog/443883645832-laki'},
-        {name:'Антисептики',image:I.paint3,h:'/catalog/424637688572-antiseptiki'},
-        {name:'Краски фасадные',image:I.paint4,h:'/catalog/478948993422-kraski-fasadnie'},
-        {name:'Краски для интерьера',image:I.paint5,h:'/catalog/980859624572-kraski-dlya-interera'} ]}
+        {name:'Краски фасадные', h:'/catalog/478948993422-kraski-fasadnie',
+          image:'https://static.tildacdn.com/stor3736-3732-4133-b531-626465646335/455f5138fd5e589727a12e5366f0f13f.jpg'},
+        {name:'Краски для интерьера', h:'/catalog/980859624572-kraski-dlya-interera',
+          image:'https://static.tildacdn.com/stor3733-3462-4230-b637-366232373537/81f048b3a5835ea71d54f0e8500ac1b5.png'},
+        {name:'Пропитки и морилки', h:'/catalog/424637688572-propitki-i-morilki',
+          image:'https://static.tildacdn.com/stor3266-3630-4038-a232-343436623937/53b7eb98abb0721da819b646b0888185.jpg'},
+        {name:'Лаки', h:'/catalog/443883645832-laki',
+          image:'https://static.tildacdn.com/stor3266-3630-4038-a232-343436623937/53b7eb98abb0721da819b646b0888185.jpg'},
+        {name:'Лазури', h:'/catalog/667154489043-lazuri',
+          image:'https://static.tildacdn.com/stor3166-3334-4862-b462-663864386432/dbe1beb1cdd5b451642bdeff7855896f.webp'},
+        {name:'Масло для дерева', h:'/catalog/775950412632-maslo-dlya-dereva',
+          image:'https://static.tildacdn.com/stor6434-6432-4834-a435-363933313732/e6f9117791ed717d215188ac33036c01.jpg'}
+      ]}
     ]}
   ];
 
