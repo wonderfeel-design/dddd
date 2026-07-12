@@ -95,12 +95,15 @@
   }
   .artm-row-heading:hover .artm-row-label { color: #4C9E24; }
   .artm-row-strip {
-    position: relative; height: 74px; background: #0a0a0a;
+    position: relative; height: 120px; background: #0a0a0a;
     border-radius: 3px; overflow: hidden; margin-bottom: 7px;
   }
 
   /* ── SEGMENTS (ромбы) ── */
-  .artm-seg { position: absolute; inset: 0; cursor: pointer; z-index: 1; display: block; text-decoration: none; }
+  .artm-seg {
+    position: absolute; inset: 0; cursor: pointer; z-index: 1; display: block;
+    text-decoration: none; transition: clip-path .28s ease;
+  }
   .artm-seg:hover { z-index: 2; }
   .artm-seg-bg {
     position: absolute; inset: 0; background-size: cover; background-position: center;
@@ -117,7 +120,7 @@
     font-size: 10px; font-weight: 600; color: rgba(255,255,255,.9);
     text-shadow: 0 1px 6px rgba(0,0,0,.95); letter-spacing: .03em;
     line-height: 1.25; pointer-events: none; font-family: inherit;
-    transition: font-weight .15s, color .15s;
+    transition: font-weight .15s, color .15s, left .28s ease;
   }
   .artm-seg:hover .artm-seg-label { color: #fff; font-weight: 700; }
   .artm-svg-lines { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 3; }
@@ -179,7 +182,7 @@
 
 <script>
 (function () {
-  var SKEW = 5, GAP = 0.4;
+  var SKEW = 5, GAP = 0.7, EXPAND = 2, MINW = 6;
 
   /* Фото — реальные (tildacdn), из таблицы клиента. Несколько мест без фото
      в таблице временно используют фото соседнего похожего пункта — см.
@@ -402,24 +405,20 @@
     return wrap;
   }
 
-  /* Десктоп: диагональные ромбы */
+  /* Десктоп: диагональные ромбы с «гармошкой» — наведение расширяет сегмент
+     (фото читается крупнее и резче), соседи сжимаются; уход мыши возвращает
+     равные доли. Разделитель — тёмный диагональный зазор GAP (SVG-швы убраны,
+     они не могли дёшево синхронизироваться с анимацией clip-path). */
   function buildStrip(sub) {
-    var N = sub.items.length, segW = 100 / N;
+    var N = sub.items.length;
     var strip = document.createElement('div');
     strip.className = 'artm-row-strip';
 
-    sub.items.forEach(function(item, i) {
-      var isFirst = i === 0, isLast = i === N - 1;
-      var tL = isFirst ? 0 : i * segW + GAP;
-      var tR = isLast  ? 100 : (i + 1) * segW - GAP;
-      var bL = isFirst ? 0 : tL - SKEW;
-      var bR = isLast  ? 100 : tR - SKEW;
-      var clip = 'polygon('+tL+'% 0%,'+tR+'% 0%,'+bR+'% 100%,'+bL+'% 100%)';
-      var cx = (bL + bR) / 2;
+    var segs = [], labels = [];
 
+    sub.items.forEach(function(item, i) {
       var seg = document.createElement('a');
       seg.className = 'artm-seg'; seg.href = item.h;
-      seg.style.clipPath = clip;
 
       var bg = document.createElement('div');
       bg.className = 'artm-seg-bg';
@@ -431,22 +430,44 @@
 
       var lbl2 = document.createElement('div');
       lbl2.className = 'artm-seg-label';
-      lbl2.style.left = 'calc('+cx+'% - 54px)';
       lbl2.textContent = item.name; seg.appendChild(lbl2);
 
+      seg.addEventListener('mouseenter', function() { layout(i); });
+
+      segs.push(seg); labels.push(lbl2);
       strip.appendChild(seg);
     });
 
-    var svg = svgEl('svg'); svg.setAttribute('class','artm-svg-lines');
-    for (var i = 0; i < N - 1; i++) {
-      var x1 = (i + 1) * segW, x2 = x1 - SKEW;
-      var line = svgEl('line');
-      line.setAttribute('x1', x1+'%'); line.setAttribute('y1','0%');
-      line.setAttribute('x2', x2+'%'); line.setAttribute('y2','100%');
-      line.setAttribute('stroke','rgba(255,255,255,.22)'); line.setAttribute('stroke-width','1');
-      svg.appendChild(line);
+    strip.addEventListener('mouseleave', function() { layout(-1); });
+
+    /* Пересчёт границ. hover < 0 — равные доли; иначе сегмент hover получает
+       увеличенную долю, остальные делят остаток поровну. */
+    function layout(hover) {
+      var normalW = 100 / N, widths = [], i;
+      if (hover < 0 || N < 2) {
+        for (i = 0; i < N; i++) widths.push(normalW);
+      } else {
+        var expandedW = Math.min(EXPAND * normalW, 100 - (N - 1) * MINW);
+        var rest = (100 - expandedW) / (N - 1);
+        for (i = 0; i < N; i++) widths.push(i === hover ? expandedW : rest);
+      }
+      var bounds = [0];
+      for (i = 0; i < N; i++) bounds.push(bounds[i] + widths[i]);
+      bounds[N] = 100; /* защита от накопленной погрешности */
+
+      for (i = 0; i < N; i++) {
+        var isFirst = i === 0, isLast = i === N - 1;
+        var tL = isFirst ? 0 : bounds[i] + GAP;
+        var tR = isLast  ? 100 : bounds[i + 1] - GAP;
+        var bL = isFirst ? 0 : tL - SKEW;
+        var bR = isLast  ? 100 : tR - SKEW;
+        segs[i].style.clipPath =
+          'polygon('+tL+'% 0%,'+tR+'% 0%,'+bR+'% 100%,'+bL+'% 100%)';
+        labels[i].style.left = 'calc('+((bL + bR) / 2)+'% - 54px)';
+      }
     }
-    strip.appendChild(svg);
+
+    layout(-1);
     return strip;
   }
 
