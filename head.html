@@ -139,6 +139,138 @@ if (location.pathname.indexOf('/tproduct/') !== -1) {
 </script>
 
 <script>
+/* ══ Каталог: дерево разделов + крошки + «показать все товары» ══
+   Только на /catalog. Три задачи (согласовано с клиентом):
+   1) дерево разделов слева — держать раскрытой ветку выбранного пункта и
+      подсвечивать сам пункт зелёным (нативный Tilda иногда сворачивает дерево
+      до одной строки «Все товары» на категориях с фильтрами);
+   2) в хлебных крошках убрать лишний пункт «Все» (оставить «Все товары»);
+   3) сразу показывать все товары — автоматически дожимать «Показать ещё».
+   DOM Tilda-дерева точных имён классов не гарантирует → селекторы по подстроке
+   + мягкие фолбэки; всё не разрушающее (нет узла — просто ничего не делает).
+   Наблюдатель короткоживущий (первичный async-рендер), далее — по кликам в
+   дереве и popstate, чтобы не держать вечный observer. */
+(function () {
+  'use strict';
+  if (location.pathname.indexOf('/catalog') !== 0) return;
+
+  var CUR = 'nx-tree-current';
+
+  function treeRoot() {
+    return document.querySelector('.js-catalog-filter-tree-container') ||
+           document.querySelector('.t-catalog__sidebar');
+  }
+  function isHidden(el) {
+    return !el || (el.offsetParent === null && getComputedStyle(el).position !== 'fixed') ||
+           getComputedStyle(el).display === 'none';
+  }
+  function linkPath(a) {
+    try { return new URL(a.getAttribute('href'), location.origin).pathname; }
+    catch (e) { return a.getAttribute('href') || ''; }
+  }
+
+  /* 1. Раскрыть ветку выбранного пункта + подсветить */
+  function highlightAndExpand() {
+    var root = treeRoot();
+    if (!root) return;
+
+    var uidMatch = location.pathname.match(/\/catalog\/(\d+)/);
+    var uid = uidMatch ? uidMatch[1] : null;
+    var path = decodeURIComponent(location.pathname);
+
+    // активный пункт: нативный active-класс → по uid → по совпадению пути
+    var active = root.querySelector('[class*="filter-tree-label"][class*="active"]') ||
+                 (uid && root.querySelector('a[href*="' + uid + '"], [data-partuid="' + uid + '"], [data-product-part-uid="' + uid + '"]'));
+    if (!active) {
+      var links = root.querySelectorAll('a[href]');
+      for (var i = 0; i < links.length; i++) {
+        if (linkPath(links[i]) === path) { active = links[i]; break; }
+      }
+    }
+    // нормализуем до элемента-лейбла
+    if (active && !/filter-tree-label/.test(active.className)) {
+      active = active.closest('[class*="filter-tree-label"]') || active;
+    }
+    if (!active) return;
+
+    // подсветка (снять с прежнего, поставить на текущий)
+    root.querySelectorAll('.' + CUR).forEach(function (n) { if (n !== active) n.classList.remove(CUR); });
+    active.classList.add(CUR);
+
+    // раскрыть всех предков активной ветки, соседей не трогаем
+    var node = active;
+    var guard = 0;
+    while (node && node !== root && guard++ < 30) {
+      node = node.parentElement;
+      if (!node) break;
+      if (/filter-tree-item/.test(node.className || '')) {
+        node.classList.add('t-catalog__filter-tree-item_opened', 'nx-tree-open');
+        node.querySelectorAll(':scope > ul, :scope > [class*="tree-list"], :scope > [class*="tree"][class*="sub"], :scope > [class*="children"]').forEach(function (sub) {
+          if (isHidden(sub)) sub.style.setProperty('display', 'block', 'important');
+        });
+      }
+    }
+  }
+
+  /* 2. Убрать пункт «Все» из хлебных крошек (не трогая «Все товары») */
+  function trimCrumbs() {
+    document.querySelectorAll('.t-catalog__breadcrumbs-item').forEach(function (it) {
+      if ((it.textContent || '').trim() !== 'Все') return;
+      var next = it.nextElementSibling, prev = it.previousElementSibling;
+      if (next && /breadcrumbs-divider/.test(next.className || '')) next.remove();
+      else if (prev && /breadcrumbs-divider/.test(prev.className || '')) prev.remove();
+      it.remove();
+    });
+  }
+
+  /* 3. Сразу показывать все товары — дожать «Показать ещё» (если есть) */
+  var _lmTries = 0;
+  function clickLoadMore() {
+    if (_lmTries++ > 20) return;
+    var scope = document.querySelector('.t-catalog__cont-wrapper') || document;
+    var cand = scope.querySelectorAll('a, button, [class*="load-more"], [class*="loadmore"], .t-store__load-more');
+    for (var i = 0; i < cand.length; i++) {
+      var b = cand[i];
+      if (b.offsetParent === null) continue;
+      if (/(показать|загрузить)\s+ещ[её]/i.test((b.textContent || '').trim())) {
+        b.click();
+        setTimeout(clickLoadMore, 800);
+        return;
+      }
+    }
+  }
+
+  function apply() {
+    try { highlightAndExpand(); } catch (e) {}
+    try { trimCrumbs(); } catch (e) {}
+  }
+
+  function start() {
+    if (!document.body) return;
+    apply();
+    clickLoadMore();
+    // первичный async-рендер Tilda: короткий наблюдатель, затем отключаемся
+    var host = document.getElementById('allrecords') || document.body;
+    var scheduled = false;
+    var obs = new MutationObserver(function () {
+      if (scheduled) return;
+      scheduled = true;
+      requestAnimationFrame(function () { scheduled = false; apply(); });
+    });
+    obs.observe(host, { childList: true, subtree: true });
+    setTimeout(function () { try { obs.disconnect(); } catch (e) {} }, 8000);
+    // AJAX-навигация по дереву без перезагрузки: реагируем на клики и popstate
+    host.addEventListener('click', function (e) {
+      if (e.target.closest('[class*="filter-tree"], .t-catalog__breadcrumbs')) setTimeout(apply, 200);
+    }, true);
+    window.addEventListener('popstate', function () { setTimeout(apply, 200); });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
+  else start();
+})();
+</script>
+
+<script>
 /* Общий парсер цены — один на §2 (карточки) и §3 (страница товара). */
 function nxParsePrice(n) { return parseFloat(String(n || 0).replace(/\s/g, '').replace(',', '.')) || 0; }
 
