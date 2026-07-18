@@ -423,6 +423,8 @@ function nxParsePrice(n) { return parseFloat(String(n || 0).replace(/\s/g, '').r
   var _selected     = {};
   var _qty          = 1;
   var _boardLen     = 6;
+  var _isBoard      = true;
+  var _genericAttrKeys = [];
   var _paletteColor = null;
 
   var parsePrice = nxParsePrice;
@@ -475,6 +477,10 @@ function nxParsePrice(n) { return parseFloat(String(n || 0).replace(/\s/g, '').r
     if (!_paletteColor && !noCovering && _selected['Цвет'] && e['Цвет'] !== undefined && e['Цвет'] !== _selected['Цвет']) return false;
     if (_selected['Ширина (мм)'] && e.pack_y && String(e.pack_y) !== _selected['Ширина (мм)']) return false;
     if (_selected['Длина'] && e.pack_x && String(e.pack_x) !== _selected['Длина']) return false;
+    for (var i = 0; i < _genericAttrKeys.length; i++) {
+      var k = _genericAttrKeys[i];
+      if (_selected[k] !== undefined && e[k] !== undefined && String(e[k]) !== String(_selected[k])) return false;
+    }
     return true;
   }
 
@@ -519,7 +525,7 @@ function nxParsePrice(n) { return parseFloat(String(n || 0).replace(/\s/g, '').r
       (priceSqm ? '<div class="nx-p-price-col"><span class="nx-p-price-lbl">Цена за кв.м.:</span><span class="nx-p-price--sqm">' + fmt(priceSqm) + ' ₽</span></div>' : '<div></div>');
   }
 
-  function renderColorSwatches(editions, colorMap) {
+  function renderColorSwatches(editions, colorMap, showPaletteLink) {
     var seen = {};
     var swatches = editions.filter(function (e) {
       var c = String(e['Цвет']); if (!c || seen[c]) return false; seen[c] = true; return true;
@@ -534,7 +540,27 @@ function nxParsePrice(n) { return parseFloat(String(n || 0).replace(/\s/g, '').r
     }).join('');
     return '<div class="nx-p-opt-lbl">Цвет:</div>' +
       '<div class="nx-p-color-circles">' + swatches +
-      '<a href="/palitra" class="nx-p-palette-btn" id="nx-palette-btn">Палитра цветов</a></div>';
+      (showPaletteLink === false ? '' : '<a href="/palitra" class="nx-p-palette-btn" id="nx-palette-btn">Палитра цветов</a>') + '</div>';
+  }
+
+  function renderGenericSelects(keys, editions) {
+    if (!keys || !keys.length) return '';
+    var wraps = keys.map(function (k) {
+      var seen = {}, vals = [];
+      (editions || []).forEach(function (e) {
+        var v = e[k]; if (v === undefined || v === '') return;
+        var s = String(v); if (!seen[s]) { seen[s] = true; vals.push(s); }
+      });
+      if (!vals.length) return '';
+      var options = vals.map(function (v) {
+        return '<option value="' + v + '"' + (_selected[k] === v ? ' selected' : '') + '>' + v + '</option>';
+      }).join('');
+      return '<div class="nx-p-select-wrap" data-prop="' + k + '">' +
+        '<span class="nx-p-opt-lbl">' + k + ':</span>' +
+        '<select class="nx-p-select" data-prop="' + k + '">' + options + '</select>' +
+      '</div>';
+    }).join('');
+    return '<div class="nx-p-selects nx-p-selects--generic">' + wraps + '</div>';
   }
 
   function renderSelects(properties, editions) {
@@ -862,7 +888,23 @@ var item = {
   function renderRoot(p) {
     _p        = p;
     _editions = p.editions || [];
-    _boardLen = _editions.length ? (parseFloat(_editions[0].pack_x) / 1000 || 6) : 6;
+    _isBoard  = _editions.some(function (e) { return parseFloat(e.pack_x) > 0; });
+    _boardLen = _isBoard ? (parseFloat(_editions[0].pack_x) / 1000 || 6) : 0;
+
+    /* Непалубные товары (крепёж и т.п.) — реальные варианты берём из
+       p.json_options (то же поле, что уже читает addToCart для корзины),
+       а не из board-специфичных Ширина(мм)/Длина/pack_x. */
+    _genericAttrKeys = [];
+    if (!_isBoard) {
+      var jsonOpts = p.json_options;
+      if (typeof jsonOpts === 'string') { try { jsonOpts = JSON.parse(jsonOpts); } catch (e) { jsonOpts = []; } }
+      var GENERIC_EXCLUDE = { 'Цвет': true, 'Покрытие': true, 'Тип покрытия': true };
+      (jsonOpts || []).forEach(function (o) {
+        if (o && o.title && !GENERIC_EXCLUDE[o.title] && _genericAttrKeys.indexOf(o.title) === -1) {
+          _genericAttrKeys.push(o.title);
+        }
+      });
+    }
 
     COATING_MAP = {};
     _noColorCoatings = {};
@@ -875,7 +917,14 @@ var item = {
     if (p.properties) {
       p.properties.forEach(function (prop) { _selected[prop.title] = prop.values.split('\n')[0].split('=')[0].trim(); });
     }
-    if (_editions.length) { _selected['Длина'] = String(parseFloat(_editions[0].pack_x)); }
+    if (_isBoard && _editions.length) { _selected['Длина'] = String(parseFloat(_editions[0].pack_x)); }
+    if (!_isBoard && _editions.length) {
+      _genericAttrKeys.forEach(function (k) {
+        if (_selected[k] === undefined && _editions[0][k] !== undefined) {
+          _selected[k] = String(_editions[0][k]);
+        }
+      });
+    }
     
 // Инициализация цвета — ПОСЛЕ properties
 var firstNonPainting = _editions.find(function(e) { 
@@ -918,30 +967,31 @@ if (firstEd && firstEd['Покрытие'] === 'Без покрытия') {
                   '<div class="nx-p-qty" id="nx-qty-units">' +
                     '<button data-d="-1">−</button><input type="number" id="nx-inp-units" value="1" min="1"><button data-d="1">+</button>' +
                   '</div></div>' +
+                (_isBoard ?
                 '<div class="nx-p-qty-link">🔗</div>' +
                 '<div class="nx-p-qty-wrap"><span class="nx-p-qty-lbl">Погонные метры:</span>' +
                   '<div class="nx-p-qty" id="nx-qty-meters">' +
                     '<button data-d="-1">−</button><input type="number" id="nx-inp-meters" value="' + _boardLen + '" min="' + _boardLen + '" step="' + _boardLen + '"><button data-d="1">+</button>' +
-                  '</div></div>' +
+                  '</div></div>' : '') +
               '</div>' +
             '</div>' +
 
             /* 3. Кнопка Купить */
             '<button class="nx-p-btn" id="nx-btn-buy">Купить</button>' +
 
-            /* 4. Селекты: Ширина, Длина, Тип покрытия */
-            renderSelects(p.properties, _editions) +
+            /* 4. Селекты: для досок — Ширина/Длина/Тип покрытия; для прочих товаров —
+               реальные атрибуты варианта (Размер/Шлиц/Фасовка и т.п.) из p.json_options */
+            (_isBoard ? renderSelects(p.properties, _editions) : renderGenericSelects(_genericAttrKeys, _editions)) +
 
             /* 5. Цвет */
-            '<div class="nx-p-opts" id="nx-colors">' + renderColorSwatches(_editions, colorMap) + '</div>' +
+            '<div class="nx-p-opts" id="nx-colors">' + renderColorSwatches(_editions, colorMap, _isBoard) + '</div>' +
             '<div id="nx-coat-warn" class="nx-coat-warn">⚠ Для выбора цвета смените тип покрытия</div>' +
 
-            /* 6. Уведомление */
+            /* 6+7. Уведомление о выкрасе и кнопка пробного выкраса — только для досок */
+            (_isBoard ?
             '<div class="nx-p-notice"><span class="nx-p-notice__icon">i</span>' +
               '<span><strong>Внимание:</strong> Можем выкрасить доску в любой, необходимый цвет.</span></div>' +
-
-            /* 7. Кнопка выкраса */
-            '<button id="nx-btn-sample" class="nx-p-btn nx-p-btn--outline">Заказать пробный выкрас</button>' +
+            '<button id="nx-btn-sample" class="nx-p-btn nx-p-btn--outline">Заказать пробный выкрас</button>' : '') +
           '</div>' +
         '</div>' +
         (p.text ? '<div class="nx-p-fulltext">' + p.text + '</div>' : '') +
@@ -1124,7 +1174,7 @@ if (firstEd && firstEd['Покрытие'] === 'Без покрытия') {
       _selected['Цвет'] = available[0] || '';
     }
 
-    colorsEl.innerHTML = renderColorSwatches(filtered, getColorMap());
+    colorsEl.innerHTML = renderColorSwatches(filtered, getColorMap(), _isBoard);
   }
 
   /* Сброс выбранного из палитры цвета: общий блок для всех мест,
@@ -1242,6 +1292,26 @@ root.addEventListener('change', function (e) {
   var sel = e.target.closest('.nx-p-select');
   if (!sel) return;
   _selected[sel.dataset.prop] = sel.value;
+
+  /* Непалубные товары: атрибуты варианта (Размер/Шлиц/Фасовка и т.п.) —
+     фиксированная связка одного SKU, а не независимые оси вроде Ширина×Длина
+     у досок. Меняем один — синхронизируем остальные с реально найденным
+     изданием (как уже делает свотч цвета для Тип покрытия чуть выше по файлу),
+     иначе несовместимая комбинация просто не найдёт edition и молча
+     откатится на _editions[0]. */
+  if (!_isBoard && _genericAttrKeys.indexOf(sel.dataset.prop) !== -1) {
+    var genMatch = _editions.find(function (e2) { return String(e2[sel.dataset.prop]) === sel.value; });
+    if (genMatch) {
+      root.querySelectorAll('.nx-p-select').forEach(function (otherSel) {
+        var k = otherSel.dataset.prop;
+        if (k !== sel.dataset.prop && _genericAttrKeys.indexOf(k) !== -1 && genMatch[k] !== undefined) {
+          _selected[k] = String(genMatch[k]);
+          otherSel.value = _selected[k];
+        }
+      });
+    }
+  }
+
   if (sel.dataset.prop === 'Тип покрытия') {
     if (sel.value === 'Без покрытия') {
       clearPaletteColor();
@@ -1309,11 +1379,11 @@ root.addEventListener('change', function (e) {
       qtyUnits.addEventListener('click', function (e) {
         var btn = e.target.closest('button'); if (!btn) return;
         _qty = Math.max(1, _qty + parseInt(btn.dataset.d));
-        inpUnits.value = _qty; inpMeters.value = (_qty * _boardLen).toFixed(0);
+        inpUnits.value = _qty; if (inpMeters) inpMeters.value = (_qty * _boardLen).toFixed(0);
       });
       inpUnits.addEventListener('input', function () {
         _qty = Math.max(1, parseInt(this.value) || 1);
-        inpMeters.value = (_qty * _boardLen).toFixed(0);
+        if (inpMeters) inpMeters.value = (_qty * _boardLen).toFixed(0);
       });
     }
     if (qtyMeters) {
