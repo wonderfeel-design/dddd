@@ -145,16 +145,21 @@ if (location.pathname.indexOf('/tproduct/') !== -1) {
 
 <script>
 /* ══ Каталог: дерево разделов + крошки + «показать все товары» ══
-   Только на /catalog. Три задачи (согласовано с клиентом):
-   1) дерево разделов слева — держать раскрытой ветку выбранного пункта и
-      подсвечивать сам пункт зелёным (нативный Tilda иногда сворачивает дерево
-      до одной строки «Все товары» на категориях с фильтрами);
-   2) в хлебных крошках убрать лишний пункт «Все» (оставить «Все товары»);
+   Только на /catalog. Задачи (согласовано с клиентом):
+   1) дерево разделов слева — держать ВСЕГДА полностью развёрнутым (все ветки,
+      не только текущая) и подсвечивать активный пункт зелёным. Нативный Tilda
+      после перехода по ссылке (из верхнего меню, мегаменю или из самого
+      дерева) перерисовывает сайдбар через AJAX и сворачивает его до одной
+      строки «Все товары» — раскрывают только маленькие стрелки-тумблеры,
+      которые такой перерисовки не вызывают;
+   2) в хлебных крошках убрать лишний пункт «Все» (оставить «Все товары»),
+      остальной путь строит сама Tilda — не трогаем;
    3) сразу показывать все товары — автоматически дожимать «Показать ещё».
    DOM Tilda-дерева точных имён классов не гарантирует → селекторы по подстроке
    + мягкие фолбэки; всё не разрушающее (нет узла — просто ничего не делает).
-   Наблюдатель короткоживущий (первичный async-рендер), далее — по кликам в
-   дереве и popstate, чтобы не держать вечный observer. */
+   Наблюдатели короткоживущие: разворачиваются на 5–8 секунд после триггера
+   (первичный рендер / клик по каталожной ссылке / popstate), затем
+   отключаются — не держим вечный observer. */
 (function () {
   'use strict';
   if (location.pathname.indexOf('/catalog') !== 0) return;
@@ -174,8 +179,20 @@ if (location.pathname.indexOf('/tproduct/') !== -1) {
     catch (e) { return a.getAttribute('href') || ''; }
   }
 
-  /* 1. Раскрыть ветку выбранного пункта + подсветить */
-  function highlightAndExpand() {
+  /* 1а. Раскрыть ВСЕ ветки дерева целиком (не только активную) */
+  function expandAll() {
+    var root = treeRoot();
+    if (!root) return;
+    root.querySelectorAll('[class*="filter-tree-item"]').forEach(function (node) {
+      node.classList.add('t-catalog__filter-tree-item_opened', 'nx-tree-open');
+      node.querySelectorAll(':scope > ul, :scope > [class*="tree-list"], :scope > [class*="tree"][class*="sub"], :scope > [class*="children"]').forEach(function (sub) {
+        if (isHidden(sub)) sub.style.setProperty('display', 'block', 'important');
+      });
+    });
+  }
+
+  /* 1б. Подсветить активный пункт (раскрытием занимается expandAll выше) */
+  function highlightActive() {
     var root = treeRoot();
     if (!root) return;
 
@@ -196,25 +213,9 @@ if (location.pathname.indexOf('/tproduct/') !== -1) {
     if (active && !/filter-tree-label/.test(active.className)) {
       active = active.closest('[class*="filter-tree-label"]') || active;
     }
-    if (!active) return;
 
-    // подсветка (снять с прежнего, поставить на текущий)
     root.querySelectorAll('.' + CUR).forEach(function (n) { if (n !== active) n.classList.remove(CUR); });
-    active.classList.add(CUR);
-
-    // раскрыть всех предков активной ветки, соседей не трогаем
-    var node = active;
-    var guard = 0;
-    while (node && node !== root && guard++ < 30) {
-      node = node.parentElement;
-      if (!node) break;
-      if (/filter-tree-item/.test(node.className || '')) {
-        node.classList.add('t-catalog__filter-tree-item_opened', 'nx-tree-open');
-        node.querySelectorAll(':scope > ul, :scope > [class*="tree-list"], :scope > [class*="tree"][class*="sub"], :scope > [class*="children"]').forEach(function (sub) {
-          if (isHidden(sub)) sub.style.setProperty('display', 'block', 'important');
-        });
-      }
-    }
+    if (active) active.classList.add(CUR);
   }
 
   /* 2. Убрать пункт «Все» из хлебных крошек (не трогая «Все товары») */
@@ -246,16 +247,18 @@ if (location.pathname.indexOf('/tproduct/') !== -1) {
   }
 
   function apply() {
-    try { highlightAndExpand(); } catch (e) {}
+    try { expandAll(); } catch (e) {}
+    try { highlightActive(); } catch (e) {}
     try { trimCrumbs(); } catch (e) {}
   }
 
-  function start() {
-    if (!document.body) return;
+  /* Держим apply() активным на протяжении ms после триггера — одноразового
+     отложенного вызова недостаточно: AJAX-перерисовка сайдбара/списка после
+     перехода по каталогу может занять больше одного «тика» и переиграть
+     нашу правку обратно в свёрнутое состояние. */
+  var _watchTimer = null;
+  function watchAndApply(host, ms) {
     apply();
-    clickLoadMore();
-    // первичный async-рендер Tilda: короткий наблюдатель, затем отключаемся
-    var host = document.getElementById('allrecords') || document.body;
     var scheduled = false;
     var obs = new MutationObserver(function () {
       if (scheduled) return;
@@ -263,12 +266,28 @@ if (location.pathname.indexOf('/tproduct/') !== -1) {
       requestAnimationFrame(function () { scheduled = false; apply(); });
     });
     obs.observe(host, { childList: true, subtree: true });
-    setTimeout(function () { try { obs.disconnect(); } catch (e) {} }, 8000);
-    // AJAX-навигация по дереву без перезагрузки: реагируем на клики и popstate
-    host.addEventListener('click', function (e) {
-      if (e.target.closest('[class*="filter-tree"], .t-catalog__breadcrumbs')) setTimeout(apply, 200);
+    clearTimeout(_watchTimer);
+    _watchTimer = setTimeout(function () { try { obs.disconnect(); } catch (e) {} }, ms);
+  }
+
+  function start() {
+    if (!document.body) return;
+    var host = document.getElementById('allrecords') || document.body;
+    clickLoadMore();
+    watchAndApply(host, 8000);
+
+    /* Любой переход по каталогу — клик в дереве/крошках, ИЛИ по любой ссылке
+       на /catalog (верхнее меню, мегаменю, карточки) — Tilda может
+       перерисовать сайдбар не мгновенно, поэтому вместо одного отложенного
+       apply() держим короткий наблюдатель на document (клик может прийти
+       откуда угодно на странице, не только из #allrecords). */
+    document.addEventListener('click', function (e) {
+      var inTree = e.target.closest('[class*="filter-tree"], .t-catalog__breadcrumbs');
+      var a = e.target.closest('a[href]');
+      if (!inTree && !(a && linkPath(a).indexOf('/catalog') === 0)) return;
+      watchAndApply(host, 5000);
     }, true);
-    window.addEventListener('popstate', function () { setTimeout(apply, 200); });
+    window.addEventListener('popstate', function () { watchAndApply(host, 5000); });
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
   else start();
