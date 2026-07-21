@@ -662,21 +662,14 @@ html.nx-pal-hasctx #rec2362172923 {
 }
 
 /* Выбранный пункт дерева разделов — зелёная подсветка (было: тусклый серый).
-   Ловим и нативный active-класс Tilda (имя меняется — берём по подстроке), и
-   наш JS-хук .nx-tree-current (head.html выставляет его на активной ветке). */
-#allrecords .t-catalog__filter-tree-label.nx-tree-current,
-#allrecords .t-catalog__filter-tree-label[class*="active"],
-#allrecords [class*="filter-tree-item"][class*="active"] > * .t-catalog__filter-tree-label,
-#allrecords [class*="filter-tree-item"][class*="current"] > * .t-catalog__filter-tree-label,
-#allrecords [class*="filter-tree"][class*="_active"] > .t-catalog__filter-tree-label {
+   Реальные классы подтверждены живым DOM: нативный .t-catalog__parts-current
+   (Tilda сама помечает активный пункт) + наш JS-хук .nx-tree-current
+   (head.html, фолбэк — когда нативный класс почему-то не проставлен). */
+#allrecords .t-catalog__parts-current .t-catalog__parts-item-title,
+#allrecords .nx-tree-current .t-catalog__parts-item-title,
+#allrecords .nx-tree-current {
     color: var(--nx-green) !important;
     font-weight: 500 !important;
-}
-/* Раскрытая нашим скриптом ветка — повернуть шеврон (best-effort, если Tilda
-   рисует стрелку своим элементом). */
-#allrecords .nx-tree-open > * [class*="arrow"],
-#allrecords .nx-tree-open > [class*="arrow"] {
-    transform: rotate(90deg) !important;
 }
 
 /* Слайдер цены */

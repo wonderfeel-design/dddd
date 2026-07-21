@@ -119,18 +119,23 @@ if (location.pathname.indexOf('/tproduct/') !== -1) {
 <script>
 /* ══ Каталог: дерево разделов + крошки + «показать все товары» ══
    Только на /catalog. Задачи (согласовано с клиентом):
-   1) дерево разделов слева — раскрыть цепочку предков активного пункта и
-      подсветить сам пункт зелёным. При прямой загрузке страницы категории
-      Tilda уже сама корректно рисует дерево раскрытым до текущего пункта —
-      трогать этот случай не нужно. Но при переходе кликом по пункту
-      сайдбара/верхнего меню (AJAX, без перезагрузки) Tilda обновляет список
-      товаров и крошки, а сайдбар откатывает к свёрнутой одной строке
-      «Все товары» — вот тут и нужна наша правка;
+   1) дерево разделов слева — раскрыть цепочку предков активного пункта.
+      Проверено на живом DOM (см. историю правок): дерево строится ПОЛНОСТЬЮ
+      уже на сервере (.t-catalog__parts-root содержит все уровни и категории
+      целиком, лениво ничего не подгружается), но вложенные списки
+      (.t-catalog__parts-subparts) у Tilda по умолчанию display:none —
+      и открывать нужную ветку (до текущего .t-catalog__parts-current)
+      должен нативный JS Tilda. На практике он это не делает надёжно —
+      подтверждено computed style (display:none у всех subparts, ни один
+      узел не помечен «открытым») без единой ошибки в консоли. Раскрываем
+      сами: находим .t-catalog__parts-current и форсируем display:block
+      инлайн-стилем (с !important — гарантированно перебивает внешний CSS)
+      на всей цепочке .t-catalog__parts-subparts от него до корня;
    2) в хлебных крошках убрать лишний пункт «Все» (оставить «Все товары»),
       остальной путь строит сама Tilda — не трогаем;
    3) сразу показывать все товары — автоматически дожимать «Показать ещё».
-   DOM Tilda-дерева точных имён классов не гарантирует → селекторы по подстроке
-   + мягкие фолбэки; всё не разрушающее (нет узла — просто ничего не делает). */
+   Реальные имена классов подтверждены живым DOM: t-catalog-parts-sidebar__container,
+   t-catalog__parts-wrapper, t-catalog__parts-subparts, t-catalog__parts-current. */
 (function () {
   'use strict';
   if (location.pathname.indexOf('/catalog') !== 0) return;
@@ -138,41 +143,34 @@ if (location.pathname.indexOf('/tproduct/') !== -1) {
   var CUR = 'nx-tree-current';
 
   function treeRoot() {
-    return document.querySelector('.js-catalog-filter-tree-container') ||
+    return document.querySelector('.t-catalog-parts-sidebar__container') ||
            document.querySelector('.t-catalog__sidebar');
-  }
-  function isHidden(el) {
-    return !el || (el.offsetParent === null && getComputedStyle(el).position !== 'fixed') ||
-           getComputedStyle(el).display === 'none';
   }
   function linkPath(a) {
     try { return new URL(a.getAttribute('href'), location.origin).pathname; }
     catch (e) { return a.getAttribute('href') || ''; }
   }
 
-  /* Найти активный пункт, раскрыть ТОЛЬКО цепочку его предков (соседние
-     ветки не трогаем — так же ведёт себя нативная Tilda при прямой загрузке
-     страницы) и подсветить сам пункт. */
+  /* Найти активный пункт (.t-catalog__parts-current), раскрыть цепочку его
+     предков (.t-catalog__parts-subparts от листа до корня) и подсветить сам
+     пункт. Соседние ветки не трогаем. */
   function highlightAndExpand() {
     var root = treeRoot();
     if (!root) return;
 
-    var uidMatch = location.pathname.match(/\/catalog\/(\d+)/);
-    var uid = uidMatch ? uidMatch[1] : null;
-    var path = decodeURIComponent(location.pathname);
-
-    // активный пункт: нативный active-класс → по uid → по совпадению пути
-    var active = root.querySelector('[class*="filter-tree-label"][class*="active"]') ||
-                 (uid && root.querySelector('a[href*="' + uid + '"], [data-partuid="' + uid + '"], [data-product-part-uid="' + uid + '"]'));
+    var active = root.querySelector('.t-catalog__parts-current');
     if (!active) {
-      var links = root.querySelectorAll('a[href]');
-      for (var i = 0; i < links.length; i++) {
-        if (linkPath(links[i]) === path) { active = links[i]; break; }
+      // фолбэк: по uid из URL или по совпадению href, если native-класс не проставлен
+      var uidMatch = location.pathname.match(/\/catalog\/(\d+)/);
+      var uid = uidMatch ? uidMatch[1] : null;
+      var path = decodeURIComponent(location.pathname);
+      active = (uid && root.querySelector('[data-storepart-uid="' + uid + '"]')) || null;
+      if (!active) {
+        var links = root.querySelectorAll('a[href]');
+        for (var i = 0; i < links.length; i++) {
+          if (linkPath(links[i]) === path) { active = links[i]; break; }
+        }
       }
-    }
-    // нормализуем до элемента-лейбла
-    if (active && !/filter-tree-label/.test(active.className)) {
-      active = active.closest('[class*="filter-tree-label"]') || active;
     }
     if (!active) return;
 
@@ -180,18 +178,17 @@ if (location.pathname.indexOf('/tproduct/') !== -1) {
     root.querySelectorAll('.' + CUR).forEach(function (n) { if (n !== active) n.classList.remove(CUR); });
     active.classList.add(CUR);
 
-    // раскрыть всех предков активной ветки, соседей не трогаем
+    // раскрыть цепочку .t-catalog__parts-subparts от активного пункта до корня
     var node = active;
     var guard = 0;
-    while (node && node !== root && guard++ < 30) {
-      node = node.parentElement;
-      if (!node) break;
-      if (/filter-tree-item/.test(node.className || '')) {
-        node.classList.add('t-catalog__filter-tree-item_opened', 'nx-tree-open');
-        node.querySelectorAll(':scope > ul, :scope > [class*="tree-list"], :scope > [class*="tree"][class*="sub"], :scope > [class*="children"]').forEach(function (sub) {
-          if (isHidden(sub)) sub.style.setProperty('display', 'block', 'important');
-        });
-      }
+    while (node && guard++ < 30) {
+      var subparts = node.closest('.t-catalog__parts-subparts');
+      if (!subparts) break;
+      subparts.style.setProperty('display', 'block', 'important');
+      var wrapper = subparts.parentElement;
+      var arrow = wrapper && wrapper.querySelector(':scope > a .t-catalog__parts-tree-expander-icon');
+      if (arrow) arrow.style.setProperty('transform', 'rotate(90deg)', 'important');
+      node = wrapper;
     }
   }
 
