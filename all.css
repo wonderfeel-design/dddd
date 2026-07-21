@@ -672,23 +672,10 @@ html.nx-pal-hasctx #rec2362172923 {
     color: var(--nx-green) !important;
     font-weight: 500 !important;
 }
-/* Дерево разделов — всегда полностью развёрнуто (чисто CSS, без JS/observer).
-   Нативный Tilda схлопывает вложенные списки через inline-style или модификатор
-   класса при AJAX-перерисовке сайдбара; !important здесь побеждает и то, и
-   другое независимо от того, когда именно Tilda это переключит — гонки со
-   временем перерисовки нет вообще, в отличие от JS-подхода. */
-#allrecords .js-catalog-filter-tree-container [class*="tree-list"],
-#allrecords .js-catalog-filter-tree-container [class*="tree"][class*="sub"],
-#allrecords .js-catalog-filter-tree-container [class*="children"],
-#allrecords .t-catalog__sidebar [class*="tree-list"],
-#allrecords .t-catalog__sidebar [class*="tree"][class*="sub"],
-#allrecords .t-catalog__sidebar [class*="children"] {
-    display: block !important;
-}
-/* Раз всё всегда раскрыто — стрелки-тумблеры разворачиваем в положение
-   «открыто» (best-effort: имя класса стрелки у Tilda не гарантировано). */
-#allrecords .js-catalog-filter-tree-container [class*="arrow"],
-#allrecords .t-catalog__sidebar [class*="arrow"] {
+/* Раскрытая нашим скриптом ветка — повернуть шеврон (best-effort, если Tilda
+   рисует стрелку своим элементом). */
+#allrecords .nx-tree-open > * [class*="arrow"],
+#allrecords .nx-tree-open > [class*="arrow"] {
     transform: rotate(90deg) !important;
 }
 

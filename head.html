@@ -146,18 +146,16 @@ if (location.pathname.indexOf('/tproduct/') !== -1) {
 <script>
 /* ══ Каталог: дерево разделов + крошки + «показать все товары» ══
    Только на /catalog. Задачи (согласовано с клиентом):
-   1) дерево разделов слева — держать ВСЕГДА полностью развёрнутым (все ветки,
-      не только текущая) — это чистый CSS (см. all.css, правило
-      «Дерево разделов — всегда полностью развёрнуто»): !important побеждает
-      то, чем Tilda схлопывает вложенные списки (класс или inline-style),
-      независимо от того, когда именно это произойдёт — гонки со временем
-      AJAX-перерисовки нет вообще, поэтому JS/observer для самого раскрытия
-      не нужен;
-   2) подсвечивать активный пункт зелёным — это уже нельзя чистым CSS
-      (нужно сопоставить текущий URL с пунктом дерева), лёгкий JS ниже;
-   3) в хлебных крошках убрать лишний пункт «Все» (оставить «Все товары»),
+   1) дерево разделов слева — раскрыть цепочку предков активного пункта и
+      подсветить сам пункт зелёным. При прямой загрузке страницы категории
+      Tilda уже сама корректно рисует дерево раскрытым до текущего пункта —
+      трогать этот случай не нужно. Но при переходе кликом по пункту
+      сайдбара/верхнего меню (AJAX, без перезагрузки) Tilda обновляет список
+      товаров и крошки, а сайдбар откатывает к свёрнутой одной строке
+      «Все товары» — вот тут и нужна наша правка;
+   2) в хлебных крошках убрать лишний пункт «Все» (оставить «Все товары»),
       остальной путь строит сама Tilda — не трогаем;
-   4) сразу показывать все товары — автоматически дожимать «Показать ещё».
+   3) сразу показывать все товары — автоматически дожимать «Показать ещё».
    DOM Tilda-дерева точных имён классов не гарантирует → селекторы по подстроке
    + мягкие фолбэки; всё не разрушающее (нет узла — просто ничего не делает). */
 (function () {
@@ -170,13 +168,19 @@ if (location.pathname.indexOf('/tproduct/') !== -1) {
     return document.querySelector('.js-catalog-filter-tree-container') ||
            document.querySelector('.t-catalog__sidebar');
   }
+  function isHidden(el) {
+    return !el || (el.offsetParent === null && getComputedStyle(el).position !== 'fixed') ||
+           getComputedStyle(el).display === 'none';
+  }
   function linkPath(a) {
     try { return new URL(a.getAttribute('href'), location.origin).pathname; }
     catch (e) { return a.getAttribute('href') || ''; }
   }
 
-  /* Подсветить активный пункт (раскрытие ветки — CSS, см. комментарий выше) */
-  function highlightActive() {
+  /* Найти активный пункт, раскрыть ТОЛЬКО цепочку его предков (соседние
+     ветки не трогаем — так же ведёт себя нативная Tilda при прямой загрузке
+     страницы) и подсветить сам пункт. */
+  function highlightAndExpand() {
     var root = treeRoot();
     if (!root) return;
 
@@ -197,9 +201,25 @@ if (location.pathname.indexOf('/tproduct/') !== -1) {
     if (active && !/filter-tree-label/.test(active.className)) {
       active = active.closest('[class*="filter-tree-label"]') || active;
     }
+    if (!active) return;
 
+    // подсветка (снять с прежнего, поставить на текущий)
     root.querySelectorAll('.' + CUR).forEach(function (n) { if (n !== active) n.classList.remove(CUR); });
-    if (active) active.classList.add(CUR);
+    active.classList.add(CUR);
+
+    // раскрыть всех предков активной ветки, соседей не трогаем
+    var node = active;
+    var guard = 0;
+    while (node && node !== root && guard++ < 30) {
+      node = node.parentElement;
+      if (!node) break;
+      if (/filter-tree-item/.test(node.className || '')) {
+        node.classList.add('t-catalog__filter-tree-item_opened', 'nx-tree-open');
+        node.querySelectorAll(':scope > ul, :scope > [class*="tree-list"], :scope > [class*="tree"][class*="sub"], :scope > [class*="children"]').forEach(function (sub) {
+          if (isHidden(sub)) sub.style.setProperty('display', 'block', 'important');
+        });
+      }
+    }
   }
 
   /* 2. Убрать пункт «Все» из хлебных крошек (не трогая «Все товары») */
@@ -231,7 +251,7 @@ if (location.pathname.indexOf('/tproduct/') !== -1) {
   }
 
   function apply() {
-    try { highlightActive(); } catch (e) {}
+    try { highlightAndExpand(); } catch (e) {}
     try { trimCrumbs(); } catch (e) {}
   }
 
