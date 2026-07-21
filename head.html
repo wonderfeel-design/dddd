@@ -92,33 +92,6 @@ if (location.pathname.indexOf('/tproduct/') !== -1) {
 </script>
 
 <script>
-/* Remove legacy fallback catalog sidebar if it appears. Только на /catalog, и
-   наблюдатель отключается после первичного рендера (8 с) — не висит вечно и не
-   выполняется на главной/товаре/палитре. */
-(function () {
-  'use strict';
-  if (location.pathname.indexOf('/catalog') !== 0) return;
-
-  function removeFallbackSidebar() {
-    document.querySelectorAll('.nx-fallback-sidebar-parts').forEach(function (node) {
-      var holder = node.closest('.js-sidebar-parts');
-      node.remove();
-      if (holder && !holder.children.length) holder.remove();
-    });
-  }
-  function start() {
-    if (!document.body) return;
-    removeFallbackSidebar();
-    var obs = new MutationObserver(removeFallbackSidebar);
-    obs.observe(document.body, { childList: true, subtree: true });
-    setTimeout(function () { try { obs.disconnect(); } catch (e) {} }, 8000);
-  }
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
-  else start();
-})();
-</script>
-
-<script>
 /* Скрыть устаревшие «именные» значения фильтра «Цвет» (беж, белый, бордо…).
    Раньше цвет вводили названиями; теперь используются коды RAL/Valtti (1004, 5050…)
    с реальным hex. Именные значения остались в характеристике как «пустые» свотчи.

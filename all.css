@@ -1790,7 +1790,3 @@ html body .nx-megamenu-wrap { padding-left: 20px !important; }
     z-index: 10 !important;
 }
 
-/* Если нативное дерево разделов Tilda отрисовано, кастомный fallback не нужен */
-.t-catalog-parts-sidebar__container .t-catalog__parts-root + .js-sidebar-parts {
-    display: none !important;
-}
