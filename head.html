@@ -147,19 +147,19 @@ if (location.pathname.indexOf('/tproduct/') !== -1) {
 /* ══ Каталог: дерево разделов + крошки + «показать все товары» ══
    Только на /catalog. Задачи (согласовано с клиентом):
    1) дерево разделов слева — держать ВСЕГДА полностью развёрнутым (все ветки,
-      не только текущая) и подсвечивать активный пункт зелёным. Нативный Tilda
-      после перехода по ссылке (из верхнего меню, мегаменю или из самого
-      дерева) перерисовывает сайдбар через AJAX и сворачивает его до одной
-      строки «Все товары» — раскрывают только маленькие стрелки-тумблеры,
-      которые такой перерисовки не вызывают;
-   2) в хлебных крошках убрать лишний пункт «Все» (оставить «Все товары»),
+      не только текущая) — это чистый CSS (см. all.css, правило
+      «Дерево разделов — всегда полностью развёрнуто»): !important побеждает
+      то, чем Tilda схлопывает вложенные списки (класс или inline-style),
+      независимо от того, когда именно это произойдёт — гонки со временем
+      AJAX-перерисовки нет вообще, поэтому JS/observer для самого раскрытия
+      не нужен;
+   2) подсвечивать активный пункт зелёным — это уже нельзя чистым CSS
+      (нужно сопоставить текущий URL с пунктом дерева), лёгкий JS ниже;
+   3) в хлебных крошках убрать лишний пункт «Все» (оставить «Все товары»),
       остальной путь строит сама Tilda — не трогаем;
-   3) сразу показывать все товары — автоматически дожимать «Показать ещё».
+   4) сразу показывать все товары — автоматически дожимать «Показать ещё».
    DOM Tilda-дерева точных имён классов не гарантирует → селекторы по подстроке
-   + мягкие фолбэки; всё не разрушающее (нет узла — просто ничего не делает).
-   Наблюдатели короткоживущие: разворачиваются на 5–8 секунд после триггера
-   (первичный рендер / клик по каталожной ссылке / popstate), затем
-   отключаются — не держим вечный observer. */
+   + мягкие фолбэки; всё не разрушающее (нет узла — просто ничего не делает). */
 (function () {
   'use strict';
   if (location.pathname.indexOf('/catalog') !== 0) return;
@@ -170,28 +170,12 @@ if (location.pathname.indexOf('/tproduct/') !== -1) {
     return document.querySelector('.js-catalog-filter-tree-container') ||
            document.querySelector('.t-catalog__sidebar');
   }
-  function isHidden(el) {
-    return !el || (el.offsetParent === null && getComputedStyle(el).position !== 'fixed') ||
-           getComputedStyle(el).display === 'none';
-  }
   function linkPath(a) {
     try { return new URL(a.getAttribute('href'), location.origin).pathname; }
     catch (e) { return a.getAttribute('href') || ''; }
   }
 
-  /* 1а. Раскрыть ВСЕ ветки дерева целиком (не только активную) */
-  function expandAll() {
-    var root = treeRoot();
-    if (!root) return;
-    root.querySelectorAll('[class*="filter-tree-item"]').forEach(function (node) {
-      node.classList.add('t-catalog__filter-tree-item_opened', 'nx-tree-open');
-      node.querySelectorAll(':scope > ul, :scope > [class*="tree-list"], :scope > [class*="tree"][class*="sub"], :scope > [class*="children"]').forEach(function (sub) {
-        if (isHidden(sub)) sub.style.setProperty('display', 'block', 'important');
-      });
-    });
-  }
-
-  /* 1б. Подсветить активный пункт (раскрытием занимается expandAll выше) */
+  /* Подсветить активный пункт (раскрытие ветки — CSS, см. комментарий выше) */
   function highlightActive() {
     var root = treeRoot();
     if (!root) return;
@@ -247,18 +231,16 @@ if (location.pathname.indexOf('/tproduct/') !== -1) {
   }
 
   function apply() {
-    try { expandAll(); } catch (e) {}
     try { highlightActive(); } catch (e) {}
     try { trimCrumbs(); } catch (e) {}
   }
 
-  /* Держим apply() активным на протяжении ms после триггера — одноразового
-     отложенного вызова недостаточно: AJAX-перерисовка сайдбара/списка после
-     перехода по каталогу может занять больше одного «тика» и переиграть
-     нашу правку обратно в свёрнутое состояние. */
-  var _watchTimer = null;
-  function watchAndApply(host, ms) {
+  function start() {
+    if (!document.body) return;
     apply();
+    clickLoadMore();
+    // первичный async-рендер Tilda: короткий наблюдатель, затем отключаемся
+    var host = document.getElementById('allrecords') || document.body;
     var scheduled = false;
     var obs = new MutationObserver(function () {
       if (scheduled) return;
@@ -266,28 +248,19 @@ if (location.pathname.indexOf('/tproduct/') !== -1) {
       requestAnimationFrame(function () { scheduled = false; apply(); });
     });
     obs.observe(host, { childList: true, subtree: true });
-    clearTimeout(_watchTimer);
-    _watchTimer = setTimeout(function () { try { obs.disconnect(); } catch (e) {} }, ms);
-  }
+    setTimeout(function () { try { obs.disconnect(); } catch (e) {} }, 8000);
 
-  function start() {
-    if (!document.body) return;
-    var host = document.getElementById('allrecords') || document.body;
-    clickLoadMore();
-    watchAndApply(host, 8000);
-
-    /* Любой переход по каталогу — клик в дереве/крошках, ИЛИ по любой ссылке
-       на /catalog (верхнее меню, мегаменю, карточки) — Tilda может
-       перерисовать сайдбар не мгновенно, поэтому вместо одного отложенного
-       apply() держим короткий наблюдатель на document (клик может прийти
-       откуда угодно на странице, не только из #allrecords). */
+    /* Переход по каталогу — клик в дереве/крошках, ИЛИ по любой ссылке на
+       /catalog (верхнее меню, мегаменю, карточки) — переприменяем подсветку
+       и обрезку крошек одним отложенным вызовом (само дерево раскрытым
+       держит CSS, ему этот триггер не нужен). */
     document.addEventListener('click', function (e) {
       var inTree = e.target.closest('[class*="filter-tree"], .t-catalog__breadcrumbs');
       var a = e.target.closest('a[href]');
       if (!inTree && !(a && linkPath(a).indexOf('/catalog') === 0)) return;
-      watchAndApply(host, 5000);
+      setTimeout(apply, 200);
     }, true);
-    window.addEventListener('popstate', function () { watchAndApply(host, 5000); });
+    window.addEventListener('popstate', function () { setTimeout(apply, 200); });
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
   else start();
