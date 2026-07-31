@@ -446,19 +446,39 @@ function nxParsePrice(n) { return parseFloat(String(n || 0).replace(/\s/g, '').r
 
   var _allProducts = [];
 
+  /* Tilda Store API иногда отвечает не списком товаров, а
+     {"redirectto":"com"} — просьбой повторить тот же запрос на другой
+     домен (store.tildaapi.<tld>). Без обработки этого товар «не находится»
+     даже когда он реально есть и опубликован (подтверждено на живом
+     сайте: ответ был буквально {"redirectto":"com"}). Повторяем запрос
+     на указанный домен один раз. */
+  function fetchProductsListText(tld) {
+    return fetch('https://store.tildaapi.' + tld + '/api/getproductslist/?storepartuid=' + STORE_UID + '&recid=' + CATALOG_REC)
+      .then(function (r) { return r.text(); });
+  }
+
   function loadProduct(uid) {
-    return fetch('https://store.tildaapi.one/api/getproductslist/?storepartuid=' + STORE_UID + '&recid=' + CATALOG_REC)
-      .then(function (r) { return r.text(); })
-      .then(function (txt) {
-        if (!txt || txt.indexOf('ERROR') === 0) {
-          console.warn('nx: store API error:', (txt || '').slice(0, 80));
-          return null;
-        }
-        var d;
-        try { d = JSON.parse(txt); } catch (e) { console.warn('nx: store API non-JSON response'); return null; }
-        _allProducts = d.products || [];
-        return _allProducts.find(function (x) { return String(x.uid) === String(uid); }) || null;
-      });
+    function parseAndFind(txt) {
+      if (!txt || txt.indexOf('ERROR') === 0) {
+        console.warn('nx: store API error:', (txt || '').slice(0, 80));
+        return null;
+      }
+      var d;
+      try { d = JSON.parse(txt); } catch (e) { console.warn('nx: store API non-JSON response'); return null; }
+      return d;
+    }
+    return fetchProductsListText('one').then(function (txt) {
+      var d = parseAndFind(txt);
+      if (d && d.redirectto) {
+        return fetchProductsListText(d.redirectto).then(function (txt2) {
+          var d2 = parseAndFind(txt2);
+          _allProducts = (d2 && d2.products) || [];
+          return _allProducts.find(function (x) { return String(x.uid) === String(uid); }) || null;
+        });
+      }
+      _allProducts = (d && d.products) || [];
+      return _allProducts.find(function (x) { return String(x.uid) === String(uid); }) || null;
+    });
   }
 
   var COATING_MAP = {};
