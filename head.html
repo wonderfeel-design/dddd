@@ -1282,14 +1282,26 @@ if (firstEd && nxCoatKey(firstEd['Покрытие']) === nxCoatKey('Без по
       btn.classList.add('nx-p-color-btn--active');
       _selected['Цвет'] = btn.dataset.color;
 
-// Найти edition с этим цветом и обновить покрытие
-var matchedEd = _editions.find(function(e) { 
-  return String(e['Цвет']) === btn.dataset.color; 
-});
-if (matchedEd && matchedEd['Покрытие']) {
-  _selected['Тип покрытия'] = matchedEd['Покрытие'];
-  var coatingSel = document.querySelector('.nx-p-select[data-prop="Тип покрытия"]');
-  if (coatingSel) coatingSel.value = matchedEd['Покрытие'];
+// Найти edition с этим цветом. Свотч отрисован уже ОТФИЛЬТРОВАННЫМ под
+// текущее покрытие (см. updateColors) — значит цвет и так совместим с
+// выбранным покрытием, менять его не нужно. Ищем сначала СРЕДИ изданий
+// текущего покрытия (или, если у выбранного покрытия нет своих изданий —
+// напр. «Премиум»-надбавка без отдельных SKU — среди всех крашеных); только
+// если цвета там нет вообще, ищем по всем изданиям и переключаем покрытие —
+// иначе клик по свотчу «Премиум»-набора молча откатывал выбор на базовое
+// покрытие (то, которому реально принадлежит найденное издание).
+var curEdCoating = COATING_MAP[nxCoatKey(_selected['Тип покрытия'])];
+var scopedEditions = curEdCoating
+  ? _editions.filter(function (e) { return nxCoatKey(e['Покрытие']) === nxCoatKey(curEdCoating); })
+  : _editions.filter(function (e) { return nxCoatKey(e['Покрытие']) !== nxCoatKey('Без покрытия'); });
+var matchedEd = scopedEditions.find(function(e) { return String(e['Цвет']) === btn.dataset.color; });
+if (!matchedEd) {
+  matchedEd = _editions.find(function(e) { return String(e['Цвет']) === btn.dataset.color; });
+  if (matchedEd && matchedEd['Покрытие']) {
+    _selected['Тип покрытия'] = matchedEd['Покрытие'];
+    var coatingSel = document.querySelector('.nx-p-select[data-prop="Тип покрытия"]');
+    if (coatingSel) coatingSel.value = matchedEd['Покрытие'];
+  }
 }
       updatePricesAndImage();
 
