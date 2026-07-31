@@ -1304,6 +1304,16 @@ var scopedEditions = curEdCoating
   ? _editions.filter(function (e) { return nxCoatKey(e['Покрытие']) === nxCoatKey(curEdCoating); })
   : _editions.filter(function (e) { return nxCoatKey(e['Покрытие']) !== nxCoatKey('Без покрытия'); });
 var matchedEd = scopedEditions.find(function(e) { return String(e['Цвет']) === btn.dataset.color; });
+/* Временная диагностика — почему клик по свотчу иногда переключает
+   покрытие, хотя тот же свотч уже был активен под текущим покрытием.
+   Убрать после того, как разберёмся. */
+console.log('nx: swatch click debug', JSON.stringify({
+  clickedColor: btn.dataset.color,
+  selectedCoating: _selected['Тип покрытия'],
+  curEdCoating: curEdCoating,
+  foundInScope: !!matchedEd,
+  scopedEditions: scopedEditions.map(function (e) { return { Цвет: e['Цвет'], Покрытие: e['Покрытие'] }; })
+}));
 if (!matchedEd) {
   matchedEd = _editions.find(function(e) { return String(e['Цвет']) === btn.dataset.color; });
   if (matchedEd && matchedEd['Покрытие']) {
