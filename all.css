@@ -65,7 +65,7 @@ html {
     flex-direction: column;
     position: relative;
 }
-#rec2362175613 {
+#t-footer {
     margin-top: auto;
     width: 100%;
     position: relative !important;
@@ -75,8 +75,16 @@ html {
     flex: 1;
 }
 
-/* ── Убрать белое пространство после футера ── */
-#allrecords > div:empty {
+/* ── Убрать белое пространство после футера ──
+   :not(#nx-prod-root) — до рендера товара наш корень тоже пуст (создаётся
+   заранее в ensureProdRoot, контент вставляется позже через loadProduct),
+   и без исключения этот же селектор сносил ему display:none вместе с его
+   min-height:100vh — именно тем, что должно было держать страницу открытой
+   на время загрузки (4-6 сек на редирект store-api). Без этой высоты футер
+   рендерился сразу после шапки, т.к. flex:1 у :last-child достаётся не
+   контенту и не футеру, а невидимому хвостовому реку (попап корзины и т.п.),
+   который остаётся нулевой высоты. */
+#allrecords > div:empty:not(#nx-prod-root) {
     display: none !important;
     flex: 0 !important;
 }
@@ -888,8 +896,13 @@ html.nx-pal-hasctx #rec2362172923 {
 #nx-prod-root * { box-sizing: border-box;}
 
 #nx-prod-root h1, #nx-prod-root h2, #nx-prod-root h3 { margin: 0; padding: 0; }
+/* flex:1 явно — не полагаемся на #allrecords > div:last-child (тот кому-то
+   ещё достаётся, напр. хвостовому реку попапа корзины, а не нам, см. диагностику
+   в консоли: #nx-prod-root получал flex-grow:0). min-height:100vh — резервный
+   пол на случай Structure B (fixed, вне флекс-контекста #allrecords). */
 #nx-prod-root {
     width: 100%;
+    flex: 1 1 auto;
     min-height: 100vh;
     overflow: hidden;
     padding: 120px 0 80px;
