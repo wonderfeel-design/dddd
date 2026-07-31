@@ -190,6 +190,17 @@ if (location.pathname.indexOf('/tproduct/') !== -1) {
       if (arrow) arrow.style.setProperty('transform', 'rotate(90deg)', 'important');
       node = wrapper;
     }
+
+    // если сам активный пункт — не лист, а родительская категория (например,
+    // мы на странице «Краски», а не «Краски фасадные») — раскрыть и её
+    // собственные подкатегории, не только цепочку предков
+    var ownWrapper = active.closest('.t-catalog__parts-wrapper');
+    var ownSubparts = ownWrapper && ownWrapper.querySelector(':scope > .t-catalog__parts-subparts');
+    if (ownSubparts) {
+      ownSubparts.style.setProperty('display', 'block', 'important');
+      var ownArrow = ownWrapper.querySelector(':scope > a .t-catalog__parts-tree-expander-icon');
+      if (ownArrow) ownArrow.style.setProperty('transform', 'rotate(90deg)', 'important');
+    }
   }
 
   /* 2. Убрать пункт «Все» из хлебных крошек (не трогая «Все товары») */
