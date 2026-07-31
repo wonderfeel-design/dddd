@@ -28,6 +28,15 @@
        виджет товара/снипеты — данные мы берём из store API, рендерим сами. */
     display: none !important;
   }
+  /* Критический sticky-footer CSS для /tproduct/ — дублирует правила из
+     all.css здесь же, в head, синхронно применяемом до первой отрисовки.
+     all.css — отдельный файл, применяется чуть позже первого пейнта →
+     без дублирования браузер на долю секунды рисует нативную раскладку
+     (футер сразу под шапкой, его тёмный фон виден), а затем перескакивает
+     на исправленную — это и есть «футер мелькает и пропадает». */
+  html.nx-tp #allrecords { min-height: 100vh; display: flex; flex-direction: column; }
+  html.nx-tp #nx-prod-root { flex: 1 1 auto; min-height: 100vh; }
+  html.nx-tp #t-footer { margin-top: auto; }
 </style>
 
 <script>-1!==location.pathname.indexOf("/tproduct/")&&(document.documentElement.classList.add("nx-tp"),setTimeout(function(){window._nxProdRendered||document.documentElement.classList.remove("nx-tp")},3e3));</script>
