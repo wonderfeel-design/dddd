@@ -484,9 +484,16 @@ function nxParsePrice(n) { return parseFloat(String(n || 0).replace(/\s/g, '').r
   var COATING_MAP = {};
   var _noColorCoatings = {};
 
+  /* Ключ покрытия для сопоставления опции селекта «Тип покрытия» (текст из
+     p.properties) с полем «Покрытие» на изданиях (текст из store API) —
+     без учёта регистра/пробелов, т.к. это два независимых источника текста
+     и лишний пробел или разный регистр в одном из них молча ломает связку
+     покрытие→цвет (свотчи просто перестают фильтроваться). */
+  function nxCoatKey(s) { return String(s || '').trim().toLowerCase().replace(/\s+/g, ' '); }
+
   function matchBase(e) {
-    var edCoating = COATING_MAP[_selected['Тип покрытия'] || ''];
-    var noCovering = edCoating ? !!_noColorCoatings[edCoating] : false;
+    var edCoating = COATING_MAP[nxCoatKey(_selected['Тип покрытия'])];
+    var noCovering = edCoating ? !!_noColorCoatings[nxCoatKey(edCoating)] : false;
     if (!_paletteColor && !noCovering && _selected['Цвет'] && e['Цвет'] !== undefined && e['Цвет'] !== _selected['Цвет']) return false;
     if (_selected['Ширина (мм)'] && e.pack_y && String(e.pack_y) !== _selected['Ширина (мм)']) return false;
     if (_selected['Длина'] && e.pack_x && String(e.pack_x) !== _selected['Длина']) return false;
@@ -499,24 +506,24 @@ function nxParsePrice(n) { return parseFloat(String(n || 0).replace(/\s/g, '').r
 
   function getEd() {
     var selectedCoating = _selected['Тип покрытия'] || '';
-    var edCoating = COATING_MAP[selectedCoating];
+    var edCoating = COATING_MAP[nxCoatKey(selectedCoating)];
 
     if (edCoating) {
       var exact = _editions.find(function (e) {
-        return matchBase(e) && e['Покрытие'] === edCoating;
+        return matchBase(e) && nxCoatKey(e['Покрытие']) === nxCoatKey(edCoating);
       });
       if (exact) return exact;
     }
 
     var candidates = _editions.filter(matchBase);
-    return candidates.find(function (e) { return e['Покрытие'] === 'Без покрытия'; })
+    return candidates.find(function (e) { return nxCoatKey(e['Покрытие']) === nxCoatKey('Без покрытия'); })
       || candidates[0]
       || _editions[0] || null;
   }
 
   function getCoatingDelta() {
     var selectedCoating = _selected['Тип покрытия'] || '';
-    if (!selectedCoating || COATING_MAP[selectedCoating] !== undefined) return 0;
+    if (!selectedCoating || COATING_MAP[nxCoatKey(selectedCoating)] !== undefined) return 0;
     var coatingProp = (_p && _p.properties || []).find(function (prop) { return prop.title === 'Тип покрытия'; });
     if (!coatingProp) return 0;
     var line = coatingProp.values.split('\n').find(function (v) { return v.split('=')[0].trim() === selectedCoating; }) || '';
@@ -922,8 +929,8 @@ var item = {
     COATING_MAP = {};
     _noColorCoatings = {};
     _editions.forEach(function (e) {
-      if (e['Покрытие']) COATING_MAP[e['Покрытие']] = e['Покрытие'];
-      if (e['Цвет'] === 'без') _noColorCoatings[e['Покрытие']] = true;
+      if (e['Покрытие']) COATING_MAP[nxCoatKey(e['Покрытие'])] = e['Покрытие'];
+      if (e['Цвет'] === 'без') _noColorCoatings[nxCoatKey(e['Покрытие'])] = true;
     });
 
     var colorMap = getColorMap();
@@ -940,12 +947,12 @@ var item = {
     }
     
 // Инициализация цвета — ПОСЛЕ properties
-var firstNonPainting = _editions.find(function(e) { 
-  return e['Покрытие'] === (_selected['Тип покрытия'] || ''); 
+var firstNonPainting = _editions.find(function(e) {
+  return nxCoatKey(e['Покрытие']) === nxCoatKey(_selected['Тип покрытия']);
 });
 var firstEd = firstNonPainting || (_editions.length ? _editions[0] : null);
 _selected['Цвет'] = (firstEd && firstEd['Цвет'] !== undefined) ? String(firstEd['Цвет']) : '';
-if (firstEd && firstEd['Покрытие'] === 'Без покрытия') {
+if (firstEd && nxCoatKey(firstEd['Покрытие']) === nxCoatKey('Без покрытия')) {
   _selected['Цвет'] = 'без';
 }
 
@@ -1156,8 +1163,8 @@ if (firstEd && firstEd['Покрытие'] === 'Без покрытия') {
     if (!colorsEl) return;
 
     var selectedCoating = _selected['Тип покрытия'] || '';
-    var edCoating = COATING_MAP[selectedCoating];
-    var noCovering = edCoating ? !!_noColorCoatings[edCoating] : false;
+    var edCoating = COATING_MAP[nxCoatKey(selectedCoating)];
+    var noCovering = edCoating ? !!_noColorCoatings[nxCoatKey(edCoating)] : false;
 
     var palBtn2 = document.getElementById('nx-palette-btn');
     var warnEl  = document.getElementById('nx-coat-warn');
@@ -1176,9 +1183,9 @@ if (firstEd && firstEd['Покрытие'] === 'Без покрытия') {
 
     var filtered;
     if (edCoating) {
-      filtered = _editions.filter(function (e) { return e['Покрытие'] === edCoating; });
+      filtered = _editions.filter(function (e) { return nxCoatKey(e['Покрытие']) === nxCoatKey(edCoating); });
     } else {
-      filtered = _editions.filter(function (e) { return e['Покрытие'] !== 'Без покрытия'; });
+      filtered = _editions.filter(function (e) { return nxCoatKey(e['Покрытие']) !== nxCoatKey('Без покрытия'); });
     }
     if (!filtered.length) filtered = _editions;
 
