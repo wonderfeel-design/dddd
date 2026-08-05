@@ -300,22 +300,41 @@
           image:'https://static.tildacdn.com/stor3832-6134-4339-a262-623932316139/808c346bc5e5d61b04a7b9b569be9eda.jpg'}
       ]}
     ]},
-    { key: 'krepezh', label: 'КРЕПЕЖ', href: '/catalog/559088613632-krepezh', subCats: [
-      { heading: 'КРЕПЁЖ', href: '/catalog/559088613632-krepezh', items: [
-        {name:'Для вагонки', h:'/catalog/958351966462-dlya-vagonki',
-          image:'https://static.tildacdn.com/stor3366-3236-4238-b366-663134396134/b2b7a334bd4ac0c4c38b6de9a43ef38d.jpg'},
-        {name:'Для имитации бруса', h:'/catalog/254591601132-dlya-imitatsii-brusa',
-          image:'https://static.tildacdn.com/stor6261-3236-4164-b666-356564393366/eb691f656de7b5571502816a4058d50b.webp'},
-        {name:'Для террасной доски', h:'/catalog/819626010462-dlya-terrasnoi-doski',
-          image:'https://static.tildacdn.com/stor3664-6234-4534-a166-633861313376/7233783434d19be2e3f9553af72f2882.jpg'},
-        {name:'Для планкена', h:'/catalog/677218539812-dlya-plankena',
-          image:'https://static.tildacdn.com/stor6265-3533-4134-a164-393935613834/0684dde7904cdce4b864d92b865d931.jpg'},
-        {name:'Для половой доски', h:'/catalog/421223750203-dlya-polovoi-doski',
-          image:'https://static.tildacdn.com/stor3836-6336-4565-a336-663336333391/ef9d0c95ddd455fc30ad0947ebe1189e.jpg'},
-        {name:'Для фасадной доски', h:'/catalog/464313704813-dlya-fasadnoi-doski',
+    /* Крепёж — перестроено по реальному дереву категорий Tilda (дамп сайдбара,
+       Настройки → Магазин → Категории). Ссылки — БЕЗ uid-префикса: это
+       буквально href из нативного сайдбара Tilda (data-storepart-link), т.е.
+       заведомо рабочие адреса, а не выдуманные. Старые uid 958351966462
+       ("Для вагонки") и позиция 254591601132 как отдельного верхнеуровневого
+       пункта — удалены по просьбе клиента, эта категория переехала
+       (958351966462 в дереве больше не существует вовсе, её сменила
+       "Для вагонки и бруса" 746671482673, а "Для имитации бруса" 254591601132
+       стала её дочерней, не отдельным пунктом). */
+    { key: 'krepezh', label: 'КРЕПЕЖ', href: '/catalog/krepezh', subCats: [
+      { heading: 'ДЛЯ ВАГОНКИ И БРУСА', href: '/catalog/krepezh-dlya-vagonki-i-brusa', items: [
+        {name:'Для имитации бруса', h:'/catalog/krepezh-dlya-vagonki-i-brusa-imitatsia-brusa',
+          image:'https://static.tildacdn.com/stor6261-3236-4164-b666-356564393366/eb691f656de7b5571502816a4058d50b.webp'}
+      ]},
+      { heading: 'САМОРЕЗЫ', href: '/catalog/krepezh--samorezi', items: [
+        {name:'Для дерева', h:'/catalog/krepezh-samorezi-dlya-dereva',
+          image:'https://static.tildacdn.com/stor6265-3533-4134-a164-393935613834/0684dde7904cdce44b864d92b865d931.jpg'},
+        {name:'Для скрытого крепежа', h:'/catalog/krepezh-samorezi-dlya-skritogo-krepezha',
+          image:'https://static.tildacdn.com/stor3864-6135-4365-a461-303066643861/29b1052af2153042109616b83acb1b3d.png'},
+        {name:'Для террас и фасадов', h:'/catalog/krepezh-samorezi-dlya-terras-i-fasadov',
           image:'https://static.tildacdn.com/stor3861-3430-4930-b166-393139626235/f894ebdcd9e29bd0f691d3781a1c0da7.jpg'},
-        {name:'Для каркасной доски', h:'/catalog/353892678243-dlya-karkasnoi-doski',
-          image:'https://static.tildacdn.com/stor3032-3866-4461-b430-323634324639/16fb3ff215c55d14ea5fff7b05e1eb75.jpg'}
+        {name:'Для фиброцемента', h:'/catalog/samorezy-dlya-fibrocementa',
+          image:'https://static.tildacdn.com/stor3337-3862-4733-b736-343530356539/c769b8ef6d29a879973d0f2c4e5e5909.png'},
+        {name:'Конструкционные', h:'/catalog/samorezy-konstruktsionnye',
+          image:'https://static.tildacdn.com/stor3135-6466-4131-a230-643036303539/359c3b4bda2c7fc5067fae8d2518dacd.jpg'},
+        {name:'По металлу', h:'/catalog/samorezy-po-metallu',
+          image:'https://static.tildacdn.com/stor3834-3566-4536-b964-363939623165/42f46a64d40dee819eb6b5b8255d76c1.jpg'}
+      ]},
+      { heading: 'СКРЫТЫЙ КРЕПЁЖ', href: '/catalog/krepezh-skritii-krepezh', items: [
+        {name:'Скрытый крепёж', h:'/catalog/krepezh-skritii-krepezh',
+          image:'https://static.tildacdn.com/stor3862-6462-4061-b633-343130383934/930e2c24f863676536181eb3b9532855.jpg'}
+      ]},
+      { heading: 'СПЕЙСЕРЫ И АКСЕССУАРЫ', href: '/catalog/krepezh-speiseri-i-aksessuari', items: [
+        {name:'Спейсеры и аксессуары', h:'/catalog/krepezh-speiseri-i-aksessuari',
+          image:'https://static.tildacdn.com/stor3436-6236-4739-a632-626231326264/14a8f4ed4eea5e941e2654375ae81cbf.png'}
       ]}
     ]},
     { key: 'kraski', label: 'КРАСКИ', href: '/catalog/807847057542-kraski', subCats: [
