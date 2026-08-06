@@ -58,13 +58,20 @@
   .artm-nav-link:hover { color: #fff !important; }
   .artm-nav-link.active { color: #fff !important; border-bottom-color: #4C9E24; }
 
-  /* ── PANEL (выпадающая, скрыта по умолчанию) ── */
+  /* ── PANEL (выпадающая, скрыта по умолчанию) ──
+     Раньше панель была во всю ширину экрана (left/right:0), а контент внутри
+     просто отступал на --artm-gap — из-за этого сам белый блок с рамкой/тенью
+     всегда шёл край в край, а не по ширине сайта. Теперь сам блок зажат в
+     стандартную сетку 1200px (те же left/right, что использует .nx-megamenu
+     в all.css) — на мобиле, где 100vw-1200px уходит в минус, отступ сам
+     схлопывается в 0 и панель остаётся во всю ширину. */
   .artm-panel {
-    display: none; position: absolute; top: 44px; left: 0; right: 0;
+    display: none; position: absolute; top: 44px;
+    left: max(0px, calc((100vw - 1200px) / 2));
+    right: max(0px, calc((100vw - 1200px) / 2));
     border: 1px solid #ddd; border-top: none; background: #fff;
     box-shadow: 0 8px 28px rgba(0,0,0,.13); z-index: 50;
     max-height: calc(100vh - 120px); overflow-y: auto;
-    padding-left: var(--artm-gap); padding-right: var(--artm-gap);
   }
   .artm-panel.open { display: flex; }
 
@@ -95,7 +102,7 @@
   }
   .artm-row-heading:hover .artm-row-label { color: #4C9E24; }
   .artm-row-strip {
-    position: relative; height: 120px; background: #0a0a0a;
+    position: relative; height: 92px; background: #0a0a0a;
     border-radius: 3px; overflow: hidden; margin-bottom: 7px;
   }
 
@@ -154,7 +161,7 @@
     font-size: 9px; font-weight: 700; color: #fff;
     text-shadow: 0 1px 4px rgba(0,0,0,.9); line-height: 1.25; letter-spacing: .02em;
   }
-  .artm-sub { margin-bottom: 10px; }
+  .artm-sub { margin-bottom: 8px; }
 
   /* Десктоп: скрываем мобильную сетку. Мобайл: складываем панель в столбец,
      прячем сайдбар (первый уровень доступен в баре сверху) и ромбы → карточки. */
