@@ -102,7 +102,11 @@
   }
   .artm-row-heading:hover .artm-row-label { color: #4C9E24; }
   .artm-row-strip {
-    position: relative; height: 92px; background: #0a0a0a;
+    /* Фон белый (не чёрный) — это то, что видно в GAP-зазоре между
+       соседними ромбами (clip-path не стыкует их впритык). На мобильной
+       сетке зазор между карточками и так белый (фон страницы просвечивает
+       через grid-gap) — здесь то же самое, только явным фоном. */
+    position: relative; height: 92px; background: #fff;
     border-radius: 3px; overflow: hidden; margin-bottom: 7px;
   }
 
@@ -122,12 +126,22 @@
     opacity: 0; pointer-events: none; transition: opacity .25s;
   }
   .artm-seg:hover .artm-seg-tint { opacity: 1; }
+  /* Тёмный градиент снизу — читаемость подписи поверх светлых фото
+     (то же самое уже есть на мобильной сетке, .artm-mob-card-grad). */
+  .artm-seg-grad {
+    position: absolute; inset: 0; pointer-events: none;
+    background: linear-gradient(to top, rgba(0,0,0,.65) 0%, rgba(0,0,0,0) 60%);
+  }
   .artm-seg-label {
-    position: absolute; bottom: 9px; width: 108px; text-align: center;
+    /* width/left считает JS (layout()) — под фактическую ширину ромба,
+       чтобы длинные подписи не переносились на второй ряд там, где место
+       есть; text-shadow здесь уже вторичен (есть градиент), оставлен как
+       подстраховка на случай короткого/узкого ромба. */
+    position: absolute; bottom: 9px; text-align: center; white-space: nowrap;
     font-size: 10px; font-weight: 600; color: rgba(255,255,255,.9);
     text-shadow: 0 1px 6px rgba(0,0,0,.95); letter-spacing: .03em;
     line-height: 1.25; pointer-events: none; font-family: inherit;
-    transition: font-weight .15s, color .15s, left .28s ease;
+    transition: font-weight .15s, color .15s, left .28s ease, width .28s ease;
   }
   .artm-seg:hover .artm-seg-label { color: #fff; font-weight: 700; }
   .artm-svg-lines { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 3; }
@@ -468,6 +482,9 @@
       var tint = document.createElement('div');
       tint.className = 'artm-seg-tint'; seg.appendChild(tint);
 
+      var grad = document.createElement('div');
+      grad.className = 'artm-seg-grad'; seg.appendChild(grad);
+
       var lbl2 = document.createElement('div');
       lbl2.className = 'artm-seg-label';
       lbl2.textContent = item.name; seg.appendChild(lbl2);
@@ -495,6 +512,14 @@
       for (i = 0; i < N; i++) bounds.push(bounds[i] + widths[i]);
       bounds[N] = 100; /* защита от накопленной погрешности */
 
+      /* Подпись растягивается под фактическую ширину ромба (в px, не %,
+         иначе width:NN% плюс left:calc(...% - NNpx) конфликтуют) — длинный
+         текст в широком ромбе остаётся в одну строку вместо переноса;
+         LBL_PAD — запас от острых скошенных краёв, LBL_MIN — пол на случай
+         очень узкого (сжатого при hover соседа) сегмента. */
+      var stripW = strip.offsetWidth || strip.getBoundingClientRect().width;
+      var LBL_PAD = 18, LBL_MIN = 46;
+
       for (i = 0; i < N; i++) {
         var isFirst = i === 0, isLast = i === N - 1;
         var tL = isFirst ? 0 : bounds[i] + GAP;
@@ -503,11 +528,20 @@
         var bR = isLast  ? 100 : tR - SKEW;
         segs[i].style.clipPath =
           'polygon('+tL+'% 0%,'+tR+'% 0%,'+bR+'% 100%,'+bL+'% 100%)';
-        labels[i].style.left = 'calc('+((bL + bR) / 2)+'% - 54px)';
+        var midPct = (bL + bR) / 2;
+        var wPx = Math.max(LBL_MIN, (bR - bL) / 100 * stripW - LBL_PAD);
+        labels[i].style.width = wPx + 'px';
+        labels[i].style.left = 'calc('+midPct+'% - '+(wPx / 2)+'px)';
       }
     }
 
+    /* strip ещё не вставлен в документ на этот момент (buildStrip вызывается
+       ДО append в вызывающем коде) — offsetWidth даст 0, ширина подписей
+       временно упадёт до LBL_MIN. Пересчитываем на следующем кадре, когда
+       элемент уже точно в DOM и виден (после того как повесили .open на
+       панель). */
     layout(-1);
+    requestAnimationFrame(function () { layout(-1); });
     return strip;
   }
 
