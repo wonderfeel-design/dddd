@@ -278,8 +278,14 @@
           image:'https://static.tildacdn.com/stor3661-6332-4632-b131-363662363634/fda1dfd9d1c5a726f4cb022ec350b5a2.jpg'}
       ]},
       { heading: 'СТЕНЫ', href: '/catalog/dlya-fasada-steni', items: [
+        /* bgSize — докадрировано в CSS (без перезаливки файла): картинка уже
+           показывается в её родном разрешении без запаса (626×240 факт =
+           626×240 рендер), поэтому zoom слегка увеличивает саму картинку —
+           небольшая потеря резкости, но для маленького ромба в меню
+           некритично. Если понадобится другой сдвиг кадра — добавь bgPos. */
         {name:'Скандинавская доска', h:'/catalog/dlya-fasada-steni-skandinavskaya-doska',
-          image:'https://static.tildacdn.com/stor3936-3364-4631-a364-363362336663/75a1d8ec29c4e670d9f4e45e55030e04.png'},
+          image:'https://static.tildacdn.com/stor3936-3364-4631-a364-363362336663/75a1d8ec29c4e670d9f4e45e55030e04.png',
+          bgSize:'150%'},
         {name:'Имитация бруса', h:'/catalog/dlya-fasada-imitatsiya-brusa',
           image:'https://static.tildacdn.com/stor3536-3364-4137-a635-353761303336/9f64eb7a59e0e1568860162673720e13.png'},
         {name:'Планкен', h:'/catalog/dlya-fasada-steni-planken',
@@ -477,6 +483,11 @@
       var bg = document.createElement('div');
       bg.className = 'artm-seg-bg';
       bg.style.backgroundImage = 'url('+item.image+')';
+      /* Ручной докроп конкретной картинки без перезаливки файла — если у
+         пункта задано bgSize/bgPos, используем их вместо дефолтных
+         cover/center (см. Скандинавская доска выше). */
+      if (item.bgSize) bg.style.backgroundSize = item.bgSize;
+      if (item.bgPos)  bg.style.backgroundPosition = item.bgPos;
       seg.appendChild(bg);
 
       var tint = document.createElement('div');
