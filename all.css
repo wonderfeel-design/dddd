@@ -508,7 +508,7 @@ input:checked ~ .t-checkbox__indicator:not([class*="_color"]) {
 }
 
 #rec2362174763 {
-    padding-top: 90px !important;   /* было «85» без px — невалидно, игнорировалось */
+    padding-top: 0px !important;
     padding-bottom: 0px !important;
 }
 

@@ -173,7 +173,13 @@ if (location.pathname.indexOf('/tproduct/') !== -1) {
       var uidMatch = location.pathname.match(/\/catalog\/(\d+)/);
       var uid = uidMatch ? uidMatch[1] : null;
       var path = decodeURIComponent(location.pathname);
-      active = (uid && root.querySelector('[data-storepart-uid="' + uid + '"]')) || null;
+      /* Важно: искать именно <a>, а не .t-catalog__parts-wrapper — у обоих
+         одинаковый data-storepart-uid/level, и querySelector без явного "a"
+         матчит СНАЧАЛА враппер (он раньше в разметке). Враппер физически
+         содержит внутри себя весь список дочерних пунктов (.subparts), и
+         color:green на нём наследуется вниз на ВСЕ дочерние ссылки —
+         подсвечивался не один пункт, а вся раскрытая ветка целиком. */
+      active = (uid && root.querySelector('a[data-storepart-uid="' + uid + '"]')) || null;
       if (!active) {
         var links = root.querySelectorAll('a[href]');
         for (var i = 0; i < links.length; i++) {
@@ -188,7 +194,7 @@ if (location.pathname.indexOf('/tproduct/') !== -1) {
          равно оказались в блоке "не нашли активный", разумный дефолт —
          раскрыть корень: ниже по коду для активного пункта уже есть логика
          "раскрыть собственные подкатегории", она сработает и здесь. */
-      if (!active) active = root.querySelector('[data-storepart-level="0"]');
+      if (!active) active = root.querySelector('[data-storepart-level="0"] > a');
     }
     if (!active) return;
 
