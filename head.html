@@ -180,6 +180,15 @@ if (location.pathname.indexOf('/tproduct/') !== -1) {
           if (linkPath(links[i]) === path) { active = links[i]; break; }
         }
       }
+      /* Последний фолбэк — корень «Все товары» (level 0). На голом /catalog
+         ни current-класс, ни uid, ни href ни на что не указывают (у «Все
+         товары» может быть /catalog/catalog или /catalog/<uid>-vse-tovari —
+         оба не совпадают с "/catalog" как есть), поэтому раньше ничего не
+         подсвечивалось и дерево оставалось нативно свёрнутым. Раз мы всё
+         равно оказались в блоке "не нашли активный", разумный дефолт —
+         раскрыть корень: ниже по коду для активного пункта уже есть логика
+         "раскрыть собственные подкатегории", она сработает и здесь. */
+      if (!active) active = root.querySelector('[data-storepart-level="0"]');
     }
     if (!active) return;
 
@@ -240,9 +249,23 @@ if (location.pathname.indexOf('/tproduct/') !== -1) {
     }
   }
 
+  /* 3.5. Убрать «Тип покрытия» из боковых фильтров каталога — ищем по
+     видимому тексту заголовка фильтра (не по data-filter-name — реальный
+     id опции мы не видели в живых данных, а текстовый поиск устойчив
+     к этому и не ломается, если Tilda сменит внутренний id). */
+  function hideCoatingFilter() {
+    document.querySelectorAll('.t-catalog__filter__item').forEach(function (item) {
+      var title = item.querySelector('.js-catalog-filter-item-title, [data-filter-name]');
+      if (title && (title.textContent || '').trim().toLowerCase() === 'тип покрытия') {
+        item.style.setProperty('display', 'none', 'important');
+      }
+    });
+  }
+
   function apply() {
     try { highlightAndExpand(); } catch (e) {}
     try { trimCrumbs(); } catch (e) {}
+    try { hideCoatingFilter(); } catch (e) {}
   }
 
   function start() {

@@ -509,7 +509,7 @@ input:checked ~ .t-checkbox__indicator:not([class*="_color"]) {
 
 #rec2362174763 {
     padding-top: 90px !important;   /* было «85» без px — невалидно, игнорировалось */
-    padding-bottom: 60px !important;
+    padding-bottom: 0px !important;
 }
 
 /* Палитра (rec2362172923): при ПРЯМОМ заходе (без контекстной панели) блок стоит
