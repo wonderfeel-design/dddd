@@ -623,7 +623,12 @@ html.nx-pal-hasctx #rec2362172923 {
     padding: 0 !important;
     gap: 20px !important;
     column-gap: 20px !important;
-    align-items: flex-start;
+    /* stretch, не flex-start — карточки с разным объёмом контента (напр.
+       не у всех есть «Цена за кв.м.») иначе прижимались к верху ряда и
+       оставались разной высоты; растягиваем всех до высоты самой высокой
+       в ряду; .t-catalog__card сам уже flex-column (см. медиа-запросы
+       ниже), так что растянутая высота уйдёт в его нижний контент/кнопки. */
+    align-items: stretch !important;
 }
 /* Палитра: убрать двойной отступ — centering уже на уровне section container */
 #rec2362172923 .t-catalog__cont-wrapper {
@@ -631,8 +636,16 @@ html.nx-pal-hasctx #rec2362172923 {
     padding-right: 0 !important;
 }
 
-/* Каталог: 3 колонки; палитра: 4 колонки, гэп 20px */
-#rec2362174763 .t-catalog__stretch-col {
+/* Каталог: 3 колонки; палитра: 4 колонки, гэп 20px.
+   Раньше было привязано к #rec2362174763 — конкретному rec id страницы, на
+   которой это тестировалось. Категории (Для интерьера, Крепёж и т.д.)
+   оказались каждая на СВОЕЙ странице Тильды со своим собственным rec id —
+   привязка к одному id не долетала до остальных, и там карточки оставались
+   на нативной раскладке (пустое место в ряду). #allrecords — общий враппер
+   контента на любой странице, ловит все. Палитра переопределяет ниже по
+   правилам с #rec2362172923 (тот же вес специфичности, но позже по
+   порядку — существующий, уже документированный механизм каскада). */
+#allrecords .t-catalog__stretch-col {
     width: calc(33.333% - 14px) !important;
     max-width: calc(33.333% - 14px) !important;
     min-width: 0 !important;
@@ -1481,17 +1494,12 @@ html body .nx-megamenu-wrap { padding-left: 20px !important; }
    ================================================ */
 
 @media (max-width: 960px) {
-    #rec2362174763 .t-catalog__cont-wrapper,
-    #rec2362172923 .t-catalog__cont-wrapper { flex-direction: column !important; padding-left: 16px !important; padding-right: 16px !important; }
-    #rec2362174763 .t-catalog__sidebar,
-    #rec2362172923 .t-catalog__sidebar { width: 100% !important; min-width: 0 !important; order: -1 !important; }
-    #rec2362174763 .t-catalog__stretch-col,
-    #rec2362172923 .t-catalog__stretch-col { width: 100% !important; max-width: 100% !important; flex: 0 0 100% !important; order: 1 !important; }
-    #rec2362174763 .t-catalog-parts-above__container,
-    #rec2362172923 .t-catalog-parts-above__container { padding-left: var(--nx-grid-padding) !important; }
+    #allrecords .t-catalog__cont-wrapper { flex-direction: column !important; padding-left: 16px !important; padding-right: 16px !important; }
+    #allrecords .t-catalog__sidebar { width: 100% !important; min-width: 0 !important; order: -1 !important; }
+    #allrecords .t-catalog__stretch-col { width: 100% !important; max-width: 100% !important; flex: 0 0 100% !important; order: 1 !important; }
+    #allrecords .t-catalog-parts-above__container { padding-left: var(--nx-grid-padding) !important; }
     /* крошки — 0, наследуют отступ контейнера (без двойного) */
-    #rec2362174763 .t-catalog__breadcrumbs,
-    #rec2362172923 .t-catalog__breadcrumbs { padding-left: 0 !important; }
+    #allrecords .t-catalog__breadcrumbs { padding-left: 0 !important; }
 
     /* ГЛАВНЫЙ ФИКС мобильной пустоты: грид-контейнер — КОЛОНКА, а не ряд.
        Иначе полноширинная панель «Найдено/Сбросить» (chosen-bar, flex:0 0 100%)
@@ -1499,16 +1507,14 @@ html body .nx-megamenu-wrap { padding-left: 20px !important; }
     .js-catalog-grid-cont { flex-direction: column !important; }
 
     /* 2 карточки в ряд (641–960px): sidebar ушёл наверх, карточки — 50%.
-       Scoped to catalog/palitra recs only — an unscoped rule here previously
-       hit every .t-catalog__card-list on the site, including unrelated blocks. */
-    #rec2362174763 .t-catalog__card-list,
-    #rec2362172923 .t-catalog__card-list {
+       #allrecords, а не привязка к rec id одной конкретной страницы —
+       категории теперь каждая на своей странице Тильды со своим id. */
+    #allrecords .t-catalog__card-list {
         display: flex !important; flex-direction: row !important;
         flex-wrap: wrap !important; align-items: stretch !important;
         width: 100% !important; padding: 0 !important; gap: 10px !important;
     }
-    #rec2362174763 .t-catalog__card,
-    #rec2362172923 .t-catalog__card {
+    #allrecords .t-catalog__card {
         width: calc(50% - 5px) !important;
         max-width: calc(50% - 5px) !important;
         flex: 0 0 calc(50% - 5px) !important;
@@ -1518,15 +1524,13 @@ html body .nx-megamenu-wrap { padding-left: 20px !important; }
 }
 
 /* > 960px: 3 карточки в ряд (переопределяем нативный Tilda-грид на 4).
-   Scoped to catalog/palitra recs only (see note above). */
+   #allrecords — см. заметку выше. */
 @media (min-width: 961px) {
-    #rec2362174763 .t-catalog__card-list,
-    #rec2362172923 .t-catalog__card-list {
+    #allrecords .t-catalog__card-list {
         display: flex !important; flex-wrap: wrap !important;
         gap: 12px !important;
     }
-    #rec2362174763 .t-catalog__card,
-    #rec2362172923 .t-catalog__card {
+    #allrecords .t-catalog__card {
         width: calc(33.333% - 8px) !important;
         max-width: calc(33.333% - 8px) !important;
         flex: 0 0 calc(33.333% - 8px) !important;
