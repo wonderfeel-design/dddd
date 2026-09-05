@@ -3,6 +3,41 @@
    Версия: очищенная
    ================================================ */
 
+/* Корзина (t706): адаптивный попап + крестик в правом верхнем углу карточки,
+   зелёного цвета. База (мобайл/узкие): карточка ~на всю ширину, крестик 16/16. */
+.t706__cartwin-close {
+    position: absolute !important;
+    top: 16px !important;
+    right: 16px !important;
+    bottom: auto !important;
+    left: auto !important;
+    z-index: 6 !important;
+    cursor: pointer !important;
+}
+/* Крестик — зелёный (нативно белый на тёмном фоне) */
+.t706__cartwin-close svg,
+.t706__cartwin-close svg g,
+.t706__cartwin-close svg rect,
+.t706__cartwin-close svg path {
+    fill: var(--nx-green) !important;
+    stroke: var(--nx-green) !important;
+}
+/* >900px: карточка корзины шире (70%), по центру; крестик — у правого края
+   карточки. Оверлей .t706__cartwin НЕ трогаем (flex ломал раскладку и прятал
+   крестик) — только расширяем контент и двигаем absolute-крестик к его краю. */
+@media (min-width: 901px) {
+    .t706__cartwin-content {
+        width: 70% !important;
+        max-width: 70% !important;
+        margin-left: auto !important;
+        margin-right: auto !important;
+    }
+    .t706__cartwin-close {
+        top: 24px !important;
+        right: 15% !important;
+    }
+}
+
 /* ── ДИЗАЙН-ТОКЕНЫ ── */
 :root {
     --nx-green:        #4C9E24;
@@ -40,8 +75,16 @@ html {
     flex: 1;
 }
 
-/* ── Убрать белое пространство после футера ── */
-#allrecords > div:empty {
+/* ── Убрать белое пространство после футера ──
+   :not(#nx-prod-root) — до рендера товара наш корень тоже пуст (создаётся
+   заранее в ensureProdRoot, контент вставляется позже через loadProduct),
+   и без исключения этот же селектор сносил ему display:none вместе с его
+   min-height:100vh — именно тем, что должно было держать страницу открытой
+   на время загрузки (4-6 сек на редирект store-api). Без этой высоты футер
+   рендерился сразу после шапки, т.к. flex:1 у :last-child достаётся не
+   контенту и не футеру, а невидимому хвостовому реку (попап корзины и т.п.),
+   который остаётся нулевой высоты. */
+#allrecords > div:empty:not(#nx-prod-root) {
     display: none !important;
     flex: 0 !important;
 }
@@ -61,6 +104,22 @@ html #allrecords {
 .t-store__prod-page #allrecords,
 .t-store__prod-snippet__container {
     background: transparent !important;
+}
+
+/* ── Унификация ширины контента — 1200px, выровнено по центру ──
+   Tilda выставляет контейнеры блоков в 960px. Полноширинные блоки
+   переопределяют это через #recXXX max-width:100%!important. */
+.t-section__container {
+    max-width: 1200px !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+}
+#allrecords ul[class*="__container"] {
+    max-width: 1200px !important;
+    width: 100% !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+    box-sizing: border-box !important;
 }
 
 /* ================================================
@@ -192,12 +251,13 @@ html body .t-btnflex.t-btnflex_type_button.t-store__card__btn {
     font-size: 12px !important;
     font-weight: 700 !important;
     text-transform: uppercase !important;
-    letter-spacing: 0.5px !important;
-    padding: 10px 16px !important;
+    letter-spacing: 0 !important;
+    padding: 10px 10px !important;
+    white-space: nowrap !important;
     transition: background-color .2s !important;
     display: inline-flex !important;
     align-items: center !important;
-    gap: 7px !important;
+    gap: 5px !important;
 }
 html body .t-btnflex.t-btnflex_type_button.t-catalog__card__btn:hover,
 html body .t-btnflex.t-btnflex_type_button.t-store__card__btn:hover {
@@ -210,8 +270,8 @@ html body .t-btnflex.t-btnflex_type_button.t-store__card__btn::before {
     content: '';
     display: inline-block;
     flex-shrink: 0;
-    width: 16px;
-    height: 16px;
+    width: 14px;
+    height: 14px;
     background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='9' cy='21' r='1'/%3E%3Ccircle cx='20' cy='21' r='1'/%3E%3Cpath d='M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6'/%3E%3C/svg%3E");
     background-repeat: no-repeat;
     background-size: contain;
@@ -365,20 +425,12 @@ html body .t-product__option-item_active .t-product__option-title {
    2. КАТАЛОГ #rec2362174763
    ================================================ */
 
-/* Нативный блок товара — скрываем сразу */
-.t-store__prod-snippet__container { display: none !important; }
-
-/* Скрытие категории «Палитра» (родитель + 5 подпалитр) */
-.t-catalog__parts-tree-item[data-part-uid="152547959142"],
-.t-catalog__parts-tree-item[data-part-uid="179624093472"],
-.t-catalog__parts-tree-item[data-part-uid="236627535922"],
-.t-catalog__parts-tree-item[data-part-uid="726570418172"],
-.t-catalog__parts-tree-item[data-part-uid="189744702942"],
-.t-catalog__parts-tree-item[data-part-uid="819691203232"] { display: none !important; }
-
-/* Скрытие пункта «Все» в сайдбаре разделов */
-.t-catalog__parts-tree-item:first-child,
-.t-catalog__parts-tree-item[data-part-uid=""] { display: none !important; }
+/* Нативный блок товара — скрываем, пока рендерим свою карточку (см. тот же
+   фикс в head.html): без привязки к .nx-tp это правило прятало нативный
+   виджет товара НАВСЕГДА, в том числе в момент, когда наш скрипт не находит
+   товар и снимает nx-tp, пытаясь показать этот самый виджет как страховку —
+   вместо fallback получалась пустая страница. */
+html.nx-tp .t-store__prod-snippet__container { display: none !important; }
 
 /* Мобильная: панель «Найдено: N + чипсы фильтров» во всю ширину СВЕРХУ,
    а не узкой колонкой (она лежит внутри грида .t-catalog__mobile-two-columns) */
@@ -398,128 +450,217 @@ html body .t-product__option-item_active .t-product__option-title {
   }
 }
 
-/* Свотчи фильтра «Цвет» (каталог + палитра) — как кружки на карточке товара:
-   крупный круг с белой рамкой и серым кольцом, зелёное кольцо при выборе */
-.t-catalog__filter__checkmark_color {
-  width: 34px !important;
-  height: 34px !important;
+/* Свотчи фильтра «Цвет» (каталог + палитра) — как кнопки цвета на карточке
+   товара (.nx-p-color-btn): круглый цветной свотч в белом кольце с серой
+   обводкой, зелёная обводка у выбранного. Сам цвет — из инлайнового
+   background-color (Tilda ставит style="background-color:rgb(...) !important"
+   на .t-checkbox__indicator); фон/цвет НЕ переопределяем, только оформление. */
+.t-catalog__filter__checkmark_color,
+.t-catalog__filter__checkmark_color.t-checkbox__indicator,
+label.t-catalog__filter__checkbox_color .t-checkbox__indicator {
+  width: 40px !important;
+  height: 40px !important;
   border-radius: 50% !important;
-  border: 4px solid #fff !important;
+  border: 3px solid #fff !important;
   box-shadow: 0 0 0 2px #e8e8e8 !important;
+  padding: 0 !important;
+  cursor: pointer !important;
   background-clip: padding-box !important;
   background-size: cover !important;
   background-position: center !important;
-  transition: box-shadow .15s, transform .15s !important;
+  background-image: none !important;
+  transition: box-shadow .15s, transform .1s !important;
 }
-.t-catalog__filter__checkbox_color:hover .t-catalog__filter__checkmark_color {
+.t-catalog__filter__checkbox_color:hover .t-checkbox__indicator {
   transform: scale(1.08) !important;
   box-shadow: 0 0 0 2px #ccc !important;
 }
 .t-catalog__filter__checkbox_color input:checked + .t-catalog__filter__checkmark_color,
-.t-catalog__filter__checkbox_color input:checked ~ .t-catalog__filter__checkmark_color {
+.t-catalog__filter__checkbox_color input:checked ~ .t-catalog__filter__checkmark_color,
+.t-catalog__filter__checkbox_color input:checked ~ .t-checkbox__indicator {
   box-shadow: 0 0 0 2.5px var(--nx-green) !important;
 }
 
-/* Ссылка на палитру */
-.nx-palette-link-wrap { padding: 8px 16px 16px; }
-.nx-palette-link {
-    font-size: 14px;
-    color: var(--nx-green);
-    text-decoration: none;
-    display: inline-block;
+/* Чекбоксы фильтров (каталог, палитра, панель фильтров) — Figma-стиль.
+   Пустой: белый квадрат 20×20 со скруглением 3px и серой рамкой.
+   Отмеченный: сплошной зелёный #4C9E24 с белой галочкой.
+   ВАЖНО: цветовые свотчи (Цвет) НЕ трогаем — у них и контейнер, и метка
+   содержат «_color»; они остаются круглыми (правило ..._color выше).
+   Поэтому таргетим только чекбоксы ВНУТРИ НЕ-цветового контейнера + сам
+   .t-checkbox__indicator (обычный нативный чекбокс без цвета). */
+.t-catalog__filter__checkbox:not([class*="_color"]) .t-catalog__filter__checkmark:not([class*="_color"]),
+.t-store__filter__checkbox:not([class*="_color"]) .t-store__filter__checkmark:not([class*="_color"]),
+.t-checkbox__indicator:not([class*="_color"]) {
+  box-sizing: border-box !important;
+  width: 20px !important;
+  height: 20px !important;
+  border-radius: 3px !important;
+  border: 1.5px solid #C9C9C9 !important;
+  background: #ffffff !important;
+  transition: background .15s, border-color .15s !important;
 }
-.nx-palette-link:hover { text-decoration: underline; }
+.t-catalog__filter__checkbox:not([class*="_color"]) input:checked ~ .t-catalog__filter__checkmark:not([class*="_color"]),
+.t-store__filter__checkbox:not([class*="_color"]) input:checked ~ .t-store__filter__checkmark:not([class*="_color"]),
+input:checked + .t-checkbox__indicator:not([class*="_color"]),
+input:checked ~ .t-checkbox__indicator:not([class*="_color"]) {
+  background-color: #4C9E24 !important;
+  border-color: #4C9E24 !important;
+  background-image: url("data:image/svg+xml,%3Csvg width='12' height='8' viewBox='0 0 12 8' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M9.95463 0L11.4286 0.806867L5.03781 8H3.56387L0 4.103L1.47394 3.03004L4.30084 5.09013L9.95463 0Z' fill='white'/%3E%3C/svg%3E") !important;
+  background-repeat: no-repeat !important;
+  background-position: center !important;
+  background-size: 12px 8px !important;
+}
 
 #rec2362174763 {
-    padding-top: 90px !important;   /* было «85» без px — невалидно, игнорировалось */
-    padding-bottom: 60px !important;
+    padding-top: 0px !important;
+    padding-bottom: 0px !important;
 }
 
-/* Палитра (rec2362172923): у блока padding-top=0 → заголовок «ПАЛИТРЫ ЦВЕТОВ»
-   и хлебные крошки уезжали под фикс. шапку+меню (низ меню ≈126px).
-   Даём такой же верхний отступ, как у каталога. */
+/* Палитра (rec2362172923): при ПРЯМОМ заходе (без контекстной панели) блок стоит
+   под фикс-шапкой → нужен верхний отступ. При переходе с карточки товара показана
+   контекстная панель (её margin-top уже отодвигает контент) → убираем дубль. */
 #rec2362172923 {
     padding-top: 90px !important;
     padding-bottom: 45px !important;
 }
+html.nx-pal-hasctx #rec2362172923 {
+    padding-top: 8px !important;
+}
 
-#rec2362174763 .t-catalog__breadcrumbs { padding-left: var(--nx-grid-padding) !important; }
-/* Заголовок каталога «Все товары» */
-#rec2362174763 .t-section__container {
+/* Скрыть фильтр-дубль дерева разделов */
+.t-catalog__filter__item:has(.js-catalog-filter-tree-container) { display: none !important; }
+
+/* Каталог — отступы, сетка, сайдбар (работает при любом rec-id) */
+/* Крошки: заголовок лежит в .t-section__container.t-container (1200, по центру),
+   а крошки — прямой ребёнок grid-cont. На палитре grid-cont сам .t-container
+   (1200), а на каталоге — .t-catalog__grid-cont_indent (на всю ширину, padding
+   0 40px) → крошки уезжали к краю (40px), не в линию с заголовком. Решение,
+   единое для всех страниц: центрируем крошки как .t-container (max-width 1200,
+   margin auto) → их левый край совпадает с заголовком (тоже 1200-центрированным)
+   на любой обёртке. */
+#allrecords .t-catalog__breadcrumbs {
+    max-width: 1200px !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+    padding-left: 0 !important;
+    box-sizing: border-box !important;
+    /* стиль как в карточке товара (.nx-p-bc) */
+    display: flex !important;
+    align-items: center !important;
+    flex-wrap: wrap !important;
+    gap: 6px !important;
+    font-size: 13px !important;
+    color: #888 !important;
+}
+/* Пункты-ссылки — серые, без обрезки; наведение — зелёное */
+#allrecords .t-catalog__breadcrumbs-item,
+#allrecords .t-catalog__breadcrumbs-item-text {
+    color: #888 !important;
+    font-weight: 400 !important;
+    max-width: none !important;
+}
+#allrecords .t-catalog__breadcrumbs-item_clickable:hover,
+#allrecords .t-catalog__breadcrumbs-item_clickable:hover .t-catalog__breadcrumbs-item-text {
+    color: var(--nx-green) !important;
+}
+/* Текущий (активный) пункт — тёмный, чуть жирнее */
+#allrecords .t-catalog__breadcrumbs-item_active,
+#allrecords .t-catalog__breadcrumbs-item_active .t-catalog__breadcrumbs-item-text {
+    color: #222 !important;
+    font-weight: 500 !important;
+}
+/* Иконка «домик» — тем же серым, компактная */
+#allrecords .t-catalog__breadcrumbs-item svg { height: calc(1em - 4px) !important; width: auto !important; }
+/* Разделитель — символ › вместо нативной SVG-иконки (как в .nx-p-bc__sep) */
+#allrecords .t-catalog__breadcrumbs-divider svg { display: none !important; }
+#allrecords .t-catalog__breadcrumbs-divider {
+    color: #bbb !important;
+    gap: 0 !important;
+}
+#allrecords .t-catalog__breadcrumbs-divider::before {
+    content: '›' !important;
+    color: #bbb !important;
+    font-size: 15px !important;
+    line-height: 1 !important;
+}
+/* Заголовок каталога/палитры — только вертикальный ритм; горизонтальный отступ
+   даёт нативный .t-container (как на палитре), сами НЕ сдвигаем. */
+#allrecords .t-store__title,
+#allrecords .t-catalog__title,
+#rec2362172923 .t-store__title,
+#rec2362172923 .t-catalog__title {
+    box-sizing: border-box !important;
+    margin-top: 4px !important;
+    margin-bottom: 16px !important;
+}
+#allrecords .t-section__container:has(.t-catalog__cont-w-filter) {
     padding-left: var(--nx-grid-padding) !important;
     padding-right: var(--nx-grid-padding) !important;
     box-sizing: border-box !important;
     max-width: 100% !important;
     width: 100% !important;
+    margin: 0 !important;
 }
-
-
-/* Табы категорий */
-#rec2362174763 .t-catalog-parts-above__container {
+#allrecords .t-catalog-parts-above__container,
+#allrecords .t-catalog__filter__search-and-sort {
     padding-left: var(--nx-grid-padding) !important;
     padding-right: var(--nx-grid-padding) !important;
     box-sizing: border-box !important;
 }
-
-/* Строка поиска и сортировки */
-#rec2362174763 .t-catalog__filter__search-and-sort {
-    padding-left: var(--nx-grid-padding) !important;
-    padding-right: var(--nx-grid-padding) !important;
-    box-sizing: border-box !important;
-}
-
-/* Контейнер sidebar + карточки */
-#rec2362174763 .t-catalog__cont-w-filter {
+#allrecords .t-catalog__cont-w-filter {
     padding-left: 0 !important;
     padding-right: 0 !important;
     box-sizing: border-box !important;
 }
-
-#rec2362174763 .t-catalog__cont-wrapper {
+#allrecords .t-catalog__cont-wrapper {
     padding-left: var(--nx-grid-padding) !important;
     padding-right: var(--nx-grid-padding) !important;
     box-sizing: border-box !important;
     width: 100% !important;
 }
-
-/* Сайдбар */
-#rec2362174763 .t-catalog__sidebar {
+#allrecords .t-catalog__sidebar {
     width: 260px !important;
     min-width: 260px !important;
     flex-shrink: 0 !important;
 }
-
-/* Заголовок «Раздел» над нативным деревом категорий (parts-sidebar) */
-#parts-sidebar-id-2362174763::before {
-    content: 'Раздел';
-    display: block;
-    font-family: var(--nx-font);
-    font-size: 13px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: .5px;
-    color: var(--nx-text);
-    margin-bottom: 12px;
-}
-
-/* Скрыть фильтр-дубль дерева разделов: каталог уже имеет нативный сайдбар «Раздел».
-   Цель — только фасет с деревом категорий; фильтры Цвет/Цена/Тип покрытия не затрагиваются. */
-.t-catalog__filter__item:has(.js-catalog-filter-tree-container) { display: none !important; }
-
-/* Список карточек */
-#rec2362174763 .t-catalog__card-list {
+#allrecords .t-catalog__card-list {
     padding: 0 !important;
     gap: 20px !important;
     column-gap: 20px !important;
-    align-items: flex-start;
+    /* stretch, не flex-start — карточки с разным объёмом контента (напр.
+       не у всех есть «Цена за кв.м.») иначе прижимались к верху ряда и
+       оставались разной высоты; растягиваем всех до высоты самой высокой
+       в ряду; .t-catalog__card сам уже flex-column (см. медиа-запросы
+       ниже), так что растянутая высота уйдёт в его нижний контент/кнопки. */
+    align-items: stretch !important;
+}
+/* Палитра: убрать двойной отступ — centering уже на уровне section container */
+#rec2362172923 .t-catalog__cont-wrapper {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
 }
 
-/* 3 колонки */
-#rec2362174763 .t-catalog__stretch-col {
+/* Каталог: 3 колонки; палитра: 4 колонки, гэп 20px.
+   Раньше было привязано к #rec2362174763 — конкретному rec id страницы, на
+   которой это тестировалось. Категории (Для интерьера, Крепёж и т.д.)
+   оказались каждая на СВОЕЙ странице Тильды со своим собственным rec id —
+   привязка к одному id не долетала до остальных, и там карточки оставались
+   на нативной раскладке (пустое место в ряду). #allrecords — общий враппер
+   контента на любой странице, ловит все. Палитра переопределяет ниже по
+   правилам с #rec2362172923 (тот же вес специфичности, но позже по
+   порядку — существующий, уже документированный механизм каскада). */
+#allrecords .t-catalog__stretch-col {
     width: calc(33.333% - 14px) !important;
     max-width: calc(33.333% - 14px) !important;
     min-width: 0 !important;
     flex: 0 0 calc(33.333% - 14px) !important;
+}
+#rec2362172923 .t-catalog__stretch-col {
+    /* 4 cols, gap 20px: 3 × 20px = 60px ÷ 4 = 15px deduction per col */
+    width: calc(25% - 15px) !important;
+    max-width: calc(25% - 15px) !important;
+    min-width: 0 !important;
+    flex: 0 0 calc(25% - 15px) !important;
 }
 
 /* Фильтры */
@@ -543,6 +684,17 @@ html body .t-product__option-item_active .t-product__option-title {
     font-weight: 400 !important;
     color: var(--nx-muted) !important;
     cursor: pointer;
+}
+
+/* Выбранный пункт дерева разделов — зелёная подсветка (было: тусклый серый).
+   Реальные классы подтверждены живым DOM: нативный .t-catalog__parts-current
+   (Tilda сама помечает активный пункт) + наш JS-хук .nx-tree-current
+   (head.html, фолбэк — когда нативный класс почему-то не проставлен). */
+#allrecords .t-catalog__parts-current .t-catalog__parts-item-title,
+#allrecords .nx-tree-current .t-catalog__parts-item-title,
+#allrecords .nx-tree-current {
+    color: var(--nx-green) !important;
+    font-weight: 500 !important;
 }
 
 /* Слайдер цены */
@@ -713,8 +865,9 @@ html body .t-product__option-item_active .t-product__option-title {
     align-items: stretch !important;
 }
 #rec2362047083 .t-store__card {
-    flex: 0 0 285px !important;
-    width: 285px !important;
+    flex: 0 0 280px !important;
+    width: 280px !important;
+    max-width: 280px !important;
     margin: 0 !important;
     display: flex !important;
     flex-direction: column !important;
@@ -760,20 +913,48 @@ html body .t-product__option-item_active .t-product__option-title {
 #nx-prod-root * { box-sizing: border-box;}
 
 #nx-prod-root h1, #nx-prod-root h2, #nx-prod-root h3 { margin: 0; padding: 0; }
- #nx-prod-root body {
-    background: linear-gradient(180deg,
-        #ffffff 0%,
-        #ebf5e2 18%,
-        #ebf5e2 100%
-    ) !important;
-}
+/* flex:1 явно — не полагаемся на #allrecords > div:last-child (тот кому-то
+   ещё достаётся, напр. хвостовому реку попапа корзины, а не нам, см. диагностику
+   в консоли: #nx-prod-root получал flex-grow:0). min-height:100vh — резервный
+   пол на случай Structure B (fixed, вне флекс-контекста #allrecords). */
 #nx-prod-root {
     width: 100%;
+    flex: 1 1 auto;
+    min-height: 100vh;
     overflow: hidden;
     padding: 120px 0 80px;
     font-family: var(--nx-font);
     color: #222;
- /*  top: 55px; /Matches the height of your header */
+    /* Общий фон страницы товара — мягкая зелёная «подложка» (Figma):
+       прозрачная сверху/снизу, #EBF5E2 в середине. */
+    background: linear-gradient(180deg,
+        rgba(235, 245, 226, 0) 0%,
+        #EBF5E2 65%,
+        rgba(235, 245, 226, 0) 100%);
+}
+/* Structure B (/catalog/tproduct/): body has only t-zoomer__wrapper, no #allrecords.
+   #nx-prod-root is inserted as a direct body child — make it a fixed overlay
+   that sits ABOVE the zoomer (which Tilda's zoom JS re-shows regardless of our inline hide). */
+body > #nx-prod-root {
+    position: fixed !important;
+    top: 0; left: 0; right: 0; bottom: 0;
+    z-index: 99999 !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+    padding: 60px 0 80px !important;
+}
+/* Tilda's own popups (cart, mobile menu, search, wishlist) are appended to
+   <body> too and must render ABOVE the Structure-B overlay above, or the
+   overlay's z-index:99999 hides them completely — clicking the cart icon
+   opens the popup (and correctly locks background scroll) but it's
+   invisible behind our overlay, so it just looks like nothing happens.
+   Name-agnostic version: #nx-prod-root is always body's FIRST child on
+   these pages, so anything Tilda appends to body AFTER it (any popup,
+   whatever it's called) is a later sibling — force those above us. */
+body > #nx-prod-root ~ *,
+[class*="cartwin"], [class*="t-popup"],
+.t-menu__mobile-popup, .t-menusub__menu-popup {
+    z-index: 2147483000 !important;
 }
 /* Мобильная: шапка + меню выше, поэтому контент товара заезжал под меню —
    отступ = высота фикс-шапки (--nx-header-h) + меню(~56) + запас(24) */
@@ -794,18 +975,22 @@ html body .t-product__option-item_active .t-product__option-title {
 #nx-prod-root .nx-p-left  { flex: 0 0 420px; max-width: 420px; }
 #nx-prod-root .nx-p-right { flex: 1; min-width: 0; width: 100% !important; }
 
-/* Галерея */
+/* Галерея. Главное фото — фиксированный квадрат (ширина колонки 420px минус
+   миниатюры 78px минус gap 12px = 330px); миниатюры — фиксированная высота
+   в тот же квадрат с вертикальным скроллом, а не "растягивание по контенту". */
 #nx-prod-root .nx-p-gallery { display: flex; gap: 12px; align-items: flex-start; }
 #nx-prod-root .nx-p-thumbs  {
     display: flex; flex-direction: column; gap: 8px; flex: 0 0 78px;
     order: -1;               /* миниатюры — слева от главного фото */
-    max-height: 340px;       /* вертикальный скролл при большом числе фото */
+    height: 330px;
     overflow-y: auto;
+    overflow-x: hidden;      /* иначе вертикальный скролл спекой заставляет x-ось стать auto → лишний горизонтальный скролл */
     scrollbar-width: thin;
     scrollbar-color: #ddd transparent;
 }
 #nx-prod-root .nx-p-thumb {
-    width: 72px; height: 72px;
+    width: 100%;             /* заполняем колонку; при появлении верт. скролла миниатюра сама сужается — без горизонтального переполнения */
+    aspect-ratio: 1;
     border: 2px solid transparent;
     border-radius: 6px;
     overflow: hidden;
@@ -816,23 +1001,25 @@ html body .t-product__option-item_active .t-product__option-title {
 }
 #nx-prod-root .nx-p-thumb img { width: 100%; height: 100%; object-fit: cover; }
 #nx-prod-root .nx-p-thumb--active { border-color: var(--nx-green); }
-#nx-prod-root .nx-p-mainimg { flex: 1; aspect-ratio: 1/1; border-radius: 8px; overflow: hidden; background: #f5f5f5; }
+#nx-prod-root .nx-p-mainimg { flex: 0 0 330px; width: 330px; height: 330px; border-radius: 8px; overflow: hidden; background: #f5f5f5; }
 #nx-prod-root .nx-p-mainimg img { width: 100%; height: 100%; object-fit: cover; transition: opacity .2s; }
 
 /* Текст */
-#nx-prod-root .nx-p-title { font-size: 26px; font-weight: 800; text-transform: uppercase; letter-spacing: .5px; line-height: 1.2; color: #111; margin-bottom: 12px; }
-/* Заголовок: мобайл — над галереей, десктоп — в правой колонке */
-#nx-prod-root .nx-p-title--mob { display: none; }
-#nx-prod-root .nx-p-title--dsk { display: block; }
+/* Единый заголовок над обеими колонками */
+#nx-prod-root .nx-p-title { font-size: 26px; font-weight: 800; text-transform: uppercase; letter-spacing: .5px; line-height: 1.2; color: #111; margin-bottom: 20px; }
 #nx-prod-root .nx-p-descr { font-size: 14px; line-height: 1.6; color: #444; margin-bottom: 20px; }
 
 /* Цены + счётчики — единый grid (2 строки), колонки определяются один раз
    и наследуются обеими строками через subgrid → колонки выровнены вертикально */
 #nx-prod-root .nx-p-pricing {
     display: grid;
-    grid-template-columns: minmax(0, 149px) 40px minmax(0, 149px);
+    /* Две РАВНЫЕ колонки + 40px в середине под 🔗/разделитель. Один и тот же
+       трек-шаблон и max-width, что и у .nx-p-selects → колонки совпадают по всем
+       рядам (цена / счётчики / ширина-длина). */
+    grid-template-columns: minmax(0, 1fr) 40px minmax(0, 1fr);
     justify-content: start;
     width: 100% !important;
+    max-width: 420px;
     row-gap: 16px;
     margin-bottom: 24px;
 }
@@ -896,14 +1083,45 @@ html body .t-product__option-item_active .t-product__option-title {
 #nx-btn-sample {
   transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease; background-image: none !important;
 }
+/* Кнопка «Заказать пробный выкрас» — иконка-кисть вместо корзины.
+   По умолчанию зелёная (аутлайн); при наведении кнопка зеленеет → иконка белая. */
+#nx-btn-sample::before {
+    background-image: url("data:image/svg+xml,%3Csvg width='25' height='25' viewBox='0 0 25 25' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M16.2645 11.7166C16.2645 11.7166 23.2917 5.19201 23.296 5.19201C24.3154 4.17186 24.3154 2.51792 23.296 1.50212C22.2766 0.486313 20.5979 0.512359 19.6089 1.50212L13.0892 8.53896L11.9614 7.41029C11.1415 6.58983 9.81419 6.58983 8.99435 7.41029L1.06055 15.3457L5.25952 19.5479L9.45849 23.75L17.388 15.8146C18.2078 14.9941 18.2078 13.6657 17.388 12.8453L16.2601 11.7166H16.2645Z' stroke='%234C9E24' stroke-width='1.5' stroke-miterlimit='10'/%3E%3Cpath d='M7.06055 9.75L15.0605 18.75' stroke='%234C9E24' stroke-width='1.5' stroke-miterlimit='10'/%3E%3Cpath d='M6.81487 15.2135L3.5293 18.4991' stroke='%234C9E24' stroke-width='1.5' stroke-miterlimit='10'/%3E%3Cpath d='M9.7973 18.196L6.51172 21.4816' stroke='%234C9E24' stroke-width='1.5' stroke-miterlimit='10'/%3E%3C/svg%3E") !important;
+    width: 20px !important;
+    height: 20px !important;
+}
+#nx-btn-sample:hover::before {
+    background-image: url("data:image/svg+xml,%3Csvg width='25' height='25' viewBox='0 0 25 25' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M16.2645 11.7166C16.2645 11.7166 23.2917 5.19201 23.296 5.19201C24.3154 4.17186 24.3154 2.51792 23.296 1.50212C22.2766 0.486313 20.5979 0.512359 19.6089 1.50212L13.0892 8.53896L11.9614 7.41029C11.1415 6.58983 9.81419 6.58983 8.99435 7.41029L1.06055 15.3457L5.25952 19.5479L9.45849 23.75L17.388 15.8146C18.2078 14.9941 18.2078 13.6657 17.388 12.8453L16.2601 11.7166H16.2645Z' stroke='white' stroke-width='1.5' stroke-miterlimit='10'/%3E%3Cpath d='M7.06055 9.75L15.0605 18.75' stroke='white' stroke-width='1.5' stroke-miterlimit='10'/%3E%3Cpath d='M6.81487 15.2135L3.5293 18.4991' stroke='white' stroke-width='1.5' stroke-miterlimit='10'/%3E%3Cpath d='M9.7973 18.196L6.51172 21.4816' stroke='white' stroke-width='1.5' stroke-miterlimit='10'/%3E%3C/svg%3E") !important;
+}
 #nx-prod-root .nx-p-btn:hover { background: var(--nx-green-dk); color: #fff;}
 
-/* Селекты */
-#nx-prod-root .nx-p-selects { display: flex; flex-wrap: wrap; gap: 16px; margin: 16px 0; align-items: flex-end; }
-#nx-prod-root .nx-p-select-wrap { display: flex; flex-direction: column; gap: 6px; flex: 1; min-width: 120px; max-width: 200px; }
+/* Селекты — просто флекс-ряд: элементы идут подряд слева направо в порядке
+   DOM и переносятся на новую строку, если не помещаются по ширине. Раньше
+   тут был грид с явным grid-column под каждое свойство (Ширина=1,Длина=2,
+   Тип покрытия=4), подогнанный под сетку цен сверху — но при отсутствии
+   одного из свойств (напр. Ширины у реечных панелей) авто-размещение грида
+   оставляло пустующую колонку и разрыв между оставшимися. Флекс не резервирует
+   слоты под отсутствующие элементы — сколько есть, столько и встанет подряд
+   у левого края, без дырок. */
+#nx-prod-root .nx-p-selects {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: end;
+    gap: 16px;
+    margin: 20px 0;
+    max-width: 420px;
+}
+#nx-prod-root .nx-p-select-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    flex: 1 1 170px;
+    min-width: 140px;
+}
+#nx-prod-root .nx-p-selects .nx-p-opt-lbl { white-space: nowrap; }
 #nx-prod-root .nx-p-select {
     width: 100%;
-    padding: 10px 32px 10px 14px;
+    padding: 13px 32px 13px 14px;
     border: 1px solid #ddd;
     border-radius: 8px;
     background: #f5f5f5;
@@ -965,6 +1183,20 @@ html body .t-product__option-item_active .t-product__option-title {
 }
 #nx-prod-root .nx-p-palette-btn:hover { background: var(--nx-green-bg); }
 
+/* Предупреждение под свотчами при «Без покрытия» */
+.nx-coat-warn {
+    display: none;
+    font-family: var(--nx-font);
+    font-size: 13px;
+    color: #b85c00;
+    background: #fff7ed;
+    border: 1px solid #fcd3a2;
+    border-radius: 6px;
+    padding: 8px 14px;
+    margin-top: 10px;
+    line-height: 1.4;
+}
+
 .nx-pal-tip {
     position: absolute;
     bottom: calc(100% + 8px);
@@ -1002,20 +1234,84 @@ html body .t-product__option-item_active .t-product__option-title {
 #nx-prod-root .nx-p-chars-item strong { font-weight: 700; color: #222; }
 
 
-/* Популярные товары */
-#nx-prod-root .nx-p-pop { margin-top: 56px; }
-#nx-prod-root .nx-p-pop__hdr { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; flex-wrap: wrap; gap: 8px; }
-#nx-prod-root .nx-p-pop__ttl { font-size: 20px; font-weight: 800; text-transform: uppercase; letter-spacing: .5px; color: #111; }
-#nx-prod-root .nx-p-pop__lnk { font-size: 13px; color: var(--nx-green); text-decoration: none; }
-#nx-prod-root .nx-p-pop__grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; }
+/* Полное описание (Text) — свойства, таблица покрытий, применение, доставка */
+#nx-prod-root .nx-p-fulltext {
+    margin-top: 48px;
+    padding-top: 36px;
+    border-top: 1.5px solid #eee;
+    font-size: 14px;
+    line-height: 1.65;
+    color: #444;
+}
+#nx-prod-root .nx-p-fulltext h2,
+#nx-prod-root .nx-p-fulltext h3 {
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: .3px;
+    color: #111;
+    margin: 28px 0 14px;
+}
+#nx-prod-root .nx-p-fulltext h2:first-child,
+#nx-prod-root .nx-p-fulltext h3:first-child { margin-top: 0; }
+#nx-prod-root .nx-p-fulltext h2 { font-size: 20px; }
+#nx-prod-root .nx-p-fulltext h3 { font-size: 16px; }
+#nx-prod-root .nx-p-fulltext p { margin: 0 0 14px; }
+#nx-prod-root .nx-p-fulltext ul,
+#nx-prod-root .nx-p-fulltext ol { margin: 0 0 14px; padding-left: 22px; }
+#nx-prod-root .nx-p-fulltext li { margin-bottom: 6px; }
+#nx-prod-root .nx-p-fulltext strong { color: #222; font-weight: 700; }
+#nx-prod-root .nx-p-fulltext table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0 0 20px;
+    font-size: 13px;
+}
+#nx-prod-root .nx-p-fulltext th,
+#nx-prod-root .nx-p-fulltext td {
+    border: 1px solid var(--nx-border, #e5e5e5);
+    padding: 8px 12px;
+    text-align: left;
+}
+#nx-prod-root .nx-p-fulltext th {
+    background: #f7f7f7;
+    font-weight: 700;
+    color: #222;
+    text-transform: uppercase;
+    font-size: 11px;
+    letter-spacing: .4px;
+}
+#nx-prod-root .nx-p-fulltext a { color: var(--nx-green); }
 
+/* Популярные товары (продуктовая страница) — горизонтальный скролл, как на главной */
+#nx-prod-root .nx-p-pop { margin-top: 56px; }
+#nx-prod-root .nx-p-pop .nx-popular-toprow { margin-bottom: 20px; }
+#nx-prod-root .nx-p-pop__ttl { font-size: 20px; font-weight: 800; text-transform: uppercase; letter-spacing: .5px; color: #111; }
+
+/* Горизонтальный скролл (как раньше), но ширина карточки — как в каталоге
+   на соответствующей ширине экрана (>960px 3 в ряд видно, 641-960px 2, ≤640px 1);
+   лишние карточки уходят за край и доступны скроллом/стрелками. */
+#nx-prod-root .nx-pop2-grid {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 12px;
+    overflow-x: auto;
+    overflow-y: visible;
+    scroll-behavior: smooth;
+    scrollbar-width: none;
+    align-items: stretch;
+}
+#nx-prod-root .nx-pop2-grid::-webkit-scrollbar { display: none; }
+
+/* Карточка — 280px, как у изображения товара в галерее */
 #nx-prod-root .nx-pop2 {
+    flex: 0 0 280px;
+    width: 280px;
+    max-width: 280px;
     background: #fff;
     border-radius: 8px;
     border: 1px solid var(--nx-border);
     box-shadow: 0 2px 12px rgba(0,0,0,.05);
     overflow: hidden;
-    text-decoration: none;
     color: var(--nx-text);
     display: flex;
     flex-direction: column;
@@ -1023,14 +1319,55 @@ html body .t-product__option-item_active .t-product__option-title {
     position: relative;
 }
 #nx-prod-root .nx-pop2:hover { box-shadow: 0 6px 24px rgba(0,0,0,.10); transform: translateY(-2px); }
-#nx-prod-root .nx-pop2__img { aspect-ratio: 1/1; background: #F7F7F7; background-size: cover; background-position: center; flex-shrink: 0; position: relative; overflow: hidden; }
-#nx-prod-root .nx-pop2__body { padding: 0 20px 20px; display: flex; flex-direction: column; flex: 1; }
-#nx-prod-root .nx-pop2__body::before { content: ""; display: block; height: 3px; background: linear-gradient(var(--nx-green) 0 0) left/32% 100% no-repeat, linear-gradient(#E8E8E8 0 0) center/32% 100% no-repeat, linear-gradient(#E8E8E8 0 0) right/32% 100% no-repeat; border-radius: 2px; margin-bottom: 12px; }
-#nx-prod-root .nx-pop2__title { font-size: 14px; font-weight: 700; line-height: 1.35; color: var(--nx-text); margin-bottom: 4px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-#nx-prod-root .nx-pop2__size { font-size: 13px; color: var(--nx-text); line-height: 1.4; margin-bottom: 10px; }
-#nx-prod-root .nx-pop2__price { font-size: 18px; font-weight: 700; color: var(--nx-text); margin-top: auto; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
-#nx-prod-root .nx-pop2__old { font-size: 13px; font-weight: 400; color: #bbb; text-decoration: line-through; }
-#nx-prod-root .nx-pop2__disc { font-size: 12px; font-weight: 700; background: var(--nx-green-bg); color: var(--nx-green); padding: 2px 8px; border-radius: 20px; }
+
+/* Медиа-ссылка (обёртка вокруг фото) */
+#nx-prod-root .nx-pop2__media { display: block; flex-shrink: 0; position: relative; }
+#nx-prod-root .nx-pop2__img {
+    aspect-ratio: 1/1;
+    background: #F7F7F7;
+    background-size: cover;
+    background-position: center;
+    position: relative;
+    overflow: hidden;
+}
+/* Бейдж категории внутри img-обёртки */
+#nx-prod-root .nx-pop2__img > .nx-cat-badge {
+    position: absolute !important;
+    top: 12px !important;
+    left: 12px !important;
+    z-index: 2 !important;
+}
+
+#nx-prod-root .nx-pop2__body { padding: 16px 16px 16px; display: flex; flex-direction: column; flex: 1; }
+/* Заголовок-ссылка */
+#nx-prod-root .nx-pop2__title {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 1.35;
+    color: var(--nx-text);
+    text-decoration: none;
+    margin-bottom: 4px;
+}
+#nx-prod-root .nx-pop2__title:hover { color: var(--nx-green); }
+#nx-prod-root .nx-pop2__size { font-size: 13px; color: var(--nx-muted); line-height: 1.4; margin-bottom: 8px; }
+/* Цены и кнопки — те же глобальные классы .nx-price-block, .t-store__card__btns-wrapper */
+#nx-prod-root .nx-pop2__body .nx-price-block { margin-top: 4px; margin-bottom: 0; }
+#nx-prod-root .nx-pop2__body .t-store__card__btns-wrapper { margin-top: 12px; }
+/* Доставка — margin-top auto прижимает к низу */
+#nx-prod-root .nx-pop2__body .nx-delivery-row { margin-top: auto; padding-top: 10px; }
+
+@media (max-width: 960px) {
+    #nx-prod-root .nx-pop2 { flex: 0 0 calc(50% - 5px); width: calc(50% - 5px); }
+    #nx-prod-root .nx-pop2-grid { gap: 10px; }
+}
+@media (max-width: 640px) {
+    #nx-prod-root .nx-pop2 { flex: 0 0 100%; width: 100%; }
+    #nx-prod-root .nx-p-pop .nx-popular-arrows { display: none !important; }
+}
 
 /* ================================================
    6. МЕНЮ И НАВИГАЦИЯ
@@ -1064,24 +1401,26 @@ html body .nx-megamenu-wrap { padding-left: 20px !important; }
 #rec2362047143 .nx-popular-toprow { width: 100% !important; padding-left: var(--nx-grid-padding) !important; padding-right: var(--nx-grid-padding) !important; box-sizing: border-box !important; }
 #rec2362047143 .nx-popular-toprow .t-section__title { margin: 0 !important; flex: 1 !important; font-family: var(--nx-font) !important; font-size: 28px !important; font-weight: 700 !important; color: var(--nx-dark) !important; text-transform: uppercase !important; letter-spacing: 0.5px !important; line-height: 1.2 !important; }
 
+/* Блог «Полезные статьи» (T404): горизонтальный скролл, карточки 280px (кол-во в
+   ряд определяется вьюпортом само), line-clamp вместо нативного t404_unifyHeights
+   (который фиксировал height инлайном и ломал перенос текста), без «Загрузить ещё». */
 #rec2362047153 { padding-top: 20px !important; padding-bottom: 60px !important; overflow: hidden !important; }
 #rec2362047153 .t-section__container { max-width: 100% !important; width: 100% !important; margin: 0 !important; padding: 0 !important; box-sizing: border-box !important; }
-#rec2362047153 .t-container { display: flex !important; flex-wrap: nowrap !important; gap: 20px !important; overflow-x: auto !important; align-items: stretch !important; padding-bottom: 8px !important; padding-left: var(--nx-grid-padding) !important; width: 100% !important; max-width: 100% !important; margin: 0 !important; scrollbar-width: none !important; box-sizing: border-box !important; }
+#rec2362047153 .t-container { display: flex !important; flex-wrap: nowrap !important; gap: 20px !important; overflow-x: auto !important; align-items: stretch !important; padding: 0 var(--nx-grid-padding) 8px !important; width: 100% !important; max-width: 100% !important; margin: 0 !important; scrollbar-width: none !important; box-sizing: border-box !important; }
 #rec2362047153 .t-container::-webkit-scrollbar { display: none !important; }
-#rec2362047153 .t404__col { flex: 0 0 387px !important; width: 387px !important; min-width: 387px !important; margin: 0 !important; display: flex !important; flex-direction: column !important; }
+#rec2362047153 .t404__col { flex: 0 0 280px !important; width: 280px !important; max-width: 280px !important; min-width: 280px !important; margin: 0 !important; padding: 0 !important; display: flex !important; flex-direction: column !important; }
 #rec2362047153 .t404__link { display: flex !important; flex-direction: column !important; flex: 1 !important; height: 100% !important; text-decoration: none !important; background: #ffffff !important; border-radius: 8px !important; border: 1px solid var(--nx-border) !important; box-shadow: 0 2px 12px rgba(0,0,0,.05) !important; overflow: hidden !important; transition: box-shadow .2s, transform .15s !important; }
 #rec2362047153 .t404__link:hover { box-shadow: 0 6px 24px rgba(0,0,0,.10) !important; transform: translateY(-2px) !important; }
-#rec2362047153 .t404__imgbox { flex-shrink: 0 !important; overflow: hidden !important; background: #F7F7F7 !important; }
-#rec2362047153 .t404__img { width: 100% !important; display: block !important; }
-#rec2362047153 .t404__textwrapper { padding: 16px 20px 20px !important; box-sizing: border-box !important; flex: 1 !important; display: flex !important; flex-direction: column !important; }
-#rec2362047153 .t404__date, #rec2362047153 .t404__uptitle { font-family: var(--nx-font) !important; font-size: 12px !important; color: #AAAAAA !important; margin-bottom: 8px !important; display: block !important; }
-#rec2362047153 .t404__title { font-family: var(--nx-font) !important; font-size: 16px !important; font-weight: 700 !important; color: var(--nx-text) !important; line-height: 1.35 !important; margin-bottom: 10px !important; }
+#rec2362047153 .t404__imgbox { flex-shrink: 0 !important; overflow: hidden !important; background: #F7F7F7 !important; height: 180px !important; }
+#rec2362047153 .t404__img { width: 100% !important; height: 180px !important; min-height: 180px !important; background-size: cover !important; background-position: center !important; display: block !important; }
+#rec2362047153 .t404__separator { display: none !important; }
+#rec2362047153 .t404__textwrapper { padding: 16px 20px 20px !important; box-sizing: border-box !important; flex: 1 1 auto !important; display: flex !important; flex-direction: column !important; width: 100% !important; }
+#rec2362047153 .t404__date, #rec2362047153 .t404__uptitle { font-family: var(--nx-font) !important; font-size: 12px !important; color: #AAAAAA !important; margin-bottom: 8px !important; display: block !important; letter-spacing: .5px !important; }
+#rec2362047153 .t404__title { height: auto !important; min-height: 0 !important; display: -webkit-box !important; -webkit-line-clamp: 3 !important; -webkit-box-orient: vertical !important; overflow: hidden !important; font-family: var(--nx-font) !important; font-size: 16px !important; font-weight: 700 !important; color: var(--nx-text) !important; line-height: 1.35 !important; margin-bottom: 10px !important; }
 #rec2362047153 .t404__link:hover .t404__title { color: var(--nx-green) !important; }
-#rec2362047153 .t404__descr { font-family: var(--nx-font) !important; font-size: 13px !important; color: var(--nx-muted) !important; line-height: 1.55 !important; flex: 1 !important; }
-#rec2362047153 .t404__separator { height: 3px !important; background: linear-gradient(var(--nx-green) 0 0) left/32% 100% no-repeat, linear-gradient(#E8E8E8 0 0) center/32% 100% no-repeat, linear-gradient(#E8E8E8 0 0) right/32% 100% no-repeat !important; border-radius: 2px !important; margin: 0 !important; }
-
-@media (max-width: 1199px) { #rec2362047153 .t404__col { flex: 0 0 calc((100vw - 40px) / 3) !important; width: calc((100vw - 40px) / 3) !important; min-width: calc((100vw - 40px) / 3) !important; } }
-@media (max-width: 768px)  { #rec2362047153 .t404__col { flex: 0 0 280px !important; width: 280px !important; min-width: 280px !important; } }
+#rec2362047153 .t404__descr { height: auto !important; min-height: 0 !important; display: -webkit-box !important; -webkit-line-clamp: 3 !important; -webkit-box-orient: vertical !important; overflow: hidden !important; font-family: var(--nx-font) !important; font-size: 13px !important; color: var(--nx-muted) !important; line-height: 1.55 !important; flex: 1 !important; }
+/* Кнопка «Загрузить ещё» не нужна при горизонтальном скролле */
+#rec2362047153 [class*="load-more"], #rec2362047153 [class*="showmore"], #rec2362047153 [class*="btn-more"], #rec2362047153 .t404__load-more, #rec2362047153 .t-feed__showmore-btn { display: none !important; }
 
 /* ================================================
    8. ФУТЕР #rec2362175613
@@ -1159,27 +1498,54 @@ html body .nx-megamenu-wrap { padding-left: 20px !important; }
    ================================================ */
 
 @media (max-width: 960px) {
-    #rec2362174763 .t-catalog__cont-wrapper,
-    #rec2362172923 .t-catalog__cont-wrapper { flex-direction: column !important; padding-left: 16px !important; padding-right: 16px !important; }
-    #rec2362174763 .t-catalog__sidebar,
-    #rec2362172923 .t-catalog__sidebar { width: 100% !important; min-width: 0 !important; order: -1 !important; }
-    #rec2362174763 .t-catalog__stretch-col,
-    #rec2362172923 .t-catalog__stretch-col { width: 100% !important; max-width: 100% !important; flex: 0 0 100% !important; order: 1 !important; }
-    #rec2362174763 .t-catalog-parts-above__container,
-    #rec2362174763 .t-catalog__breadcrumbs,
-    #rec2362172923 .t-catalog-parts-above__container,
-    #rec2362172923 .t-catalog__breadcrumbs { padding-left: var(--nx-grid-padding) !important; }
+    #allrecords .t-catalog__cont-wrapper { flex-direction: column !important; padding-left: 16px !important; padding-right: 16px !important; }
+    #allrecords .t-catalog__sidebar { width: 100% !important; min-width: 0 !important; order: -1 !important; }
+    #allrecords .t-catalog__stretch-col { width: 100% !important; max-width: 100% !important; flex: 0 0 100% !important; order: 1 !important; }
+    #allrecords .t-catalog-parts-above__container { padding-left: var(--nx-grid-padding) !important; }
+    /* крошки — 0, наследуют отступ контейнера (без двойного) */
+    #allrecords .t-catalog__breadcrumbs { padding-left: 0 !important; }
 
     /* ГЛАВНЫЙ ФИКС мобильной пустоты: грид-контейнер — КОЛОНКА, а не ряд.
        Иначе полноширинная панель «Найдено/Сбросить» (chosen-bar, flex:0 0 100%)
        встаёт РЯДОМ со списком карточек и выталкивает его за экран (left=414). */
     .js-catalog-grid-cont { flex-direction: column !important; }
-    .t-catalog__card-list { width: 100% !important; }
+
+    /* 2 карточки в ряд (641–960px): sidebar ушёл наверх, карточки — 50%.
+       #allrecords, а не привязка к rec id одной конкретной страницы —
+       категории теперь каждая на своей странице Тильды со своим id. */
+    #allrecords .t-catalog__card-list {
+        display: flex !important; flex-direction: row !important;
+        flex-wrap: wrap !important; align-items: stretch !important;
+        width: 100% !important; padding: 0 !important; gap: 10px !important;
+    }
+    #allrecords .t-catalog__card {
+        width: calc(50% - 5px) !important;
+        max-width: calc(50% - 5px) !important;
+        flex: 0 0 calc(50% - 5px) !important;
+        margin-bottom: 0 !important;
+        display: flex !important; flex-direction: column !important;
+    }
+}
+
+/* > 960px: 3 карточки в ряд (переопределяем нативный Tilda-грид на 4).
+   #allrecords — см. заметку выше. */
+@media (min-width: 961px) {
+    #allrecords .t-catalog__card-list {
+        display: flex !important; flex-wrap: wrap !important;
+        gap: 12px !important;
+    }
+    #allrecords .t-catalog__card {
+        width: calc(33.333% - 8px) !important;
+        max-width: calc(33.333% - 8px) !important;
+        flex: 0 0 calc(33.333% - 8px) !important;
+        margin-bottom: 0 !important;
+        display: flex !important; flex-direction: column !important;
+    }
 }
 
 @media (max-width: 640px) {
-    .t-catalog__card-list { display: flex !important; flex-direction: row !important; flex-wrap: wrap !important; align-items: stretch !important; padding: 0 12px !important; gap: 10px !important; }
-    .t-catalog__card { width: calc(50% - 5px) !important; max-width: calc(50% - 5px) !important; flex: 0 0 calc(50% - 5px) !important; margin-bottom: 0 !important; display: flex !important; flex-direction: column !important; }
+    .t-catalog__card-list { display: flex !important; flex-direction: row !important; flex-wrap: wrap !important; align-items: stretch !important; padding: 0 !important; gap: 10px !important; }
+    .t-catalog__card { width: 100% !important; max-width: 100% !important; flex: 0 0 100% !important; margin-bottom: 0 !important; display: flex !important; flex-direction: column !important; }
     .t-catalog__card__wrap_txt-and-btns,
     .t-store__card__wrap_txt-and-btns { padding: 0 10px 12px !important; flex: 1 1 auto !important; }
     html body .t-catalog__card__title,
@@ -1198,6 +1564,28 @@ html body .nx-megamenu-wrap { padding-left: 20px !important; }
     #rec2362047143 .nx-popular-toprow { padding-left: 20px !important; padding-right: 20px !important; }
 }
 
+/* ПАЛИТРА (#rec2362172923): фикс. кол-во колонок — 4 (>960), 3 (601–960), 2 (≤600).
+   Идёт ПОСЛЕ общих правил каталога → переопределяет их (id-специфичность выше
+   безклассовых .t-catalog__card из общих медиа, и позднее по порядку). */
+@media (min-width: 961px) {
+    #rec2362172923 .t-catalog__stretch-col,
+    #rec2362172923 .t-catalog__card {
+        width: calc(25% - 15px) !important; max-width: calc(25% - 15px) !important; flex: 0 0 calc(25% - 15px) !important;
+    }
+}
+@media (min-width: 601px) and (max-width: 960px) {
+    #rec2362172923 .t-catalog__stretch-col,
+    #rec2362172923 .t-catalog__card {
+        width: calc(33.333% - 10px) !important; max-width: calc(33.333% - 10px) !important; flex: 0 0 calc(33.333% - 10px) !important; order: 1 !important;
+    }
+}
+@media (max-width: 600px) {
+    #rec2362172923 .t-catalog__stretch-col,
+    #rec2362172923 .t-catalog__card {
+        width: calc(50% - 6px) !important; max-width: calc(50% - 6px) !important; flex: 0 0 calc(50% - 6px) !important; order: 1 !important;
+    }
+}
+
 @media (max-width: 768px) {
     /* Мобайл: одна колонка; порядок — фото → миниатюры → правый блок → характеристики */
     #nx-prod-root .nx-p-layout { display: grid !important; grid-template-columns: 1fr; }
@@ -1206,25 +1594,25 @@ html body .nx-megamenu-wrap { padding-left: 20px !important; }
        и слушаются order */
     #nx-prod-root .nx-p-left,
     #nx-prod-root .nx-p-gallery { display: contents !important; }
-    #nx-prod-root .nx-p-mainimg { order: 1; width: 100% !important; }
+    /* Ширина фото динамическая (100%) — квадрат держим через aspect-ratio,
+       а не фикс. высоту из десктопного правила. */
+    #nx-prod-root .nx-p-mainimg { order: 1; width: 100% !important; height: auto !important; aspect-ratio: 1 / 1 !important; }
     /* Миниатюры — горизонтальной лентой ПОД главным фото */
     #nx-prod-root .nx-p-thumbs {
         order: 2; flex-direction: row !important; flex: none !important;
-        max-height: none !important; overflow-y: visible !important;
+        height: auto !important; max-height: none !important; overflow-y: visible !important;
         overflow-x: auto !important;
     }
     #nx-prod-root .nx-p-right { order: 3; }
     #nx-prod-root .nx-p-chars { order: 4; }
     #nx-prod-root .nx-p-thumb { flex-shrink: 0 !important; width: 60px !important; height: 60px !important; }
-    /* Мобайл: заголовок наверху, десктоп-заголовок скрыт */
-    #nx-prod-root .nx-p-title--mob { display: block !important; margin-bottom: 12px; }
-    #nx-prod-root .nx-p-title--dsk { display: none !important; }
+    #nx-prod-root .nx-p-title { font-size: 20px; }
     #nx-prod-root .nx-p-pop__grid { grid-template-columns: repeat(2, 1fr); }
-    #nx-prod-root .nx-p-select-wrap { max-width: calc(50% - 8px); }
-    /* Тип покрытия — отдельная строка */
-    #nx-prod-root .nx-p-select-wrap[data-prop="Тип покрытия"] {
-        flex-basis: 100% !important; max-width: 100% !important;
-    }
+    /* Цены на мобайле — 2 колонки с узким средним столбцом, на всю ширину.
+       Селекты (.nx-p-selects) — флекс, переносится сам по себе, отдельных
+       мобильных правил не требует. */
+    #nx-prod-root .nx-p-pricing { grid-template-columns: minmax(0,1fr) 12px minmax(0,1fr) !important; max-width: 100% !important; }
+    #nx-prod-root .nx-p-selects { max-width: 100% !important; }
 }
 
 @media (max-width: 640px) {
@@ -1259,6 +1647,7 @@ html body .nx-megamenu-wrap { padding-left: 20px !important; }
 /* Скрываем бейджи ТОЛЬКО на странице палитры (не глобально) */
 .nx-palette-page .t-catalog__card__mark,
 .nx-palette-page .nx-cat-badge { display: none !important; }
+.nx-palette-page .nx-p-color-swatch__name { display: none !important; }
 .nx-palette-select-bar { position: fixed; bottom: 0; left: 0; right: 0; background: #fff; border-top: 1px solid #eee; padding: 16px 20px; display: flex; align-items: center; gap: 16px; z-index: 100; box-shadow: 0 -4px 20px rgba(0,0,0,0.08); transform: translateY(100%); transition: transform 0.25s; }
 .nx-palette-select-bar--visible { transform: translateY(0); }
 .nx-palette-select-bar__preview { width: 40px; height: 40px; border-radius: 50%; border: 2px solid #eee; flex-shrink: 0; }
@@ -1276,19 +1665,22 @@ html body .nx-megamenu-wrap { padding-left: 20px !important; }
    Механика выбора цвета: карточка ↔ палитра
    ════════════════════════════════════════ */
 
-/* Плашка цвета поверх главного фото */
-#nx-prod-root .nx-p-mainimg { position: relative; overflow: hidden; }
+/* Плашка цвета поверх изображения */
+.nx-p-mainimg { position: relative; overflow: hidden; }
 
-#nx-prod-root .nx-p-color-swatch {
+.nx-p-color-swatch {
    /* display: none;*/
     position: absolute;
     inset: 0;
     border-radius: 8px;
+    display: flex;
     align-items: flex-end;
     padding: 16px;
     box-sizing: border-box;
+    pointer-events: none;
+    z-index: 3;
 }
-#nx-prod-root .nx-p-color-swatch__name {
+.nx-p-color-swatch__name {
     background: rgba(255,255,255,.88);
     backdrop-filter: blur(4px);
     border-radius: 6px;
@@ -1297,7 +1689,7 @@ html body .nx-megamenu-wrap { padding-left: 20px !important; }
     font-weight: 600;
     line-height: 1.4;
 }
-#nx-prod-root .nx-p-color-swatch__code {
+.nx-p-color-swatch__code {
     display: block;
     font-size: 11px;
     color: #888;
@@ -1402,3 +1794,4 @@ html body .nx-megamenu-wrap { padding-left: 20px !important; }
     cursor: pointer !important;
     z-index: 10 !important;
 }
+

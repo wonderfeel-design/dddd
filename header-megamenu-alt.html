@@ -1,0 +1,676 @@
+<!-- ==========================================
+     АРТ ДОСКА — Альтернативное мегаменю v2 (фото-ромбы, адаптив)
+     Вставить в Tilda → HTML-блок (T123 / Zero Block).
+     - Своё фото у каждого пункта (сегмента)
+     - Адаптив: десктоп — диагональные ромбы, мобайл — сетка карточек
+       с теми же диагональными углами
+     - Ссылки — реальные пермалинки каталога (/catalog/<uid>-<slug>)
+     - Липкое позиционирование: в покое в потоке, при прокрутке фиксируется
+       ровно под плавающей шапкой сайта (высота шапки определяется скриптом)
+     - Фото IMGS — заглушки, замените на реальные фото категорий
+     ========================================== -->
+
+<style>
+  .artm * { box-sizing: border-box; margin: 0; padding: 0; }
+  .artm {
+    font-family: 'GothamPro','Gotham Pro',sans-serif;
+    position: relative; width: 100%; z-index: 1000;
+    /* Отступ до сетки 1200 (как у шапки/крошек). Тёмный бар — во всю ширину,
+       содержимое выровнено по контейнеру. Меняйте 1200px под ширину шапки. */
+    --artm-gap: max(16px, calc((100vw - 1200px) / 2));
+  }
+  /* Сброс: Tilda перекрашивает ссылки — гасим её глобальный цвет/подчёркивание.
+     Цвет каждого пункта задаём ниже явно (наследуется потомками ссылки). */
+  html body .artm a,
+  html body .artm a:link,
+  html body .artm a:visited,
+  html body .artm a:hover,
+  html body .artm a:active { text-decoration: none !important; }
+  /* Липкость: при прокрутке фиксируем ровно под шапкой Tilda */
+  .artm.artm-sticky {
+    position: fixed !important;
+    top: var(--artm-header-h, 80px);
+    left: 0; right: 0; width: 100%;
+  }
+
+  /* ── NAV (десктоп) ── */
+  .artm-nav {
+    display: flex; align-items: stretch; background: #1A1B25; width: 100%;
+    padding-left: var(--artm-gap); padding-right: var(--artm-gap);
+  }
+  .artm-catalog-btn {
+    background: #4C9E24; color: #fff; font-family: inherit;
+    font-size: 12px; font-weight: 700; letter-spacing: .09em;
+    padding: 0 24px; height: 44px; border: none; cursor: pointer;
+    white-space: nowrap; flex-shrink: 0; text-transform: uppercase; transition: background .15s;
+  }
+  .artm-catalog-btn:hover { background: #3d8a1c; }
+  .artm-nav-links { display: flex; align-items: stretch; overflow-x: auto; flex: 1; scrollbar-width: none; }
+  .artm-nav-links::-webkit-scrollbar { display: none; }
+  .artm-nav-link {
+    color: rgba(255,255,255,.82) !important; font-family: inherit; font-size: 12px;
+    font-weight: 600; letter-spacing: .07em; padding: 0 16px; height: 44px;
+    display: flex; align-items: center; background: none; border: none;
+    border-bottom: 2px solid transparent; cursor: pointer; white-space: nowrap;
+    text-transform: uppercase; text-decoration: none;
+    transition: color .15s, border-color .15s; flex-shrink: 0;
+  }
+  .artm-nav-link:hover { color: #fff !important; }
+  .artm-nav-link.active { color: #fff !important; border-bottom-color: #4C9E24; }
+
+  /* ── PANEL (выпадающая, скрыта по умолчанию) ──
+     Раньше панель была во всю ширину экрана (left/right:0), а контент внутри
+     просто отступал на --artm-gap — из-за этого сам белый блок с рамкой/тенью
+     всегда шёл край в край, а не по ширине сайта. Теперь сам блок зажат в
+     стандартную сетку 1200px (те же left/right, что использует .nx-megamenu
+     в all.css) — на мобиле, где 100vw-1200px уходит в минус, отступ сам
+     схлопывается в 0 и панель остаётся во всю ширину. */
+  .artm-panel {
+    display: none; position: absolute; top: 44px;
+    left: max(0px, calc((100vw - 1200px) / 2));
+    right: max(0px, calc((100vw - 1200px) / 2));
+    border: 1px solid #ddd; border-top: none; background: #fff;
+    box-shadow: 0 8px 28px rgba(0,0,0,.13); z-index: 50;
+    max-height: calc(100vh - 120px); overflow-y: auto;
+  }
+  .artm-panel.open { display: flex; }
+
+  /* ── SIDEBAR ── */
+  .artm-sidebar { width: 188px; flex-shrink: 0; background: #f2f2f2; border-right: 1px solid #e0e0e0; }
+  .artm-sidebar-btn {
+    display: flex; align-items: center; justify-content: space-between;
+    width: 100%; padding: 14px 16px; font-family: inherit; font-size: 11px;
+    font-weight: 700; letter-spacing: .07em; color: #333 !important; background: none;
+    border: none; border-left: 3px solid transparent; cursor: pointer;
+    text-align: left; text-transform: uppercase; text-decoration: none;
+    transition: background .15s, color .15s, border-color .15s;
+  }
+  .artm-sidebar-btn:hover { background: #E5F5E2; color: #4C9E24 !important; }
+  .artm-sidebar-btn.active { background: #E5F5E2; color: #4C9E24 !important; border-left-color: #4C9E24; }
+  .artm-sidebar-btn svg { flex-shrink: 0; color: #bbb; transition: color .15s; }
+  .artm-sidebar-btn.active svg, .artm-sidebar-btn:hover svg { color: #4C9E24; }
+
+  /* ── CONTENT ── */
+  .artm-content { flex: 1; padding: 18px 20px 14px; min-width: 0; }
+
+  /* ── ROW ── */
+  .artm-row-heading { text-decoration: none; color: inherit; display: block; }
+  .artm-row-label {
+    font-size: 10px; font-weight: 700; letter-spacing: .12em; color: #888;
+    margin-bottom: 4px; padding-left: 2px; text-transform: uppercase; font-family: inherit;
+    transition: color .15s;
+  }
+  .artm-row-heading:hover .artm-row-label { color: #4C9E24; }
+  .artm-row-strip {
+    /* Фон белый (не чёрный) — это то, что видно в GAP-зазоре между
+       соседними ромбами (clip-path не стыкует их впритык). На мобильной
+       сетке зазор между карточками и так белый (фон страницы просвечивает
+       через grid-gap) — здесь то же самое, только явным фоном. */
+    position: relative; height: 92px; background: #fff;
+    border-radius: 3px; overflow: hidden; margin-bottom: 7px;
+  }
+
+  /* ── SEGMENTS (ромбы) ── */
+  .artm-seg {
+    position: absolute; inset: 0; cursor: pointer; z-index: 1; display: block;
+    text-decoration: none; transition: clip-path .28s ease;
+  }
+  .artm-seg:hover { z-index: 2; }
+  .artm-seg-bg {
+    position: absolute; inset: 0; background-size: cover; background-position: center;
+    filter: brightness(.72); transition: filter .25s, transform .3s;
+  }
+  .artm-seg:hover .artm-seg-bg { filter: brightness(.95); transform: scale(1.05); }
+  .artm-seg-tint {
+    position: absolute; inset: 0; background: rgba(76,158,36,.0);
+    opacity: 0; pointer-events: none; transition: opacity .25s;
+  }
+  .artm-seg:hover .artm-seg-tint { opacity: 1; }
+  /* Тёмный градиент снизу — читаемость подписи поверх светлых фото
+     (то же самое уже есть на мобильной сетке, .artm-mob-card-grad). */
+  .artm-seg-grad {
+    position: absolute; inset: 0; pointer-events: none;
+    background: linear-gradient(to top, rgba(0,0,0,.65) 0%, rgba(0,0,0,0) 60%);
+  }
+  .artm-seg-label {
+    /* width/left считает JS (layout()) — под фактическую ширину ромба,
+       чтобы длинные подписи не переносились на второй ряд там, где место
+       есть; text-shadow здесь уже вторичен (есть градиент), оставлен как
+       подстраховка на случай короткого/узкого ромба. */
+    position: absolute; bottom: 9px; text-align: center; white-space: nowrap;
+    font-size: 10px; font-weight: 600; color: rgba(255,255,255,.9);
+    text-shadow: 0 1px 6px rgba(0,0,0,.95); letter-spacing: .03em;
+    line-height: 1.25; pointer-events: none; font-family: inherit;
+    transition: font-weight .15s, color .15s, left .28s ease, width .28s ease;
+  }
+  .artm-seg:hover .artm-seg-label { color: #fff; font-weight: 700; }
+  .artm-svg-lines { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 3; }
+
+  /* ── MOBILE: фото-сетка категорий (лента) ── */
+  .artm-mobg { display: none; }
+  .artm-mob-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 5px; }
+  /* Карточки с теми же диагональными углами, что и десктоп-ромбы.
+     Внешние грани пары — прямые, внутренний шов — диагональ. */
+  .artm-mob-card {
+    position: relative; height: 62px; border-radius: 3px; overflow: hidden;
+    cursor: pointer; display: block; text-decoration: none;
+  }
+  .artm-mob-grid .artm-mob-card:nth-child(odd) {
+    clip-path: polygon(0 0, 100% 0, calc(100% - 13px) 100%, 0 100%);
+  }
+  .artm-mob-grid .artm-mob-card:nth-child(even) {
+    clip-path: polygon(13px 0, 100% 0, 100% 100%, 0 100%);
+  }
+  .artm-mob-grid .artm-mob-card:nth-child(odd):last-child {
+    clip-path: none; grid-column: 1 / -1;
+  }
+  .artm-mob-card-bg {
+    position: absolute; inset: 0; background-size: cover; background-position: center; filter: brightness(.72);
+  }
+  .artm-mob-card-grad {
+    position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,.6) 0%, transparent 62%);
+  }
+  .artm-mob-card-label {
+    position: absolute; bottom: 6px; left: 15px; right: 12px;
+    font-size: 9px; font-weight: 700; color: #fff;
+    text-shadow: 0 1px 4px rgba(0,0,0,.9); line-height: 1.25; letter-spacing: .02em;
+  }
+  .artm-sub { margin-bottom: 8px; }
+
+  /* Десктоп: скрываем мобильную сетку. Мобайл: складываем панель в столбец,
+     прячем сайдбар (первый уровень доступен в баре сверху) и ромбы → карточки. */
+  @media (min-width: 768px) { .artm-mobg { display: none; } }
+  @media (max-width: 767px) {
+    .artm-panel { flex-direction: column; }
+    .artm-sidebar { display: none; }
+    .artm-content { padding: 12px 12px 18px; }
+    .artm-desk { display: none; }
+    .artm-mobg { display: block; }
+  }
+</style>
+
+<div class="artm" id="artmRoot">
+  <!-- Десктоп -->
+  <nav class="artm-nav">
+    <button class="artm-catalog-btn" id="artmCatalogBtn">КАТАЛОГ</button>
+    <div class="artm-nav-links" id="artmNavLinks"></div>
+  </nav>
+  <div class="artm-panel" id="artmPanel">
+    <div class="artm-sidebar" id="artmSidebar"></div>
+    <div class="artm-content" id="artmContent"></div>
+  </div>
+</div>
+
+<script>
+(function () {
+  var SKEW = 5, GAP = 0.7, EXPAND = 2, MINW = 6;
+
+  /* Фото — реальные (tildacdn), из финальной таблицы клиента (авг. 2026).
+     Ссылки — БЕЗ uid-префикса везде, где клиент прислал их так (это реальные
+     href, которыми пользуется нативный сайдбар Tilda). Исключение — «Слэбы»
+     под ДЛЯ ИНТЕРЬЕРА→СТЕНЫ: единственный пункт, где клиент явно оставил uid
+     (нужен для устранения неоднозначности — то же имя встречается в
+     нескольких разделах с разными uid). */
+  var IMG_DOSKA_NEOBR   = 'https://static.tildacdn.com/stor6261-6338-4262-a135-386532303962/ef446bd4e2b4b61918fd365f375a26cb.jpg';
+  var IMG_SLEBI         = 'https://static.tildacdn.com/stor3538-3562-4030-a333-386438613662/4d72d9a9336b3f2045867945fe06b99b.png';
+
+  /* Данные каталога с реальными пермалинками (h = href) и реальными фото (image) */
+  var CATALOG = [
+    { key: 'interier', label: 'ДЛЯ ИНТЕРЬЕРА', href: '/catalog/dlya-interera', subCats: [
+      { heading: 'ПОТОЛОК', href: '/catalog/potolok', items: [
+        {name:'Вагонка', h:'/catalog/potolok-vagonka',
+          image:'https://static.tildacdn.com/stor3661-6332-4632-b131-363662363634/fda1dfd9d1c5a726f4cb022ec350b5a2.jpg'},
+        {name:'Планкен', h:'/catalog/potolok-planken',
+          image:'https://static.tildacdn.com/stor3562-6133-4235-b162-306333343039/e122a926de4c79273e8ded26e6db06d7.jpg'},
+        {name:'Имитация бруса', h:'/catalog/potolok-imitatsiya-brusa',
+          image:'https://static.tildacdn.com/stor3437-6666-4866-b062-626463393339/5d73673ad9436022a67bad30622e8ef9.jpg'}
+      ]},
+      { heading: 'СТЕНЫ', href: '/catalog/steni', items: [
+        {name:'Вагонка', h:'/catalog/steni-vagonka',
+          image:'https://static.tildacdn.com/stor3238-3739-4338-b034-343134383964/3b69764dd44550e5a5205e67c3ea0f0f.webp'},
+        {name:'Имитация бруса', h:'/catalog/steni-imitatsiya-brusa',
+          image:'https://static.tildacdn.com/stor3433-6533-4535-b234-306561613535/80681b932a2d30c11f69f1da40961fc1.png'},
+        {name:'Планкен', h:'/catalog/steni-planken',
+          image:'https://static.tildacdn.com/stor3562-6133-4235-b162-306333343039/e122a926de4c79273e8ded26e6db06d7.jpg'},
+        {name:'Стеновые панели', h:'/catalog/steni-stenovie-paneli',
+          image:'https://static.tildacdn.com/stor6535-3330-4532-a462-383238653634/c4505bbe4a27c853191cafe4b5ad6d7c.png'},
+        {name:'Доска стеновая', h:'/catalog/steni-doska-stenovaya',
+          image:'https://static.tildacdn.com/stor3438-3664-4438-b764-313661323861/ec7f7a5dfba923235bfdd43e0723f6f0.png'},
+        {name:'Шпонированная доска', h:'/catalog/steni-shponirovannaya-doska',
+          image:'https://static.tildacdn.com/stor3266-6636-4731-b965-656232393864/9da7b0e3e6869a849657cefd66901f66.png'},
+        {name:'Слэбы', h:'/catalog/steni-slebi', image: IMG_SLEBI}
+      ]},
+      { heading: 'ПОЛ', href: '/catalog/pol', items: [
+        {name:'Доска пола', h:'/catalog/pol-doska-pola',
+          image:'https://static.tildacdn.com/stor3739-3564-4330-a166-646438616362/aabb622f0d733ef250b8d5c25da57ebf.png'},
+        {name:'Террасная доска', h:'/catalog/pol-terrasnaya-doska',
+          image:'https://static.tildacdn.com/stor3831-3861-4231-b366-616339396562/4582d54acf151facfba7ce2e9adf4f82.png'},
+        {name:'Палубная доска', h:'/catalog/pol-palubnaya-doska',
+          image:'https://static.tildacdn.com/stor3366-3130-4466-b561-623635393136/c412528c93838e2c79c9fd2046b5e619.png'},
+        {name:'Паркетная доска', h:'/catalog/pol-parketnaya-doska',
+          image:'https://static.tildacdn.com/stor3736-3862-4330-b834-383134663935/e2e8ddacbd84749cc237cc5e16f8c034.png'}
+      ]},
+      { heading: 'ОКНА / ДВЕРИ', href: '/catalog/okna-dveri', items: [
+        {name:'Планкен', h:'/catalog/okna-dveri-planken',
+          image:'https://static.tildacdn.com/stor3566-3834-4430-b436-393937353632/00d253af5beb9174488df43eda6127d5.png'},
+        {name:'Шпонированная доска', h:'/catalog/okna-dveri-shponirovannaya-doska',
+          image:'https://static.tildacdn.com/stor6266-3534-4238-a234-353731656238/7120ad35fe88bdc3c9ff696191dc7328.png'},
+        {name:'Клееный щит', h:'/catalog/okna-dveri-kleenii-schit',
+          image:'https://static.tildacdn.com/stor3237-6262-4962-b864-633037316533/657ede02780d1fd10440b54e4d0965a7.png'},
+        {name:'Слэбы', h:'/catalog/okna-dveri-slebi', image: IMG_SLEBI}
+      ]},
+      { heading: 'ДЕКОР', href: '/catalog/dekor', items: [
+        {name:'Декоративные панели', h:'/catalog/dekor-dekorativnie-paneli',
+          image:'https://static.tildacdn.com/stor6235-3832-4937-a332-636664303531/0f520ca197b52973b7f1eaf57194a3e2.jpg'},
+        {name:'Плинтусы и молдинги', h:'/catalog/dekor-plintusi-i-moldingi',
+          image:'https://static.tildacdn.com/stor3363-6361-4163-b530-343735363766/b13752f08ec689473fc121761653a1d9.jpg'},
+        {name:'Столешницы', h:'/catalog/dekor-stoleshnitsi',
+          image:'https://static.tildacdn.com/stor3639-6530-4234-b538-396439396538/8b4010f067fe65ec1b42c89848ee9896.jpg'}
+      ]}
+    ]},
+    { key: 'fasad', label: 'ДЛЯ ФАСАДА', href: '/catalog/dlya-fasada', subCats: [
+      { heading: 'ПОТОЛОК / СВЕСЫ', href: '/catalog/dlya-fasada-potolok-svesi', items: [
+        {name:'Подшивная доска', h:'/catalog/dlya-fasada-podshivnaya-doska',
+          image:'https://static.tildacdn.com/stor3166-3232-4434-b636-323439363336/c2a12084fe9facc3ef47bfc07d673c7a.jpg'},
+        {name:'Планкен', h:'/catalog/dlya-fasada-planken',
+          image:'https://static.tildacdn.com/stor6564-3632-4238-a330-633461393362/c3bf697fd681a8712f81ec5221299437.png'},
+        {name:'Вагонка', h:'/catalog/dlya-fasada-vagonka',
+          image:'https://static.tildacdn.com/stor3661-6332-4632-b131-363662363634/fda1dfd9d1c5a726f4cb022ec350b5a2.jpg'}
+      ]},
+      { heading: 'СТЕНЫ', href: '/catalog/dlya-fasada-steni', items: [
+        /* bgSize — докадрировано в CSS (без перезаливки файла): картинка уже
+           показывается в её родном разрешении без запаса (626×240 факт =
+           626×240 рендер), поэтому zoom слегка увеличивает саму картинку —
+           небольшая потеря резкости, но для маленького ромба в меню
+           некритично. Если понадобится другой сдвиг кадра — добавь bgPos. */
+        {name:'Скандинавская доска', h:'/catalog/dlya-fasada-steni-skandinavskaya-doska',
+          image:'https://static.tildacdn.com/stor3936-3364-4631-a364-363362336663/75a1d8ec29c4e670d9f4e45e55030e04.png',
+          bgSize:'150%'},
+        {name:'Имитация бруса', h:'/catalog/dlya-fasada-imitatsiya-brusa',
+          image:'https://static.tildacdn.com/stor3536-3364-4137-a635-353761303336/9f64eb7a59e0e1568860162673720e13.png'},
+        {name:'Планкен', h:'/catalog/dlya-fasada-steni-planken',
+          image:'https://static.tildacdn.com/stor3162-3164-4332-b264-613335383161/855cf68c64246e045cc71b825a1d63ef.png'},
+        {name:'Реечные панели', h:'/catalog/dlya-fasada-reechnie-paneli',
+          image:'https://static.tildacdn.com/stor6365-6234-4637-a264-393065313637/db8ed1aa62ee40fed184c13f369e7018.jpg'}
+      ]},
+      { heading: 'ТЕРРАСА', href: '/catalog/dlya-fasada-terrasa', items: [
+        {name:'Террасная доска', h:'/catalog/dlya-fasada-terrasnaya-doska',
+          image:'https://static.tildacdn.com/stor3136-3031-4462-b564-396266356632/614088810c19a3995d5af4d457c7d5f5.png'},
+        {name:'Ограждение', h:'/catalog/dlya-fasada-ograzhdenie',
+          image:'https://static.tildacdn.com/stor3434-3263-4637-a136-313537343537/2d9619530b2e57732a8456db7b3d25ad.jpg'},
+        {name:'Планкен', h:'/catalog/dlya-fasada-terrasa-planken',
+          image:'https://static.tildacdn.com/stor6564-3632-4238-a330-633461393362/c3bf697fd681a8712f81ec5221299437.png'}
+      ]},
+      /* ⚠ «Планкен» тут и в ПОТОЛОК/СВЕСЫ выше — клиент прислал для обоих
+         одинаковую ссылку /catalog/dlya-fasada-planken. Похоже на дубль
+         copy-paste в таблице клиента (у всех остальных повторяющихся имён —
+         разные слаги по разделам); используем как прислано, но стоит
+         перепроверить на сайте, что это не два разных раздела. */
+      { heading: 'ОКНА / ДВЕРИ', href: '/catalog/dlya-fasada-okna-dveri', items: [
+        {name:'Планкен', h:'/catalog/dlya-fasada-planken',
+          image:'https://static.tildacdn.com/stor3562-6133-4235-b162-306333343039/e122a926de4c79273e8ded26e6db06d7.jpg'},
+        {name:'Наличники', h:'/catalog/dlya-fasada-nalichniki',
+          image:'https://static.tildacdn.com/stor3536-3364-4137-a635-353761303336/9f64eb7a59e0e1568860162673720e13.png'},
+        {name:'Слэбы', h:'/catalog/dlya-fasada-slebi', image: IMG_SLEBI}
+      ]}
+    ]},
+    { key: 'pilo', label: 'ПИЛОМАТЕРИАЛЫ', href: '/catalog/pilomateriali', subCats: [
+      { heading: 'ПИЛОМАТЕРИАЛЫ', href: '/catalog/pilomateriali', items: [
+        {name:'Бруски', h:'/catalog/pilomateriali-bruski',
+          image:'https://static.tildacdn.com/stor6161-6332-4731-b934-656330656465/9e0840ce68bb66fd2373602e238b0163.png'},
+        {name:'Доска сухая строганная', h:'/catalog/pilomateriali-doska-suhaya-strogannaya', image: IMG_DOSKA_NEOBR},
+        {name:'Доска необрезная', h:'/catalog/pilomateriali-doska-neobreznaya', image: IMG_DOSKA_NEOBR},
+        {name:'Рейки', h:'/catalog/pilomateriali-reiki',
+          image:'https://static.tildacdn.com/stor6235-6139-4537-a366-613133386135/fdb2f2fc8f606036d8262aee61191db2.jpg'},
+        {name:'Импрегнированная доска', h:'/catalog/pilomateriali-impregnirovannaya-doska',
+          image:'https://static.tildacdn.com/stor3832-6434-4835-b463-653661313339/2efe208e3cb5cbe665cbe6d161db01b5.jpg'},
+        {name:'Плитные материалы', h:'/catalog/pilomateriali-plitnie-materiali',
+          image:'https://static.tildacdn.com/stor3832-6134-4339-a262-623932316139/808c346bc5e5d61b04a7b9b569be9eda.jpg'}
+      ]}
+    ]},
+    /* Крепёж — перестроено по реальному дереву категорий Tilda (дамп сайдбара,
+       Настройки → Магазин → Категории). Ссылки — БЕЗ uid-префикса: это
+       буквально href из нативного сайдбара Tilda (data-storepart-link), т.е.
+       заведомо рабочие адреса, а не выдуманные. Старые uid 958351966462
+       ("Для вагонки") и позиция 254591601132 как отдельного верхнеуровневого
+       пункта — удалены по просьбе клиента, эта категория переехала
+       (958351966462 в дереве больше не существует вовсе, её сменила
+       "Для вагонки и бруса" 746671482673, а "Для имитации бруса" 254591601132
+       стала её дочерней, не отдельным пунктом). */
+    { key: 'krepezh', label: 'КРЕПЕЖ', href: '/catalog/krepezh', subCats: [
+      { heading: 'ДЛЯ ВАГОНКИ И БРУСА', href: '/catalog/krepezh-dlya-vagonki-i-brusa', items: [
+        {name:'Для имитации бруса', h:'/catalog/krepezh-dlya-vagonki-i-brusa-imitatsia-brusa',
+          image:'https://static.tildacdn.com/stor3632-6162-4264-b865-356430313639/c2c6bafa58816a71f2ecc46012444020.png'}
+      ]},
+      { heading: 'САМОРЕЗЫ', href: '/catalog/krepezh--samorezi', items: [
+        {name:'Для дерева', h:'/catalog/krepezh-samorezi-dlya-dereva',
+          image:'https://static.tildacdn.com/stor6265-3533-4134-a164-393935613834/0684dde7904cdce44b864d92b865d931.jpg'},
+        {name:'Для скрытого крепежа', h:'/catalog/krepezh-samorezi-dlya-skritogo-krepezha',
+          image:'https://static.tildacdn.com/stor3864-6135-4365-a461-303066643861/29b1052af2153042109616b83acb1b3d.png'},
+        {name:'Для террас и фасадов', h:'/catalog/krepezh-samorezi-dlya-terras-i-fasadov',
+          image:'https://static.tildacdn.com/stor3861-3430-4930-b166-393139626235/f894ebdcd9e29bd0f691d3781a1c0da7.jpg'},
+        {name:'Для фиброцемента', h:'/catalog/samorezy-dlya-fibrocementa',
+          image:'https://static.tildacdn.com/stor3337-3862-4733-b736-343530356539/c769b8ef6d29a879973d0f2c4e5e5909.png'},
+        {name:'Конструкционные', h:'/catalog/samorezy-konstruktsionnye',
+          image:'https://static.tildacdn.com/stor3135-6466-4131-a230-643036303539/359c3b4bda2c7fc5067fae8d2518dacd.jpg'},
+        {name:'По металлу', h:'/catalog/samorezy-po-metallu',
+          image:'https://static.tildacdn.com/stor3834-3566-4536-b964-363939623165/42f46a64d40dee819eb6b5b8255d76c1.jpg'}
+      ]},
+      { heading: 'СКРЫТЫЙ КРЕПЁЖ', href: '/catalog/krepezh-skritii-krepezh', items: [
+        {name:'Скрытый крепёж', h:'/catalog/krepezh-skritii-krepezh',
+          image:'https://static.tildacdn.com/stor6237-6235-4032-b432-653561383663/58c288055b90e8f9b4df73d993695014.png'}
+      ]},
+      { heading: 'СПЕЙСЕРЫ И АКСЕССУАРЫ', href: '/catalog/krepezh-speiseri-i-aksessuari', items: [
+        {name:'Спейсеры и аксессуары', h:'/catalog/krepezh-speiseri-i-aksessuari',
+          image:'https://static.tildacdn.com/stor3436-6236-4739-a632-626231326264/14a8f4ed4eea5e941e2654375ae81cbf.png'}
+      ]}
+    ]},
+    { key: 'kraski', label: 'КРАСКИ', href: '/catalog/kraski', subCats: [
+      { heading: 'КРАСКИ И ЛАКИ', href: '/catalog/kraski', items: [
+        {name:'Краски фасадные', h:'/catalog/kraski-fasadnie',
+          image:'https://static.tildacdn.com/stor3736-3732-4133-b531-626465646335/455f5138fd5e589727a12e5366f0f13f.jpg'},
+        {name:'Краски для интерьера', h:'/catalog/kraski-dlya-interera',
+          image:'https://static.tildacdn.com/stor3733-3462-4230-b637-366232373537/81f048b3a5835ea71d54f0e8500ac1b5.png'},
+        {name:'Пропитки и морилки', h:'/catalog/propitki-i-morilki',
+          image:'https://static.tildacdn.com/stor3935-6439-4130-b064-323561393265/383f70fdfa919d1ce0f8ec363b87d315.png'},
+        {name:'Лаки', h:'/catalog/laki',
+          image:'https://static.tildacdn.com/stor6534-6462-4264-a563-343361303937/ab56db3dc6a27af5925b345ffcab334c.png'},
+        {name:'Лазури', h:'/catalog/lazuri',
+          image:'https://static.tildacdn.com/stor3836-6635-4766-b934-363432633532/0ab5ba7e52cc2ff3df52386645ad3332.png'},
+        {name:'Масло для дерева', h:'/catalog/maslo-dlya-dereva',
+          image:'https://static.tildacdn.com/stor3830-6339-4130-a335-616232343535/3715cd0c9067df43b2bfdc6d72322710.png'}
+      ]}
+    ]}
+  ];
+
+  var activePanel = 'interier';
+  var menuOpen = false, closeTimer = null;
+
+  var root       = document.getElementById('artmRoot');
+  var panel      = document.getElementById('artmPanel');
+  var sidebar    = document.getElementById('artmSidebar');
+  var content    = document.getElementById('artmContent');
+  var navLinks   = document.getElementById('artmNavLinks');
+  var catalogBtn = document.getElementById('artmCatalogBtn');
+
+  function isMobile() { return window.matchMedia('(max-width: 767px)').matches; }
+  function svgEl(tag) { return document.createElementNS('http://www.w3.org/2000/svg', tag); }
+  function chevron() {
+    var svg = svgEl('svg');
+    svg.setAttribute('width','13'); svg.setAttribute('height','13');
+    svg.setAttribute('viewBox','0 0 24 24'); svg.setAttribute('fill','none');
+    svg.setAttribute('stroke','currentColor'); svg.setAttribute('stroke-width','2.5');
+    svg.setAttribute('stroke-linecap','round'); svg.setAttribute('stroke-linejoin','round');
+    var poly = svgEl('polyline'); poly.setAttribute('points','9 18 15 12 9 6');
+    svg.appendChild(poly); return svg;
+  }
+
+  /* ── Первый уровень (бар). Десктоп: наведение раскрывает панель и переключает
+     раздел, клик — переход. Мобайл: тап раскрывает панель и переключает раздел. ── */
+  function switchTo(key) { activePanel = key; renderSidebar(); renderContent(); updateNavActive(); }
+  CATALOG.forEach(function(cat) {
+    var a = document.createElement('a');
+    a.className = 'artm-nav-link';
+    a.textContent = cat.label;
+    a.href = cat.href;
+    a.dataset.key = cat.key;
+    a.addEventListener('mouseenter', function() {
+      if (!isMobile()) { clearTimeout(closeTimer); openMenu(); switchTo(cat.key); }
+    });
+    a.addEventListener('click', function(e) {
+      if (isMobile()) { e.preventDefault(); openMenu(); switchTo(cat.key); }
+    });
+    navLinks.appendChild(a);
+  });
+
+  /* ── Десктоп: сайдбар ── */
+  function renderSidebar() {
+    sidebar.innerHTML = '';
+    CATALOG.forEach(function(cat) {
+      var a = document.createElement('a');
+      a.className = 'artm-sidebar-btn' + (cat.key === activePanel ? ' active' : '');
+      a.href = cat.href;
+      var span = document.createElement('span'); span.textContent = cat.label;
+      a.appendChild(span); a.appendChild(chevron());
+      a.addEventListener('mouseenter', function() {
+        activePanel = cat.key; renderSidebar(); renderContent(); updateNavActive();
+      });
+      sidebar.appendChild(a);
+    });
+  }
+
+  /* ── Контент: на каждую подкатегорию — заголовок + десктоп-ромбы + мобайл-сетка ── */
+  function renderContent() {
+    content.innerHTML = '';
+    var cat = CATALOG.find(function(c){ return c.key === activePanel; });
+    if (!cat) return;
+    cat.subCats.forEach(function(sub) { content.appendChild(buildSub(sub)); });
+  }
+
+  function buildSub(sub) {
+    var wrap = document.createElement('div');
+    wrap.className = 'artm-sub';
+
+    var head = document.createElement('a');
+    head.className = 'artm-row-heading'; head.href = sub.href;
+    var lbl = document.createElement('div');
+    lbl.className = 'artm-row-label'; lbl.textContent = sub.heading;
+    head.appendChild(lbl); wrap.appendChild(head);
+
+    var desk = document.createElement('div'); desk.className = 'artm-desk';
+    desk.appendChild(buildStrip(sub)); wrap.appendChild(desk);
+
+    var mobg = document.createElement('div'); mobg.className = 'artm-mobg';
+    mobg.appendChild(buildGrid(sub)); wrap.appendChild(mobg);
+    return wrap;
+  }
+
+  /* Десктоп: диагональные ромбы с «гармошкой» — наведение расширяет сегмент
+     (фото читается крупнее и резче), соседи сжимаются; уход мыши возвращает
+     равные доли. Разделитель — тёмный диагональный зазор GAP (SVG-швы убраны,
+     они не могли дёшево синхронизироваться с анимацией clip-path). */
+  function buildStrip(sub) {
+    var N = sub.items.length;
+    var strip = document.createElement('div');
+    strip.className = 'artm-row-strip';
+
+    var segs = [], labels = [];
+
+    sub.items.forEach(function(item, i) {
+      var seg = document.createElement('a');
+      seg.className = 'artm-seg'; seg.href = item.h;
+
+      var bg = document.createElement('div');
+      bg.className = 'artm-seg-bg';
+      bg.style.backgroundImage = 'url('+item.image+')';
+      /* Ручной докроп конкретной картинки без перезаливки файла — если у
+         пункта задано bgSize/bgPos, используем их вместо дефолтных
+         cover/center (см. Скандинавская доска выше). */
+      if (item.bgSize) bg.style.backgroundSize = item.bgSize;
+      if (item.bgPos)  bg.style.backgroundPosition = item.bgPos;
+      seg.appendChild(bg);
+
+      var tint = document.createElement('div');
+      tint.className = 'artm-seg-tint'; seg.appendChild(tint);
+
+      var grad = document.createElement('div');
+      grad.className = 'artm-seg-grad'; seg.appendChild(grad);
+
+      var lbl2 = document.createElement('div');
+      lbl2.className = 'artm-seg-label';
+      lbl2.textContent = item.name; seg.appendChild(lbl2);
+
+      seg.addEventListener('mouseenter', function() { layout(i); });
+
+      segs.push(seg); labels.push(lbl2);
+      strip.appendChild(seg);
+    });
+
+    strip.addEventListener('mouseleave', function() { layout(-1); });
+
+    /* Пересчёт границ. hover < 0 — равные доли; иначе сегмент hover получает
+       увеличенную долю, остальные делят остаток поровну. */
+    function layout(hover) {
+      var normalW = 100 / N, widths = [], i;
+      if (hover < 0 || N < 2) {
+        for (i = 0; i < N; i++) widths.push(normalW);
+      } else {
+        var expandedW = Math.min(EXPAND * normalW, 100 - (N - 1) * MINW);
+        var rest = (100 - expandedW) / (N - 1);
+        for (i = 0; i < N; i++) widths.push(i === hover ? expandedW : rest);
+      }
+      var bounds = [0];
+      for (i = 0; i < N; i++) bounds.push(bounds[i] + widths[i]);
+      bounds[N] = 100; /* защита от накопленной погрешности */
+
+      /* Подпись растягивается под фактическую ширину ромба (в px, не %,
+         иначе width:NN% плюс left:calc(...% - NNpx) конфликтуют) — длинный
+         текст в широком ромбе остаётся в одну строку вместо переноса;
+         LBL_PAD — запас от острых скошенных краёв, LBL_MIN — пол на случай
+         очень узкого (сжатого при hover соседа) сегмента. */
+      var stripW = strip.offsetWidth || strip.getBoundingClientRect().width;
+      var LBL_PAD = 18, LBL_MIN = 46;
+
+      for (i = 0; i < N; i++) {
+        var isFirst = i === 0, isLast = i === N - 1;
+        var tL = isFirst ? 0 : bounds[i] + GAP;
+        var tR = isLast  ? 100 : bounds[i + 1] - GAP;
+        var bL = isFirst ? 0 : tL - SKEW;
+        var bR = isLast  ? 100 : tR - SKEW;
+        segs[i].style.clipPath =
+          'polygon('+tL+'% 0%,'+tR+'% 0%,'+bR+'% 100%,'+bL+'% 100%)';
+        var midPct = (bL + bR) / 2;
+        var wPx = Math.max(LBL_MIN, (bR - bL) / 100 * stripW - LBL_PAD);
+        labels[i].style.width = wPx + 'px';
+        labels[i].style.left = 'calc('+midPct+'% - '+(wPx / 2)+'px)';
+      }
+    }
+
+    /* strip ещё не вставлен в документ на этот момент (buildStrip вызывается
+       ДО append в вызывающем коде) — offsetWidth даст 0, ширина подписей
+       временно упадёт до LBL_MIN. Пересчитываем на следующем кадре, когда
+       элемент уже точно в DOM и виден (после того как повесили .open на
+       панель). */
+    layout(-1);
+    requestAnimationFrame(function () { layout(-1); });
+    return strip;
+  }
+
+  /* Мобайл: сетка фото-карточек */
+  function buildGrid(sub) {
+    var grid = document.createElement('div'); grid.className = 'artm-mob-grid';
+    sub.items.forEach(function(item) {
+      var card = document.createElement('a');
+      card.className = 'artm-mob-card'; card.href = item.h;
+      var cbg = document.createElement('div');
+      cbg.className = 'artm-mob-card-bg';
+      cbg.style.backgroundImage = 'url('+item.image+')';
+      var cgrad = document.createElement('div'); cgrad.className = 'artm-mob-card-grad';
+      var clbl = document.createElement('div');
+      clbl.className = 'artm-mob-card-label'; clbl.textContent = item.name;
+      card.appendChild(cbg); card.appendChild(cgrad); card.appendChild(clbl);
+      grid.appendChild(card);
+    });
+    return grid;
+  }
+
+  function updateNavActive() {
+    navLinks.querySelectorAll('.artm-nav-link').forEach(function(b) {
+      b.classList.toggle('active', menuOpen && b.dataset.key === activePanel);
+    });
+  }
+
+  /* ── Раскрыть / схлопнуть панель ── */
+  function openMenu()  { menuOpen = true;  panel.classList.add('open');    updateNavActive(); }
+  function closeMenu() { menuOpen = false; panel.classList.remove('open'); updateNavActive(); }
+
+  /* КАТАЛОГ — раскрыть/схлопнуть */
+  catalogBtn.addEventListener('click', function() { menuOpen ? closeMenu() : openMenu(); });
+
+  /* Закрытие: уход мыши с меню (десктоп) и клик вне меню */
+  root.addEventListener('mouseleave', function() {
+    if (isMobile()) return;
+    clearTimeout(closeTimer);
+    closeTimer = setTimeout(closeMenu, 150);
+  });
+  root.addEventListener('mouseenter', function() { clearTimeout(closeTimer); });
+  document.addEventListener('click', function(e) {
+    if (menuOpen && !e.target.closest('.artm')) closeMenu();
+  });
+
+  /* ── Init (схлопнуто) ── */
+  renderSidebar();
+  renderContent();
+  updateNavActive();
+
+  /* ── Sticky (прокрутка): в покое бар В ПОТОКЕ — стоит своим блоком под
+     шапкой сайта и физически не может её перекрыть. При прокрутке, когда
+     верх бара уходит под плавающую шапку Tilda, фиксируем его ровно под ней
+     (высота шапки определяется автоматически). Спейсер держит место. */
+  (function initSticky() {
+    if (!root) return;
+    function getHeaderH() {
+      var h = 0;
+      ['.tmenu-mobile_positionfixed', '.t-menu-base_positionfixed'].forEach(function (sel) {
+        var el = document.querySelector(sel);
+        if (el && getComputedStyle(el).position === 'fixed' && el.offsetHeight > 0)
+          h = Math.max(h, el.offsetHeight);
+      });
+      if (h > 0) return h;
+      document.querySelectorAll('.t-rec').forEach(function (rec) {
+        var st = getComputedStyle(rec);
+        if ((st.position === 'fixed' || st.position === 'sticky') && parseFloat(st.top || 0) <= 0 && rec.offsetHeight > 0)
+          h = Math.max(h, rec.offsetHeight);
+      });
+      if (h > 0) return h;
+      try {
+        var els = (document.getElementById('allrecords') || document.body).querySelectorAll('*');
+        for (var i = 0; i < els.length; i++) {
+          var el = els[i];
+          if (el === root || root.contains(el)) continue;
+          var st = getComputedStyle(el);
+          if (st.position !== 'fixed' && st.position !== 'sticky') continue;
+          if (el.offsetHeight < 6 || el.offsetHeight > 250) continue;
+          var rect = el.getBoundingClientRect();
+          if (rect.top >= -5 && rect.top <= 5) h = Math.max(h, el.offsetHeight);
+        }
+      } catch (err) {}
+      return h || 0;
+    }
+
+    var stuck = false;
+    var spacer = document.createElement('div');
+    spacer.style.cssText = 'display:none;';
+    root.parentNode.insertBefore(spacer, root);
+
+    function applySticky() {
+      var hdrH = getHeaderH();
+      document.documentElement.style.setProperty('--artm-header-h', hdrH + 'px');
+      /* Док-координата верха бара: в покое — сам бар, в приклеенном — спейсер. */
+      var anchor = stuck ? spacer : root;
+      var topDoc = anchor.getBoundingClientRect().top + window.scrollY;
+      var shouldStick = window.scrollY + hdrH >= topDoc;
+      if (shouldStick && !stuck) {
+        spacer.style.height = root.offsetHeight + 'px';
+        spacer.style.display = 'block';
+        root.classList.add('artm-sticky');
+        stuck = true;
+      } else if (!shouldStick && stuck) {
+        root.classList.remove('artm-sticky');
+        spacer.style.display = 'none';
+        stuck = false;
+      }
+    }
+    window.addEventListener('scroll', applySticky, { passive: true });
+    var rt = null;
+    window.addEventListener('resize', function () {
+      clearTimeout(rt);
+      rt = setTimeout(function () { if (stuck) spacer.style.height = root.offsetHeight + 'px'; applySticky(); }, 150);
+    });
+    applySticky();
+    setTimeout(applySticky, 300);
+    setTimeout(applySticky, 800);
+    setTimeout(applySticky, 1500);
+  })();
+})();
+</script>

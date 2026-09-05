@@ -1,20 +1,83 @@
+<!-- Yandex.Metrika counter -->
+<script type="text/javascript">
+    (function(m,e,t,r,i,k,a){
+        m[i]=m[i]||function(){(m[i].a=m[i].a||[]).push(arguments)};
+        m[i].l=1*new Date();
+        for (var j = 0; j < document.scripts.length; j++) {if (document.scripts[j].src === r) { return; }}
+        k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)
+    })(window, document,'script','https://mc.yandex.ru/metrika/tag.js?id=109995897', 'ym');
+
+    ym(109995897, 'init', {ssr:true, webvisor:true, clickmap:true, ecommerce:"dataLayer", referrer: document.referrer, url: location.href, accurateTrackBounce:true, trackLinks:true});
+</script>
+<noscript><div><img src="https://mc.yandex.ru/watch/109995897" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
+<!-- /Yandex.Metrika counter -->
+
+<link rel="preconnect" href="https://optim.tildacdn.com" crossorigin>
+<link rel="preconnect" href="https://static.tildacdn.com" crossorigin>
+<link rel="preconnect" href="https://static.tildacdn.one" crossorigin>
+
 <style>
-  .t-store__prod-snippet__container { display: none !important; }
-  /* На страницах /tproduct/ скрываем все Tilda-реки до рендера нашего блока */
-  html.nx-tp #allrecords > [id^="rec"]:not(#nx-prod-root) {
-    opacity: 0 !important;
-    pointer-events: none !important;
+  /* Раньше это скрывало сниппет товара ВСЕГДА, даже когда наш скрипт не
+     нашёл товар и revealOnFail() снимает nx-tp, пытаясь показать нативный
+     Tilda-виджет как страховку — виджет тоже оставался скрыт этим же
+     правилом, и вместо fallback получалась совсем пустая страница.
+     Привязано к .nx-tp: скрыто, пока рендерим свою карточку; снято —
+     нативный сниппет наконец виден. */
+  html.nx-tp .t-store__prod-snippet__container, html.nx-tp .t-store__prod-snippet,
+  html.nx-tp .t-catalog__prod-snippet__container, html.nx-tp .t-catalog__prod-snippet { display: none !important; }
+  /* На страницах /tproduct/ скрываем Tilda-реки (кроме шапки, футера, корзины и
+     нашего блока) до рендера. Раньше использовался позиционный :not(:first-child) —
+     ломался, если шапка не оказывалась первым ребёнком #allrecords (шапка/футер
+     пропадали целиком, т.к. шапка position:fixed и без видимого "провала" в layout).
+     Теперь исключаем явно: рек с .nx-menu (шапка), рек футера и рек с .t706
+     (виджет корзины — живёт в своём отдельном реке; без этого исключения попап
+     корзины навсегда получал opacity:0 и pointer-events:none, т.к. matched этим
+     же селектором — корзина открывалась технически (opacity:1, класс _showed),
+     но была невидима и некликабельна). */
+  html.nx-tp #allrecords > [id^="rec"]:not(#nx-prod-root):not(#rec2362175613):not(:has(.nx-menu)):not(:has(.t706)) {
+    /* display:none (not opacity:0) — иначе скрытые нативные реки продолжают
+       занимать высоту в потоке, и между нашей карточкой и футером (или под
+       футером) остаётся пустой «фантомный» блок → футер не прижат к низу.
+       Шапка (.nx-menu), футер (#rec2362175613) и корзина (.t706) исключены
+       селектором выше, так что схлопывается только неиспользуемый нативный
+       виджет товара/снипеты — данные мы берём из store API, рендерим сами. */
+    display: none !important;
   }
+  /* Критический sticky-footer CSS для /tproduct/ — дублирует правила из
+     all.css здесь же, в head, синхронно применяемом до первой отрисовки.
+     all.css — отдельный файл, применяется чуть позже первого пейнта →
+     без дублирования браузер на долю секунды рисует нативную раскладку
+     (футер сразу под шапкой, его тёмный фон виден), а затем перескакивает
+     на исправленную — это и есть «футер мелькает и пропадает». */
+  html.nx-tp #allrecords { min-height: 100vh; display: flex; flex-direction: column; }
+  html.nx-tp #nx-prod-root { flex: 1 1 auto; min-height: 100vh; }
+  html.nx-tp #t-footer { margin-top: auto; }
 </style>
 
-<script>if (location.pathname.indexOf('/tproduct/') !== -1) { document.documentElement.classList.add('nx-tp'); }</script>
+<script>
+if (location.pathname.indexOf('/tproduct/') !== -1) {
+  document.documentElement.classList.add('nx-tp');
+  /* Safety: if our custom render never completes within 3s (API error, JS
+     exception before the catch handler), reveal native recs so the page
+     isn't stuck blank. If render succeeded, window._nxProdRendered is true
+     and native recs (which hold the real product widget) must stay hidden —
+     removing nx-tp here would un-hide them and duplicate the title/image. */
+  setTimeout(function () {
+    if (!window._nxProdRendered) document.documentElement.classList.remove('nx-tp');
+  }, 3000);
+}
+</script>
 
 <script>
 /* ══ Скрытие ошибки заказа склада ══
    Прячем сообщение корзины только если это ошибка склада/заказа
-   (Order error / NOT FOUND PRODUCTS IN STORE), не трогая валидацию полей. */
+   (Order error / NOT FOUND PRODUCTS IN STORE), не трогая валидацию полей.
+   Наблюдатель вешается ЛЕНИВО — только после первого взаимодействия с корзиной,
+   и на контейнер корзины (.t706), а не на весь body. На главной/каталоге, где
+   корзину не открывали, не выполняется ничего (экономия на каждой загрузке). */
 (function () {
-  var _storeErrScheduled = false;
+  if (!window.MutationObserver) return;
+  var _scheduled = false, _attached = false;
   function hideStoreOrderError() {
     var boxes = document.querySelectorAll('.t-form__errorbox-text, .t-store__error, .js-errorbox-all, .t-form__errorbox');
     for (var i = 0; i < boxes.length; i++) {
@@ -25,60 +88,233 @@
       }
     }
   }
-  function scheduleHideStoreOrderError() {
-    if (_storeErrScheduled) return;
-    _storeErrScheduled = true;
-    setTimeout(function () {
-      _storeErrScheduled = false;
-      hideStoreOrderError();
-    }, 120);
+  function scheduleHide() {
+    if (_scheduled) return;
+    _scheduled = true;
+    setTimeout(function () { _scheduled = false; hideStoreOrderError(); }, 120);
   }
-  if (window.MutationObserver) {
-    new MutationObserver(scheduleHideStoreOrderError).observe(document.documentElement, { childList: true, subtree: true });
+  function attach() {
+    if (_attached) return;
+    _attached = true;
+    var host = document.querySelector('.t706') || document.body;
+    new MutationObserver(scheduleHide).observe(host, { childList: true, subtree: true });
+    hideStoreOrderError();
   }
-  document.addEventListener('DOMContentLoaded', hideStoreOrderError);
+  document.addEventListener('click', function (e) {
+    if (e.target.closest('a[href="#opencart"], .t706__carticon, .t-menuwidgeticons__link_cart')) attach();
+  }, true);
 })();
 </script>
 
 <script>
-/* ══ 1. Скрытие «Палитры» + ссылка ══ */
+/* Скрыть устаревшие «именные» значения фильтра «Цвет» (беж, белый, бордо…).
+   Раньше цвет вводили названиями; теперь используются коды RAL/Valtti (1004, 5050…)
+   с реальным hex. Именные значения остались в характеристике как «пустые» свотчи.
+   Дискриминатор: код — числовой; оставляем также «без». Прячем кириллические имена. */
+(function () {
+  if (location.pathname.indexOf('/catalog') !== 0 && location.pathname.indexOf('/palitra') !== 0) return;
+  function hideNamedColors() {
+    document.querySelectorAll('.t-catalog__filter__checkbox_color').forEach(function (lbl) {
+      var v = (lbl.getAttribute('data-tooltip') || lbl.getAttribute('aria-label') || '').trim().toLowerCase();
+      if (v && v !== 'без' && /[а-яё]/i.test(v)) lbl.style.setProperty('display', 'none', 'important');
+    });
+  }
+  function start() {
+    if (!document.body) return;
+    hideNamedColors();
+    var obs = new MutationObserver(hideNamedColors);
+    obs.observe(document.getElementById('allrecords') || document.body, { childList: true, subtree: true });
+    setTimeout(function () { try { obs.disconnect(); } catch (e) {} }, 8000);
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
+  else start();
+})();
+</script>
+
+<script>
+/* ══ Каталог: дерево разделов + крошки + «показать все товары» ══
+   Только на /catalog. Задачи (согласовано с клиентом):
+   1) дерево разделов слева — раскрыть цепочку предков активного пункта.
+      Проверено на живом DOM (см. историю правок): дерево строится ПОЛНОСТЬЮ
+      уже на сервере (.t-catalog__parts-root содержит все уровни и категории
+      целиком, лениво ничего не подгружается), но вложенные списки
+      (.t-catalog__parts-subparts) у Tilda по умолчанию display:none —
+      и открывать нужную ветку (до текущего .t-catalog__parts-current)
+      должен нативный JS Tilda. На практике он это не делает надёжно —
+      подтверждено computed style (display:none у всех subparts, ни один
+      узел не помечен «открытым») без единой ошибки в консоли. Раскрываем
+      сами: находим .t-catalog__parts-current и форсируем display:block
+      инлайн-стилем (с !important — гарантированно перебивает внешний CSS)
+      на всей цепочке .t-catalog__parts-subparts от него до корня;
+   2) в хлебных крошках убрать лишний пункт «Все» (оставить «Все товары»),
+      остальной путь строит сама Tilda — не трогаем;
+   3) сразу показывать все товары — автоматически дожимать «Показать ещё».
+   Реальные имена классов подтверждены живым DOM: t-catalog-parts-sidebar__container,
+   t-catalog__parts-wrapper, t-catalog__parts-subparts, t-catalog__parts-current. */
 (function () {
   'use strict';
-  if (location.pathname.indexOf('/catalog') !== 0 && location.pathname !== '/') return;
-  function hidePalette() {
-    document.querySelectorAll('.t-catalog__parts-text-title').forEach(function (el) {
-      if (el.textContent.trim().toLowerCase().indexOf('палитра') !== -1) {
-        var item = el.closest('.t-catalog__parts-tree-item');
-        if (item) item.style.setProperty('display', 'none', 'important');
+  if (location.pathname.indexOf('/catalog') !== 0) return;
+
+  var CUR = 'nx-tree-current';
+
+  function treeRoot() {
+    return document.querySelector('.t-catalog-parts-sidebar__container') ||
+           document.querySelector('.t-catalog__sidebar');
+  }
+  function linkPath(a) {
+    try { return new URL(a.getAttribute('href'), location.origin).pathname; }
+    catch (e) { return a.getAttribute('href') || ''; }
+  }
+
+  /* Найти активный пункт (.t-catalog__parts-current), раскрыть цепочку его
+     предков (.t-catalog__parts-subparts от листа до корня) и подсветить сам
+     пункт. Соседние ветки не трогаем. */
+  function highlightAndExpand() {
+    var root = treeRoot();
+    if (!root) return;
+
+    var active = root.querySelector('.t-catalog__parts-current');
+    if (!active) {
+      // фолбэк: по uid из URL или по совпадению href, если native-класс не проставлен
+      var uidMatch = location.pathname.match(/\/catalog\/(\d+)/);
+      var uid = uidMatch ? uidMatch[1] : null;
+      var path = decodeURIComponent(location.pathname);
+      /* Важно: искать именно <a>, а не .t-catalog__parts-wrapper — у обоих
+         одинаковый data-storepart-uid/level, и querySelector без явного "a"
+         матчит СНАЧАЛА враппер (он раньше в разметке). Враппер физически
+         содержит внутри себя весь список дочерних пунктов (.subparts), и
+         color:green на нём наследуется вниз на ВСЕ дочерние ссылки —
+         подсвечивался не один пункт, а вся раскрытая ветка целиком. */
+      active = (uid && root.querySelector('a[data-storepart-uid="' + uid + '"]')) || null;
+      if (!active) {
+        var links = root.querySelectorAll('a[href]');
+        for (var i = 0; i < links.length; i++) {
+          if (linkPath(links[i]) === path) { active = links[i]; break; }
+        }
+      }
+      /* Последний фолбэк — корень «Все товары» (level 0). На голом /catalog
+         ни current-класс, ни uid, ни href ни на что не указывают (у «Все
+         товары» может быть /catalog/catalog или /catalog/<uid>-vse-tovari —
+         оба не совпадают с "/catalog" как есть), поэтому раньше ничего не
+         подсвечивалось и дерево оставалось нативно свёрнутым. Раз мы всё
+         равно оказались в блоке "не нашли активный", разумный дефолт —
+         раскрыть корень: ниже по коду для активного пункта уже есть логика
+         "раскрыть собственные подкатегории", она сработает и здесь. */
+      if (!active) active = root.querySelector('[data-storepart-level="0"] > a');
+    }
+    if (!active) return;
+
+    // подсветка (снять с прежнего, поставить на текущий)
+    root.querySelectorAll('.' + CUR).forEach(function (n) { if (n !== active) n.classList.remove(CUR); });
+    active.classList.add(CUR);
+
+    // раскрыть цепочку .t-catalog__parts-subparts от активного пункта до корня
+    var node = active;
+    var guard = 0;
+    while (node && guard++ < 30) {
+      var subparts = node.closest('.t-catalog__parts-subparts');
+      if (!subparts) break;
+      subparts.style.setProperty('display', 'block', 'important');
+      var wrapper = subparts.parentElement;
+      var arrow = wrapper && wrapper.querySelector(':scope > a .t-catalog__parts-tree-expander-icon');
+      if (arrow) arrow.style.setProperty('transform', 'rotate(90deg)', 'important');
+      node = wrapper;
+    }
+
+    // если сам активный пункт — не лист, а родительская категория (например,
+    // мы на странице «Краски», а не «Краски фасадные») — раскрыть и её
+    // собственные подкатегории, не только цепочку предков
+    var ownWrapper = active.closest('.t-catalog__parts-wrapper');
+    var ownSubparts = ownWrapper && ownWrapper.querySelector(':scope > .t-catalog__parts-subparts');
+    if (ownSubparts) {
+      ownSubparts.style.setProperty('display', 'block', 'important');
+      var ownArrow = ownWrapper.querySelector(':scope > a .t-catalog__parts-tree-expander-icon');
+      if (ownArrow) ownArrow.style.setProperty('transform', 'rotate(90deg)', 'important');
+    }
+  }
+
+  /* 2. Убрать пункт «Все» из хлебных крошек (не трогая «Все товары») */
+  function trimCrumbs() {
+    document.querySelectorAll('.t-catalog__breadcrumbs-item').forEach(function (it) {
+      if ((it.textContent || '').trim() !== 'Все') return;
+      var next = it.nextElementSibling, prev = it.previousElementSibling;
+      if (next && /breadcrumbs-divider/.test(next.className || '')) next.remove();
+      else if (prev && /breadcrumbs-divider/.test(prev.className || '')) prev.remove();
+      it.remove();
+    });
+  }
+
+  /* 3. Сразу показывать все товары — дожать «Показать ещё» (если есть) */
+  var _lmTries = 0;
+  function clickLoadMore() {
+    if (_lmTries++ > 20) return;
+    var scope = document.querySelector('.t-catalog__cont-wrapper') || document;
+    var cand = scope.querySelectorAll('a, button, [class*="load-more"], [class*="loadmore"], .t-store__load-more');
+    for (var i = 0; i < cand.length; i++) {
+      var b = cand[i];
+      if (b.offsetParent === null) continue;
+      if (/(показать|загрузить)\s+ещ[её]/i.test((b.textContent || '').trim())) {
+        b.click();
+        setTimeout(clickLoadMore, 800);
+        return;
+      }
+    }
+  }
+
+  /* 3.5. Убрать «Тип покрытия» из боковых фильтров каталога — ищем по
+     видимому тексту заголовка фильтра (не по data-filter-name — реальный
+     id опции мы не видели в живых данных, а текстовый поиск устойчив
+     к этому и не ломается, если Tilda сменит внутренний id). */
+  function hideCoatingFilter() {
+    document.querySelectorAll('.t-catalog__filter__item').forEach(function (item) {
+      var title = item.querySelector('.js-catalog-filter-item-title, [data-filter-name]');
+      if (title && (title.textContent || '').trim().toLowerCase() === 'тип покрытия') {
+        item.style.setProperty('display', 'none', 'important');
       }
     });
   }
-  function injectPaletteLink() {
-    if (document.querySelector('.nx-palette-link-wrap')) return;
-    var tree = document.querySelector('.t-catalog__parts-tree');
-    if (!tree) return;
-    var wrap = document.createElement('div');
-    wrap.className = 'nx-palette-link-wrap';
-    wrap.innerHTML = '<a href="/palitra" class="nx-palette-link">🎨 Все цвета палитры</a>';
-    tree.appendChild(wrap);
+
+  function apply() {
+    try { highlightAndExpand(); } catch (e) {}
+    try { trimCrumbs(); } catch (e) {}
+    try { hideCoatingFilter(); } catch (e) {}
   }
-  function init() {
-    var _paletteScheduled = false;
-    function schedulePaletteRefresh() {
-      if (_paletteScheduled) return;
-      _paletteScheduled = true;
-      setTimeout(function () {
-        _paletteScheduled = false;
-        hidePalette();
-        injectPaletteLink();
-      }, 120);
-    }
-    hidePalette(); injectPaletteLink();
-    new MutationObserver(schedulePaletteRefresh)
-      .observe(document.body, { childList: true, subtree: true });
+
+  function start() {
+    if (!document.body) return;
+    apply();
+    clickLoadMore();
+    // первичный async-рендер Tilda: короткий наблюдатель, затем отключаемся
+    var host = document.getElementById('allrecords') || document.body;
+    var scheduled = false;
+    var obs = new MutationObserver(function () {
+      if (scheduled) return;
+      scheduled = true;
+      requestAnimationFrame(function () { scheduled = false; apply(); });
+    });
+    obs.observe(host, { childList: true, subtree: true });
+    setTimeout(function () { try { obs.disconnect(); } catch (e) {} }, 8000);
+
+    /* Переход по каталогу — клик в дереве/крошках, ИЛИ по любой ссылке на
+       /catalog (верхнее меню, мегаменю, карточки) — переприменяем подсветку
+       и обрезку крошек одним отложенным вызовом (само дерево раскрытым
+       держит CSS, ему этот триггер не нужен). */
+    document.addEventListener('click', function (e) {
+      var inTree = e.target.closest('[class*="filter-tree"], .t-catalog__breadcrumbs');
+      var a = e.target.closest('a[href]');
+      if (!inTree && !(a && linkPath(a).indexOf('/catalog') === 0)) return;
+      setTimeout(apply, 200);
+    }, true);
+    window.addEventListener('popstate', function () { setTimeout(apply, 200); });
   }
-  document.readyState === 'loading' ? document.addEventListener('DOMContentLoaded', init) : setTimeout(init, 300);
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
+  else start();
 })();
+</script>
+
+<script>
+/* Общий парсер цены — один на §2 (карточки) и §3 (страница товара). */
+function nxParsePrice(n) { return parseFloat(String(n || 0).replace(/\s/g, '').replace(',', '.')) || 0; }
 
 /* ══ 2. Карточки — унифицированное обогащение (все страницы) ══ */
 (function () {
@@ -87,7 +323,7 @@
     for (var i = 0; i < args.length; i++) { var el = card.querySelector(args[i]); if (el) return el; }
     return null;
   }
-  function parsePrice(n) { return parseFloat(String(n || 0).replace(/\s/g, '').replace(',', '.')) || 0; }
+  var parsePrice = nxParsePrice;
 
   function injectCategoryBadge(card) {
     if (card.querySelector('.nx-cat-badge')) return;
@@ -190,10 +426,26 @@
 
   window._nxProcessCards = processCards;
 
-  if (document.readyState === 'loading') { document.addEventListener('DOMContentLoaded', function () { scheduleProcessCards(0); }); }
-  else { scheduleProcessCards(0); }
-  scheduleProcessCards(800);
-  scheduleProcessCards(2000);
+  /* Раньше: 3 «слепых» прохода по всему документу (0/800/2000 мс). Теперь: один
+     проход + наблюдатель ТОЛЬКО на грид-контейнерах (childList), который ловит
+     lazy-подгружаемые Tilda-карточки и отключается через 8 с. Если грида ещё нет
+     или нет MutationObserver — подстраховка прежними таймерами. */
+  function initCardEnrichment() {
+    processCards();
+    var grids = document.querySelectorAll('.js-store-grid-cont, .js-catalog-grid-cont, .t-store__card-list, .t-catalog__card-list');
+    if (!window.MutationObserver || !grids.length) {
+      scheduleProcessCards(800); scheduleProcessCards(2000);
+      return;
+    }
+    var _sched = false;
+    function run() { if (_sched) return; _sched = true; setTimeout(function () { _sched = false; processCards(); }, 120); }
+    var obs = new MutationObserver(run);
+    Array.prototype.forEach.call(grids, function (g) { obs.observe(g, { childList: true }); });
+    setTimeout(function () { try { obs.disconnect(); } catch (e) {} }, 8000);
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initCardEnrichment);
+  else initCardEnrichment();
 })();
 
 /* ══ 3. Страница товара /tproduct/ ══ */
@@ -208,9 +460,11 @@
   var _selected     = {};
   var _qty          = 1;
   var _boardLen     = 6;
+  var _isBoard      = true;
+  var _genericAttrKeys = [];
   var _paletteColor = null;
 
-  function parsePrice(n) { return parseFloat(String(n || 0).replace(/\s/g, '').replace(',', '.')) || 0; }
+  var parsePrice = nxParsePrice;
   function fmt(n) { return parsePrice(n).toLocaleString('ru'); }
 
   function showToast(msg) {
@@ -234,52 +488,104 @@
     return map;
   }
 
+  var _allProducts = [];
+
+  /* Tilda Store API иногда отвечает не списком товаров, а
+     {"redirectto":"com"} — просьбой повторить тот же запрос на другой
+     домен (store.tildaapi.<tld>). Без обработки этого товар «не находится»
+     даже когда он реально есть и опубликован (подтверждено на живом
+     сайте: ответ был буквально {"redirectto":"com"}). Повторяем запрос
+     на указанный домен один раз.
+     slice — опциональная пагинация: на разросшемся каталоге один запрос
+     может отдавать не весь список, а первую порцию плюс поле nextslice
+     для следующей. Без этого товары за пределами первой порции были
+     «не найдены» на своей странице. Само поле не подтверждено вживую (нет
+     доступа к API из песочницы), но безопасно: если nextslice в ответе
+     нет — цикл ниже останавливается сразу же, поведение как раньше. */
+  function fetchProductsListText(tld, slice) {
+    return fetch('https://store.tildaapi.' + tld + '/api/getproductslist/?storepartuid=' + STORE_UID + '&recid=' + CATALOG_REC + (slice ? '&slice=' + slice : ''))
+      .then(function (r) { return r.text(); });
+  }
+
+  function parseProductsJSON(txt) {
+    if (!txt || txt.indexOf('ERROR') === 0) {
+      console.warn('nx: store API error:', (txt || '').slice(0, 80));
+      return null;
+    }
+    try { return JSON.parse(txt); } catch (e) { console.warn('nx: store API non-JSON response'); return null; }
+  }
+
+  function fetchAllSlices(tld, slice, acc) {
+    return fetchProductsListText(tld, slice).then(function (txt) {
+      var d = parseProductsJSON(txt);
+      if (!d) return acc;
+      var merged = acc.concat(d.products || []);
+      return d.nextslice ? fetchAllSlices(tld, d.nextslice, merged) : merged;
+    });
+  }
+
   function loadProduct(uid) {
-    return fetch('https://store.tildaapi.one/api/getproductslist/?storepartuid=' + STORE_UID + '&recid=' + CATALOG_REC)
-      .then(function (r) { return r.text(); })
-      .then(function (txt) {
-        if (!txt || txt.indexOf('ERROR') === 0) {
-          console.warn('nx: store API error:', (txt || '').slice(0, 80));
-          return null;
-        }
-        var d;
-        try { d = JSON.parse(txt); } catch (e) { console.warn('nx: store API non-JSON response'); return null; }
-        return (d.products || []).find(function (x) { return String(x.uid) === String(uid); }) || null;
+    return fetchProductsListText('one').then(function (txt) {
+      var d = parseProductsJSON(txt);
+      var afterRedirect = d && d.redirectto
+        ? fetchProductsListText(d.redirectto).then(function (txt2) {
+            var d2 = parseProductsJSON(txt2);
+            var first = (d2 && d2.products) || [];
+            return d2 && d2.nextslice ? fetchAllSlices(d.redirectto, d2.nextslice, first) : first;
+          })
+        : (d && d.nextslice
+            ? fetchAllSlices('one', d.nextslice, (d && d.products) || [])
+            : Promise.resolve((d && d.products) || []));
+      return afterRedirect.then(function (all) {
+        _allProducts = all;
+        return _allProducts.find(function (x) { return String(x.uid) === String(uid); }) || null;
       });
+    });
   }
 
   var COATING_MAP = {};
   var _noColorCoatings = {};
 
+  /* Ключ покрытия для сопоставления опции селекта «Тип покрытия» (текст из
+     p.properties) с полем «Покрытие» на изданиях (текст из store API) —
+     без учёта регистра/пробелов, т.к. это два независимых источника текста
+     и лишний пробел или разный регистр в одном из них молча ломает связку
+     покрытие→цвет (свотчи просто перестают фильтроваться). */
+  function nxCoatKey(s) { return String(s || '').trim().toLowerCase().replace(/\s+/g, ' '); }
+
   function matchBase(e) {
-    var edCoating = COATING_MAP[_selected['Тип покрытия'] || ''];
-    var noCovering = edCoating ? !!_noColorCoatings[edCoating] : false;
+    var edCoating = COATING_MAP[nxCoatKey(_selected['Тип покрытия'])];
+    var noCovering = edCoating ? !!_noColorCoatings[nxCoatKey(edCoating)] : false;
     if (!_paletteColor && !noCovering && _selected['Цвет'] && e['Цвет'] !== undefined && e['Цвет'] !== _selected['Цвет']) return false;
     if (_selected['Ширина (мм)'] && e.pack_y && String(e.pack_y) !== _selected['Ширина (мм)']) return false;
     if (_selected['Длина'] && e.pack_x && String(e.pack_x) !== _selected['Длина']) return false;
+    for (var i = 0; i < _genericAttrKeys.length; i++) {
+      var k = _genericAttrKeys[i];
+      if (_selected[k] !== undefined && e[k] !== undefined && String(e[k]) !== String(_selected[k])) return false;
+    }
     return true;
   }
 
   function getEd() {
     var selectedCoating = _selected['Тип покрытия'] || '';
-    var edCoating = COATING_MAP[selectedCoating];
+    var edCoating = COATING_MAP[nxCoatKey(selectedCoating)];
 
     if (edCoating) {
       var exact = _editions.find(function (e) {
-        return matchBase(e) && e['Покрытие'] === edCoating;
+        return matchBase(e) && nxCoatKey(e['Покрытие']) === nxCoatKey(edCoating);
       });
       if (exact) return exact;
     }
 
     var candidates = _editions.filter(matchBase);
-    return candidates.find(function (e) { return e['Покрытие'] === 'Без покрытия'; })
+    return candidates.find(function (e) { return nxCoatKey(e['Покрытие']) === nxCoatKey('Без покрытия'); })
       || candidates[0]
       || _editions[0] || null;
   }
 
   function getCoatingDelta() {
     var selectedCoating = _selected['Тип покрытия'] || '';
-    if (!selectedCoating || COATING_MAP[selectedCoating] !== undefined) return 0;
+    if (!selectedCoating || COATING_MAP[nxCoatKey(selectedCoating)] !== undefined) return 0;
     var coatingProp = (_p && _p.properties || []).find(function (prop) { return prop.title === 'Тип покрытия'; });
     if (!coatingProp) return 0;
     var line = coatingProp.values.split('\n').find(function (v) { return v.split('=')[0].trim() === selectedCoating; }) || '';
@@ -301,7 +607,7 @@
       (priceSqm ? '<div class="nx-p-price-col"><span class="nx-p-price-lbl">Цена за кв.м.:</span><span class="nx-p-price--sqm">' + fmt(priceSqm) + ' ₽</span></div>' : '<div></div>');
   }
 
-  function renderColorSwatches(editions, colorMap) {
+  function renderColorSwatches(editions, colorMap, showPaletteLink) {
     var seen = {};
     var swatches = editions.filter(function (e) {
       var c = String(e['Цвет']); if (!c || seen[c]) return false; seen[c] = true; return true;
@@ -316,7 +622,27 @@
     }).join('');
     return '<div class="nx-p-opt-lbl">Цвет:</div>' +
       '<div class="nx-p-color-circles">' + swatches +
-      '<a href="/palitra" class="nx-p-palette-btn" id="nx-palette-btn">Палитра цветов</a></div>';
+      (showPaletteLink === false ? '' : '<a href="/palitra" class="nx-p-palette-btn" id="nx-palette-btn">Палитра цветов</a>') + '</div>';
+  }
+
+  function renderGenericSelects(keys, editions) {
+    if (!keys || !keys.length) return '';
+    var wraps = keys.map(function (k) {
+      var seen = {}, vals = [];
+      (editions || []).forEach(function (e) {
+        var v = e[k]; if (v === undefined || v === '') return;
+        var s = String(v); if (!seen[s]) { seen[s] = true; vals.push(s); }
+      });
+      if (!vals.length) return '';
+      var options = vals.map(function (v) {
+        return '<option value="' + v + '"' + (_selected[k] === v ? ' selected' : '') + '>' + v + '</option>';
+      }).join('');
+      return '<div class="nx-p-select-wrap" data-prop="' + k + '">' +
+        '<span class="nx-p-opt-lbl">' + k + ':</span>' +
+        '<select class="nx-p-select" data-prop="' + k + '">' + options + '</select>' +
+      '</div>';
+    }).join('');
+    return '<div class="nx-p-selects nx-p-selects--generic">' + wraps + '</div>';
   }
 
   function renderSelects(properties, editions) {
@@ -348,7 +674,7 @@
         return '<option value="' + l + '"' + (_selected['Длина'] === l ? ' selected' : '') + '>' + display + '</option>';
       }).join('');
       selects.splice(1, 0,
-        '<div class="nx-p-select-wrap">' +
+        '<div class="nx-p-select-wrap" data-prop="Длина">' +
           '<span class="nx-p-opt-lbl">Длина:</span>' +
           '<select class="nx-p-select" data-prop="Длина">' + lenOptions + '</select>' +
         '</div>'
@@ -360,14 +686,57 @@
 
   function renderGallery(gallery) {
     var imgs = gallery.map(function (g) { return g.img || g; });
+    var firstImg = imgs[0] || '';
     var thumbs = imgs.map(function (src, i) {
       return '<div class="nx-p-thumb' + (i === 0 ? ' nx-p-thumb--active' : '') +
-        '" data-idx="' + i + '"><img src="' + src + '" alt="" loading="lazy"></div>';
+        '" data-idx="' + i + '"><img src="' + src + '" alt="" loading="lazy" fetchpriority="low"></div>';
     }).join('');
     return '<div class="nx-p-gallery">' +
-      '<div class="nx-p-mainimg"><img id="nx-mi" src="' + imgs[0] + '" alt=""></div>' +
+      '<div class="nx-p-mainimg"><img id="nx-mi" src="' + firstImg + '" alt="" loading="eager" fetchpriority="high"></div>' +
       '<div class="nx-p-thumbs">' + thumbs + '</div>' +
       '</div>';
+  }
+
+  function normalizeImageSrc(src) {
+    if (src == null) return '';
+    var s = String(src).trim();
+    if (!s || s === 'undefined' || s === 'null') return '';
+    if (/[\r\n]/.test(s)) return '';
+    if (s.indexOf('javascript:') === 0) return '';
+    if (
+      s.indexOf('http://') === 0 ||
+      s.indexOf('https://') === 0 ||
+      s.indexOf('//') === 0 ||
+      s.indexOf('/') === 0 ||
+      s.indexOf('./') === 0 ||
+      s.indexOf('../') === 0 ||
+      s.indexOf('data:image/') === 0 ||
+      s.indexOf('blob:') === 0
+    ) return s;
+    return '';
+  }
+
+  function ensureMainImagePreload(src) {
+    var safeSrc = normalizeImageSrc(src);
+    if (!safeSrc) return;
+    /* Reject anything the URL parser itself can't resolve — avoids Chrome's
+       "invalid href" console warning when Tilda's gallery data has a
+       malformed/partial path (data: URLs excluded, they aren't real URLs). */
+    if (safeSrc.indexOf('data:') !== 0) {
+      try { new URL(safeSrc, location.href); } catch (e) { return; }
+    }
+    var head = document.head || document.getElementsByTagName('head')[0];
+    if (!head) return;
+    var ln = document.getElementById('nx-preload-mainimg');
+    if (!ln) {
+      ln = document.createElement('link');
+      ln.id = 'nx-preload-mainimg';
+      ln.rel = 'preload';
+      ln.as = 'image';
+      ln.fetchPriority = 'high';
+      head.appendChild(ln);
+    }
+    if (ln.href !== safeSrc) ln.href = safeSrc;
   }
 
   function renderChars(chars) {
@@ -377,9 +746,110 @@
       '</div></div>';
   }
 
+  function popularCardBadge(title) {
+    if (!title) return '';
+    return /вагонк/i.test(title)   ? 'Вагонка'
+         : /блок.хаус/i.test(title) ? 'Блок-хаус'
+         : /имитац/i.test(title)    ? 'Имитация бруса'
+         : /планк/i.test(title)     ? 'Планкен'
+         : /термо/i.test(title)     ? 'Термодерево' : '';
+  }
+
+  function popularCardImg(prod) {
+    var gallery = prod.gallery;
+    if (typeof gallery === 'string') { try { gallery = JSON.parse(gallery); } catch (e) { gallery = []; } }
+    if (gallery && gallery.length) {
+      var g0 = gallery[0];
+      return (g0 && g0.img) ? g0.img : g0;
+    }
+    return '';
+  }
+
+  function popularCardSize(prod) {
+    var ed = (prod.editions || [])[0];
+    if (ed && ed.pack_y && ed.pack_x) {
+      var y = parseFloat(ed.pack_y), x = parseFloat(ed.pack_x);
+      if (y && x) return y + '×' + (x >= 1000 ? (x / 1000) + ' м' : x + ' мм');
+    }
+    return '';
+  }
+
+  function pickPopular(currentUid, count) {
+    var pool = _allProducts.filter(function (x) {
+      return String(x.uid) !== String(currentUid) && x.title && parsePrice(x.price) > 0;
+    });
+    for (var i = pool.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var tmp = pool[i]; pool[i] = pool[j]; pool[j] = tmp;
+    }
+    return pool.slice(0, count);
+  }
+
+  function renderPopularGrid() {
+    var items = pickPopular(_p.uid, 8);
+    if (!items.length) return '';
+    var cards = items.map(function (prod) {
+      var ed0 = (prod.editions || [])[0] || {};
+      var price = parsePrice(prod.price);
+      var priceOld = parsePrice(prod.priceold);
+      var priceSqm = parsePrice(ed0['Цена за кв метр']);
+      var img = popularCardImg(prod);
+      var size = popularCardSize(prod);
+      var badge = popularCardBadge(prod.title);
+      var oldRowHtml = '';
+      if (priceOld > price) {
+        var pct = Math.round((1 - price / priceOld) * 100);
+        oldRowHtml = '<div class="nx-price-old-row"><span class="nx-price-extra__old">' + fmt(priceOld) + ' ₽</span><span class="nx-price-extra__badge">-' + pct + '%</span></div>';
+      }
+      return '<div class="nx-pop2">' +
+        '<a class="nx-pop2__media" href="/tproduct/' + prod.uid + '">' +
+          '<div class="nx-pop2__img" style="background-image:url(' + img + ')">' +
+            (badge ? '<div class="nx-cat-badge">' + badge + '</div>' : '') +
+          '</div>' +
+        '</a>' +
+        '<div class="nx-pop2__body">' +
+          '<a class="nx-pop2__title" href="/tproduct/' + prod.uid + '">' + prod.title + '</a>' +
+          (size ? '<div class="nx-pop2__size">' + size + '</div>' : '') +
+          '<div class="nx-price-block"><div class="nx-price-row">' +
+            '<div class="nx-price-col"><span class="nx-price-label">Цена за шт.:</span><span class="nx-price-val-main">' + fmt(price) + ' ₽</span></div>' +
+            (priceSqm ? '<div class="nx-price-col"><span class="nx-price-label">Цена за кв.м.:</span><span class="nx-price-val-main">' + fmt(priceSqm) + ' ₽</span></div>' : '') +
+          '</div>' + oldRowHtml + '</div>' +
+          '<div class="t-store__card__btns-wrapper">' +
+            '<button type="button" class="t-btnflex t-btnflex_type_button t-store__card__btn nx-pop2__buy" data-uid="' + prod.uid + '">Купить</button>' +
+            '<a href="/tproduct/' + prod.uid + '" class="t-btnflex t-btnflex_type_button2 t-store__card__btn">Подробнее</a>' +
+          '</div>' +
+          '<div class="nx-delivery-row">' +
+            '<div class="nx-delivery-item">Есть самовывоз сегодня</div>' +
+            '<div class="nx-delivery-item">Доставка сегодня или завтра</div>' +
+          '</div>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+    return '<div class="nx-p-pop">' +
+      '<div class="nx-popular-toprow">' +
+        '<div class="nx-p-pop__ttl">Популярные товары</div>' +
+        '<div class="nx-popular-right">' +
+          '<a href="/catalog" class="nx-catalog-link">Перейти в каталог</a>' +
+          '<div class="nx-popular-arrows">' +
+            '<button type="button" class="nx-arrow-btn nx-pop-prev">‹</button>' +
+            '<button type="button" class="nx-arrow-btn nx-pop-next">›</button>' +
+          '</div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="nx-pop2-grid" id="nx-pop-grid">' + cards + '</div>' +
+    '</div>';
+  }
+
 function addToCart() {
   if (!_p) return;
   var ed = getEd();
+
+  /* Страховка: палитровый цвет не должен уйти в корзину с несовместимым
+     покрытием (например, Valtti-цвет при «Укрывной»). Если рассинхрон —
+     сбрасываем палитровый цвет, в корзину идёт реальное издание. */
+  if (_paletteColor && ed && !nxPaletteFitsCoating(_paletteColor, ed['Покрытие'])) {
+    clearPaletteColor();
+  }
 
   // Установить цвет ДО формирования optParts
   if (ed && ed['Покрытие'] === 'Без покрытия') {
@@ -394,76 +864,97 @@ var paletteLabel = _paletteColor
   ? (_paletteColor.code + (_paletteColor.name && _paletteColor.name !== _paletteColor.code ? ' ' + _paletteColor.name : ''))
   : '';
 
-// opts — отображение в корзине и CRM
-var optParts = [];
-if (_paletteColor) {
-  optParts.push('Цвет: ' + paletteLabel);
-} else if (ed && ed['Цвет'] && ed['Цвет'] !== 'undefined' && ed['Цвет'] !== 'без') {
-  optParts.push('Цвет: ' + ed['Цвет']);
-}
-if (_selected['Ширина (мм)']) {
-  optParts.push('Ширина: ' + _selected['Ширина (мм)'] + ' мм');
-}
-if (ed && ed['Покрытие']) {
-  optParts.push('Покрытие: ' + ed['Покрытие']);
-}
-if (ed && ed['Цена за кв метр'] && parseFloat(String(ed['Цена за кв метр']).replace(/\s/g,'')) > 0) {
-  optParts.push('Цена за кв метр: ' + ed['Цена за кв метр']);
-}
-var opts = optParts.join(', ');
+var colorLabel = _paletteColor
+  ? ('Цвет из палитры: ' + paletteLabel)
+  : (ed && ed['Цвет'] && ed['Цвет'] !== 'без' && String(ed['Цвет']) !== 'undefined'
+      ? ('Цвет: ' + ed['Цвет']) : '');
+var coatLabel = (ed && ed['Покрытие'] && ed['Покрытие'] !== 'Без покрытия')
+  ? ('Покрытие: ' + ed['Покрытие']) : '';
+var widthLabel = (ed && ed.pack_y) ? ('Ширина: ' + ed.pack_y + ' мм') : '';
+var lengthVal  = ed && ed.pack_x ? parseFloat(ed.pack_x) : 0;
+var lengthLabel = lengthVal ? ('Длина: ' + (lengthVal >= 1000 ? (lengthVal / 1000) + ' м' : lengthVal + ' мм')) : '';
+/* Вычисленные погонные метры = кол-во единиц × длина доски (как в счётчике на карточке) */
+var metersTotal = _qty * _boardLen;
+var metersLabel = metersTotal ? ('Погонные метры: ' + (Math.round(metersTotal * 100) / 100) + ' м') : '';
+var nameSuffix = [colorLabel, coatLabel, widthLabel, lengthLabel, metersLabel].filter(Boolean).join(' · ');
 
-/* propOpts — ТОЧНЫЕ опции издания Tilda. Ключи и значения ДОЛЖНЫ совпадать с
-   вариацией в магазине (опции там: «Цвет» и «Покрытие»), иначе склад не найдёт
-   издание → «нет в наличии». Берём значения из подобранного издания ed.
-   Палитровый цвет тут НЕ используем: для палитры бронируем базовое издание
-   (его реальный цвет), а палитровый цвет показываем только в названии (opts). */
-/* ВАЖНО: option должна содержать ВСЕ измерения вариации (Цвет, Покрытие,
-   Цена за кв метр) ТОЧНО как в издании — иначе Tilda: «не указана опция».
-   Менять/убирать поля нельзя. Чистоту отображения решаем отдельно (в корзине). */
 var propParts = [];
 if (ed) {
   var optDims = (_p && _p.json_options) || [];
   if (typeof optDims === 'string') { try { optDims = JSON.parse(optDims); } catch (e) { optDims = []; } }
   var keys = (optDims && optDims.length)
     ? optDims.map(function (o) { return o && o.title; })
-    : ['Цвет', 'Покрытие', 'Цена за кв метр'];
+    : ['Цвет', 'Покрытие'];
   keys.forEach(function (k) {
+    if (k === 'Цена за кв метр') return;
     if (k && ed[k] !== undefined && ed[k] !== '' && String(ed[k]) !== 'undefined') {
       propParts.push(k + ': ' + ed[k]);
     }
   });
+  if (widthLabel) propParts.push(widthLabel);
+  if (lengthLabel) propParts.push(lengthLabel);
 }
 var propOpts = propParts.join(', ');
 
+/* Structured options array — Tilda store booking format.
+   Tells the warehouse which edition variant to reserve. */
+var bookingOptions = [];
+if (ed) {
+  var optDefs = (_p && _p.json_options) || [];
+  if (typeof optDefs === 'string') { try { optDefs = JSON.parse(optDefs); } catch (e) { optDefs = []; } }
+  var optKeys = (optDefs && optDefs.length) ? optDefs.map(function (o) { return o && o.title; }) : ['Цвет', 'Покрытие'];
+  optKeys.forEach(function (k) {
+    if (k && ed[k] !== undefined && ed[k] !== '' && String(ed[k]) !== 'undefined') {
+      bookingOptions.push({ option: k, variant: String(ed[k]) });
+    }
+  });
+}
+
 var item = {
-  /* Палитровый цвет — отдельной заметной подписью в названии (не в скобках),
-     т.к. в складскую option он не идёт (там измерения реальной вариации).
-     Для палитры: «Товар · Цвет из палитры: 2661 Vinha 2661».
-     Для обычной вариации цвет/покрытие видны в option ниже. */
-  name:     _p.title + (_paletteColor ? ' · Цвет из палитры: ' + paletteLabel : ''),
+  name:     _p.title + (nameSuffix ? ' · ' + nameSuffix : ''),
   option:   propOpts,
+  options:  bookingOptions,
   price:    price,
   quantity: _qty,
   amount:   price * _qty,
   img:      img,
-  /* uid ВАРИАЦИИ (ed.uid) — Tilda резервирует остаток именно издания (проверено:
-     остаток изданий реально списывается). uid товара даёт «нет в наличии» (у товара
-     остаток пустой). «Не указана опция» при ed.uid — от старой позиции в корзине. */
   uid:      String(ed && ed.uid ? ed.uid : _p.uid),
   sku:      (ed && ed.sku) || (_p.sku) || ''
 };
   console.log('nx: item to cart', JSON.stringify(item));
   var added = false;
-  try {
-    if (typeof tcart__addProduct === 'function') {
-      tcart__addProduct(item); added = true;
-    } else if (window.tcart && window.tcart.products) {
-      window.tcart.products.push(item);
-      if (typeof tcart__saveLocalObj === 'function') tcart__saveLocalObj();
-      added = true;
+  function doAdd(retries) {
+    try {
+      if (typeof tcart__addProduct === 'function') {
+        tcart__addProduct(item, true); /* true = open cart popup after adding */
+      } else if (window.tcart && window.tcart.products) {
+        window.tcart.products.push(item);
+        if (typeof tcart__saveLocalObj === 'function') tcart__saveLocalObj();
+      } else {
+        throw new Error('tcart not ready');
+      }
+      /* Success path: re-add fallback + toast */
+      try {
+        if (window.tcart && window.tcart.products) {
+          var inCart = window.tcart.products.some(function (p) {
+            return String(p.uid) === item.uid && p.option === item.option;
+          });
+          if (!inCart) {
+            window.tcart.products.push(item);
+            if (typeof tcart__saveLocalObj === 'function') tcart__saveLocalObj();
+            if (typeof tcart__reDrawCartIcon === 'function') tcart__reDrawCartIcon();
+            if (typeof tcart__reDrawProducts === 'function') tcart__reDrawProducts();
+            console.log('nx: re-added dropped item', item.uid);
+          }
+        }
+      } catch (e2) { console.error('nx: re-add error', e2); }
+      showToast('Добавлено в корзину: ' + _p.title);
+    } catch (e) {
+      if (retries > 0) { setTimeout(function () { doAdd(retries - 1); }, 300); return; }
+      console.error('nx: addToCart error', e);
     }
-  } catch (e) { console.error('nx: addToCart error', e); }
-  if (added) showToast('Добавлено в корзину: ' + _p.title);
+  }
+  doAdd(5);
 }
 
   function showPaletteTooltip(btn) {
@@ -479,45 +970,73 @@ var item = {
   function renderRoot(p) {
     _p        = p;
     _editions = p.editions || [];
-    _boardLen = _editions.length ? (parseFloat(_editions[0].pack_x) / 1000 || 6) : 6;
+    _isBoard  = _editions.some(function (e) { return parseFloat(e.pack_x) > 0; });
+    _boardLen = _isBoard ? (parseFloat(_editions[0].pack_x) / 1000 || 6) : 0;
+
+    /* Непалубные товары (крепёж и т.п.) — реальные варианты берём из
+       p.json_options (то же поле, что уже читает addToCart для корзины),
+       а не из board-специфичных Ширина(мм)/Длина/pack_x. */
+    _genericAttrKeys = [];
+    if (!_isBoard) {
+      var jsonOpts = p.json_options;
+      if (typeof jsonOpts === 'string') { try { jsonOpts = JSON.parse(jsonOpts); } catch (e) { jsonOpts = []; } }
+      var GENERIC_EXCLUDE = { 'Цвет': true, 'Покрытие': true, 'Тип покрытия': true };
+      (jsonOpts || []).forEach(function (o) {
+        if (o && o.title && !GENERIC_EXCLUDE[o.title] && _genericAttrKeys.indexOf(o.title) === -1) {
+          _genericAttrKeys.push(o.title);
+        }
+      });
+    }
 
     COATING_MAP = {};
     _noColorCoatings = {};
     _editions.forEach(function (e) {
-      if (e['Покрытие']) COATING_MAP[e['Покрытие']] = e['Покрытие'];
-      if (e['Цвет'] === 'без') _noColorCoatings[e['Покрытие']] = true;
+      if (e['Покрытие']) COATING_MAP[nxCoatKey(e['Покрытие'])] = e['Покрытие'];
+      if (e['Цвет'] === 'без') _noColorCoatings[nxCoatKey(e['Покрытие'])] = true;
     });
 
     var colorMap = getColorMap();
     if (p.properties) {
       p.properties.forEach(function (prop) { _selected[prop.title] = prop.values.split('\n')[0].split('=')[0].trim(); });
     }
-    if (_editions.length) { _selected['Длина'] = String(parseFloat(_editions[0].pack_x)); }
+    if (_isBoard && _editions.length) { _selected['Длина'] = String(parseFloat(_editions[0].pack_x)); }
+    if (!_isBoard && _editions.length) {
+      _genericAttrKeys.forEach(function (k) {
+        if (_selected[k] === undefined && _editions[0][k] !== undefined) {
+          _selected[k] = String(_editions[0][k]);
+        }
+      });
+    }
     
 // Инициализация цвета — ПОСЛЕ properties
-var firstNonPainting = _editions.find(function(e) { 
-  return e['Покрытие'] === (_selected['Тип покрытия'] || ''); 
+var firstNonPainting = _editions.find(function(e) {
+  return nxCoatKey(e['Покрытие']) === nxCoatKey(_selected['Тип покрытия']);
 });
 var firstEd = firstNonPainting || (_editions.length ? _editions[0] : null);
 _selected['Цвет'] = (firstEd && firstEd['Цвет'] !== undefined) ? String(firstEd['Цвет']) : '';
-if (firstEd && firstEd['Покрытие'] === 'Без покрытия') {
+if (firstEd && nxCoatKey(firstEd['Покрытие']) === nxCoatKey('Без покрытия')) {
   _selected['Цвет'] = 'без';
 }
 
 
     var ed      = getEd();
     var gallery = typeof p.gallery === 'string' ? JSON.parse(p.gallery) : (p.gallery || []);
+    var firstImg = '';
+    if (gallery && gallery.length) {
+      var g0 = gallery[0];
+      firstImg = (g0 && g0.img) ? g0.img : g0;
+    }
+    ensureMainImagePreload(firstImg);
 
     var html =
       '<div class="nx-p-inner">' +
         '<nav class="nx-p-bc"><a href="/">Главная</a><span class="nx-p-bc__sep">›</span>' +
           '<a href="/catalog">Каталог</a><span class="nx-p-bc__sep">›</span>' +
           '<span class="nx-p-bc__cur">' + p.title + '</span></nav>' +
-        /* Мобайл: заголовок над галереей */
-        '<h1 class="nx-p-title nx-p-title--mob">' + p.title + '</h1>' +
+        /* Единый заголовок над обеими колонками (мобайл + десктоп) */
+        '<h1 class="nx-p-title">' + p.title + '</h1>' +
         '<div class="nx-p-layout">' +
           '<div class="nx-p-left">' +
-            '<h1 class="nx-p-title nx-p-title--dsk">' + p.title + '</h1>' +
             renderGallery(gallery) + renderChars(p.characteristics) + '</div>' +
           '<div class="nx-p-right">' +
             (p.descr ? '<div class="nx-p-descr">' + p.descr + '</div>' : '') +
@@ -530,48 +1049,55 @@ if (firstEd && firstEd['Покрытие'] === 'Без покрытия') {
                   '<div class="nx-p-qty" id="nx-qty-units">' +
                     '<button data-d="-1">−</button><input type="number" id="nx-inp-units" value="1" min="1"><button data-d="1">+</button>' +
                   '</div></div>' +
+                (_isBoard ?
                 '<div class="nx-p-qty-link">🔗</div>' +
                 '<div class="nx-p-qty-wrap"><span class="nx-p-qty-lbl">Погонные метры:</span>' +
                   '<div class="nx-p-qty" id="nx-qty-meters">' +
                     '<button data-d="-1">−</button><input type="number" id="nx-inp-meters" value="' + _boardLen + '" min="' + _boardLen + '" step="' + _boardLen + '"><button data-d="1">+</button>' +
-                  '</div></div>' +
+                  '</div></div>' : '') +
               '</div>' +
             '</div>' +
 
             /* 3. Кнопка Купить */
             '<button class="nx-p-btn" id="nx-btn-buy">Купить</button>' +
 
-            /* 4. Селекты: Ширина, Длина, Тип покрытия */
-            renderSelects(p.properties, _editions) +
+            /* 4. Селекты: для досок — Ширина/Длина/Тип покрытия; для прочих товаров —
+               реальные атрибуты варианта (Размер/Шлиц/Фасовка и т.п.) из p.json_options */
+            (_isBoard ? renderSelects(p.properties, _editions) : renderGenericSelects(_genericAttrKeys, _editions)) +
 
             /* 5. Цвет */
-            '<div class="nx-p-opts" id="nx-colors">' + renderColorSwatches(_editions, colorMap) + '</div>' +
+            '<div class="nx-p-opts" id="nx-colors">' + renderColorSwatches(_editions, colorMap, _isBoard) + '</div>' +
+            '<div id="nx-coat-warn" class="nx-coat-warn">⚠ Для выбора цвета смените тип покрытия</div>' +
 
-            /* 6. Уведомление */
+            /* 6+7. Уведомление о выкрасе и кнопка пробного выкраса — только для досок */
+            (_isBoard ?
             '<div class="nx-p-notice"><span class="nx-p-notice__icon">i</span>' +
               '<span><strong>Внимание:</strong> Можем выкрасить доску в любой, необходимый цвет.</span></div>' +
-
-            /* 7. Кнопка выкраса */
-            '<button id="nx-btn-sample" class="nx-p-btn nx-p-btn--outline">🖌 Заказать пробный выкрас</button>' +
+            '<button id="nx-btn-sample" class="nx-p-btn nx-p-btn--outline">Заказать пробный выкрас</button>' : '') +
           '</div>' +
         '</div>' +
+        (p.text ? '<div class="nx-p-fulltext">' + p.text + '</div>' : '') +
+        renderPopularGrid() +
       '</div>';
 
     var root = ensureProdRoot();
     root.innerHTML = html;
 
-    /* Скрыть нативный Tilda-блок (и его rec), не трогая rec2362047083 (популярные) и наш root */
+    /* Скрыть нативный Tilda-блок снипета (и его rec), не трогая наш root */
     var SNIPPET_SELS2 = [
       '.t-store__prod-snippet__container', '.t-store__prod-snippet',
       '.t-catalog__prod-snippet__container', '.t-catalog__prod-snippet'
     ];
+    /* Сам сниппет-элемент скрывается CSS-ом (см. inline <style> в начале head).
+       JS нужен только чтобы спрятать РЕК целиком — кроме шапки/футера/популярного/
+       нашего блока, иначе стрелочный сниппет-шаблон утаскивает их за собой. */
     function hideSnippets() {
       SNIPPET_SELS2.forEach(function (sel) {
         document.querySelectorAll(sel).forEach(function (el) {
-          if (el.style.display === 'none') return;
-          el.style.cssText = 'display:none!important';
           var rec = el.closest('[id^="rec"]');
-          if (rec && rec.id !== 'nx-prod-root' && rec.id !== 'rec2362047083') {
+          if (rec && rec.style.display === 'none') return;
+          if (rec && rec.id !== 'nx-prod-root' && rec.id !== 'rec2362047083' &&
+              rec.id !== 'rec2362175613' && !rec.querySelector('.nx-menu')) {
             rec.style.cssText = 'display:none!important';
           }
         });
@@ -587,15 +1113,24 @@ if (firstEd && firstEd['Покрытие'] === 'Без покрытия') {
       }, 120);
     }
 
-    /* Первичное скрытие + наблюдатель (Tilda дорисовывает сниппеты асинхронно) */
+    /* Первичное скрытие + наблюдатель (Tilda дорисовывает сниппеты асинхронно).
+       Наблюдаем #allrecords, а не весь body — меньше срабатываний колбэка. */
     hideSnippets();
-    new MutationObserver(scheduleHideSnippets).observe(document.body, { childList: true, subtree: true });
+    var snippetsObs = new MutationObserver(scheduleHideSnippets);
+    snippetsObs.observe(document.getElementById('allrecords') || document.body, { childList: true, subtree: true });
+    /* Держим наблюдение только в фазе первичной дорисовки Tilda */
+    setTimeout(function () {
+      try { snippetsObs.disconnect(); } catch (e) {}
+    }, 8000);
 
     attachEvents();
     updateColors();
-    injectPopularBlock();
-    /* Снять CSS-скрытие Tilda-реков — наш контент уже отрендерен */
-    document.documentElement.classList.remove('nx-tp');
+    hideNativePopularBlock();
+    /* Header/footer are already excluded from the nx-tp hiding selector, so they're
+       visible regardless. Keep nx-tp ON permanently — it's the only thing hiding the
+       native Tilda product widget (real title/image), which must never reappear
+       next to our custom render. Only mark success for the 3s failsafe above. */
+    window._nxProdRendered = true;
   }
 
   function updatePricesAndImage() {
@@ -606,10 +1141,13 @@ if (firstEd && firstEd['Покрытие'] === 'Без покрытия') {
     updateColors();
   }
 
-  function applyColorFromPalette(c) {
-    _paletteColor = c;
-    var gallery  = document.querySelector('.nx-p-mainimg');
-    var mainImg  = document.getElementById('nx-mi');
+  /* Превью выбранного цвета: бейдж .nx-p-color-swatch__name на #nx-color-swatch.
+     keepPhoto:true (свотч готового издания) — подпись поверх реального фото, фон не
+     красим, #nx-mi не прячем. keepPhoto:false (палитра — фото нет) — цветной блок + прячем фото. */
+  function paintColorSwatch(c, opts) {
+    opts = opts || {};
+    var gallery = document.querySelector('.nx-p-mainimg');
+    var mainImg = document.getElementById('nx-mi');
     if (gallery) {
       var swatch = document.getElementById('nx-color-swatch');
       if (!swatch) {
@@ -618,14 +1156,20 @@ if (firstEd && firstEd['Покрытие'] === 'Без покрытия') {
         swatch.className = 'nx-p-color-swatch';
         gallery.appendChild(swatch);
       }
-      swatch.style.background = c.hex ? c.hex
-        : c.img ? 'center/cover url(' + c.img + ')' : '#e0e0e0';
+      swatch.classList.toggle('nx-p-color-swatch--label', !!opts.keepPhoto);
+      swatch.style.background = opts.keepPhoto ? 'transparent'
+        : (c.hex ? c.hex : c.img ? 'center/cover url(' + c.img + ')' : '#e0e0e0');
       swatch.style.display = 'flex';
       swatch.innerHTML = '<div class="nx-p-color-swatch__name">' +
         '<span class="nx-p-color-swatch__code">' + (c.code || '') + '</span>' +
         (c.name && c.name !== c.code ? c.name : '') + '</div>';
     }
-    if (mainImg) mainImg.style.display = 'none';
+    if (mainImg) mainImg.style.display = opts.keepPhoto ? '' : 'none';
+  }
+
+  function applyColorFromPalette(c) {
+    _paletteColor = c;
+    paintColorSwatch(c, { keepPhoto: false });
     if ((_selected['Тип покрытия'] || '') === 'Без покрытия') {
       var coatingProp = (_p && _p.properties || []).find(function (pr) { return pr.title === 'Тип покрытия'; });
       if (coatingProp) {
@@ -642,7 +1186,8 @@ if (firstEd && firstEd['Покрытие'] === 'Без покрытия') {
     updatePricesAndImage();
   }
 
-  function showColorTag(c) {
+  function showColorTag(c, opts) {
+    opts = opts || {};
     var old = document.getElementById('nx-color-tag');
     if (old) old.remove();
     var tag = document.createElement('div');
@@ -654,10 +1199,11 @@ if (firstEd && firstEd['Покрытие'] === 'Без покрытия') {
       '<span class="nx-color-tag__dot" style="' + dotStyle + '"></span>' +
       '<span class="nx-color-tag__code">' + (c.code || '') + '</span>' +
       (c.name && c.name !== c.code ? '<span class="nx-color-tag__name"> — ' + c.name + '</span>' : '') +
-      '<button class="nx-color-tag__clear" title="Сбросить цвет">×</button>';
+      (opts.clearable === false ? '' : '<button class="nx-color-tag__clear" title="Сбросить цвет">×</button>');
     var colors = document.getElementById('nx-colors');
     if (colors && colors.parentNode) colors.parentNode.insertBefore(tag, colors.nextSibling);
-    tag.querySelector('.nx-color-tag__clear').addEventListener('click', function () {
+    var clearBtn = tag.querySelector('.nx-color-tag__clear');
+    if (clearBtn) clearBtn.addEventListener('click', function () {
       clearPaletteColor();
       updatePricesAndImage();
     });
@@ -679,26 +1225,29 @@ if (firstEd && firstEd['Покрытие'] === 'Без покрытия') {
     if (!colorsEl) return;
 
     var selectedCoating = _selected['Тип покрытия'] || '';
-    var edCoating = COATING_MAP[selectedCoating];
-    var noCovering = edCoating ? !!_noColorCoatings[edCoating] : false;
+    var edCoating = COATING_MAP[nxCoatKey(selectedCoating)];
+    var noCovering = edCoating ? !!_noColorCoatings[nxCoatKey(edCoating)] : false;
 
     var palBtn2 = document.getElementById('nx-palette-btn');
+    var warnEl  = document.getElementById('nx-coat-warn');
     if (noCovering) {
       colorsEl.querySelectorAll('.nx-p-color-btn').forEach(function (b) {
         b.style.opacity = '0.3'; b.style.pointerEvents = 'none';
       });
       if (palBtn2) palBtn2.dataset.nxLocked = '1';
+      if (warnEl) warnEl.style.display = 'block';
       return;
     }
+    if (warnEl) warnEl.style.display = 'none';
 
     colorsEl.style.opacity = '';
     colorsEl.style.pointerEvents = '';
 
     var filtered;
     if (edCoating) {
-      filtered = _editions.filter(function (e) { return e['Покрытие'] === edCoating; });
+      filtered = _editions.filter(function (e) { return nxCoatKey(e['Покрытие']) === nxCoatKey(edCoating); });
     } else {
-      filtered = _editions.filter(function (e) { return e['Покрытие'] !== 'Без покрытия'; });
+      filtered = _editions.filter(function (e) { return nxCoatKey(e['Покрытие']) !== nxCoatKey('Без покрытия'); });
     }
     if (!filtered.length) filtered = _editions;
 
@@ -707,7 +1256,7 @@ if (firstEd && firstEd['Покрытие'] === 'Без покрытия') {
       _selected['Цвет'] = available[0] || '';
     }
 
-    colorsEl.innerHTML = renderColorSwatches(filtered, getColorMap());
+    colorsEl.innerHTML = renderColorSwatches(filtered, getColorMap(), _isBoard);
   }
 
   /* Сброс выбранного из палитры цвета: общий блок для всех мест,
@@ -719,6 +1268,37 @@ if (firstEd && firstEd['Покрытие'] === 'Без покрытия') {
     var sw = document.getElementById('nx-color-swatch'); if (sw) sw.style.display = 'none';
     var mi = document.getElementById('nx-mi'); if (mi) mi.style.display = '';
     var ct = document.getElementById('nx-color-tag'); if (ct) ct.remove();
+  }
+
+  /* ── Совместимость палитрового цвета и типа покрытия ──
+     Бренд цвета (Valtti/RAL/…) должен подходить под выбранное покрытие:
+     «Укрывная» → RAL/Vinha/Puutalot/Deco; пропитки/лессир./лак/воск → Valtti. */
+  function nxBrandOf(text) {
+    text = String(text || '');
+    if (/\bvinha\b/i.test(text))    return 'vinha';
+    if (/\bvaltti\b/i.test(text))   return 'valtti';
+    if (/\bpuutalot\b/i.test(text)) return 'puutalot';
+    if (/\bral\b/i.test(text))      return 'ral';
+    if (/\bdeco\b/i.test(text))     return 'deco';
+    return null;
+  }
+  var NX_OPAQUE = ['ral', 'vinha', 'puutalot', 'deco'];
+  var NX_VALTTI = ['valtti'];
+  function nxCoatingBrands(coating) {
+    var c = String(coating || '').toLowerCase();
+    if (c.indexOf('укрыв') !== -1) return NX_OPAQUE;
+    if (c.indexOf('пропит') !== -1 || c.indexOf('лессир') !== -1 ||
+        c.indexOf('лак')    !== -1 || c.indexOf('воск')   !== -1 ||
+        c.indexOf('valtti') !== -1) return NX_VALTTI;
+    return null; /* покрытие без ограничения по бренду */
+  }
+  function nxPaletteFitsCoating(palette, coating) {
+    if (!palette) return true;
+    var brand = nxBrandOf(palette.name || palette.code);
+    if (!brand) return true;                 /* бренд не распознан — не мешаем */
+    var allowed = nxCoatingBrands(coating);
+    if (!allowed) return true;               /* нет ограничения */
+    return allowed.indexOf(brand) !== -1;
   }
 
   function attachEvents() {
@@ -745,6 +1325,11 @@ if (firstEd && firstEd['Покрытие'] === 'Без покрытия') {
     root.addEventListener('click', function (e) {
       var thumb = e.target.closest('.nx-p-thumb');
       if (!thumb) return;
+      /* A previously selected palette/swatch color hides #nx-mi behind a color
+         overlay and leaves _paletteColor set — without clearing it here, the
+         thumbnail's image src would update on a hidden <img> (looks like nothing
+         happened) and addToCart() would still add the stale color selection. */
+      if (_paletteColor) clearPaletteColor();
       root.querySelectorAll('.nx-p-thumb').forEach(function (t) { t.classList.remove('nx-p-thumb--active'); });
       thumb.classList.add('nx-p-thumb--active');
       var mi = document.getElementById('nx-mi');
@@ -759,25 +1344,86 @@ if (firstEd && firstEd['Покрытие'] === 'Без покрытия') {
       btn.classList.add('nx-p-color-btn--active');
       _selected['Цвет'] = btn.dataset.color;
 
-// Найти edition с этим цветом и обновить покрытие
-var matchedEd = _editions.find(function(e) { 
-  return String(e['Цвет']) === btn.dataset.color; 
-});
-if (matchedEd && matchedEd['Покрытие']) {
-  _selected['Тип покрытия'] = matchedEd['Покрытие'];
-  var coatingSel = document.querySelector('.nx-p-select[data-prop="Тип покрытия"]');
-  if (coatingSel) coatingSel.value = matchedEd['Покрытие'];
+// Найти edition с этим цветом. Свотч отрисован уже ОТФИЛЬТРОВАННЫМ под
+// текущее покрытие (см. updateColors) — значит цвет и так совместим с
+// выбранным покрытием, менять его не нужно. Ищем сначала СРЕДИ изданий
+// текущего покрытия (или, если у выбранного покрытия нет своих изданий —
+// напр. «Премиум»-надбавка без отдельных SKU — среди всех крашеных); только
+// если цвета там нет вообще, ищем по всем изданиям и переключаем покрытие —
+// иначе клик по свотчу «Премиум»-набора молча откатывал выбор на базовое
+// покрытие (то, которому реально принадлежит найденное издание).
+var curEdCoating = COATING_MAP[nxCoatKey(_selected['Тип покрытия'])];
+var scopedEditions = curEdCoating
+  ? _editions.filter(function (e) { return nxCoatKey(e['Покрытие']) === nxCoatKey(curEdCoating); })
+  : _editions.filter(function (e) { return nxCoatKey(e['Покрытие']) !== nxCoatKey('Без покрытия'); });
+var matchedEd = scopedEditions.find(function(e) { return String(e['Цвет']) === btn.dataset.color; });
+/* Временная диагностика — почему клик по свотчу иногда переключает
+   покрытие, хотя тот же свотч уже был активен под текущим покрытием.
+   Убрать после того, как разберёмся. */
+console.log('nx: swatch click debug', JSON.stringify({
+  clickedColor: btn.dataset.color,
+  selectedCoating: _selected['Тип покрытия'],
+  curEdCoating: curEdCoating,
+  foundInScope: !!matchedEd,
+  scopedEditions: scopedEditions.map(function (e) { return { Цвет: e['Цвет'], Покрытие: e['Покрытие'] }; })
+}));
+if (!matchedEd) {
+  matchedEd = _editions.find(function(e) { return String(e['Цвет']) === btn.dataset.color; });
+  if (matchedEd && matchedEd['Покрытие']) {
+    _selected['Тип покрытия'] = matchedEd['Покрытие'];
+    var coatingSel = document.querySelector('.nx-p-select[data-prop="Тип покрытия"]');
+    if (coatingSel) coatingSel.value = matchedEd['Покрытие'];
+  }
 }
       updatePricesAndImage();
+
+      /* Свотч ведёт себя как палитра: чип #nx-color-tag + подпись на превью.
+         _paletteColor НЕ ставим — это готовое издание, а не кастомный замес. */
+      if (matchedEd && String(matchedEd['Цвет']) && String(matchedEd['Цвет']) !== 'без') {
+        var sc = {
+          code:    String(matchedEd['Цвет']),
+          name:    '',
+          hex:     getColorMap()[String(matchedEd['Цвет'])] || '',
+          img:     matchedEd.img || '',
+          coating: matchedEd['Покрытие'] || ''
+        };
+        paintColorSwatch(sc, { keepPhoto: true });
+        showColorTag(sc, { clearable: false });
+      }
     });
 
 root.addEventListener('change', function (e) {
   var sel = e.target.closest('.nx-p-select');
   if (!sel) return;
   _selected[sel.dataset.prop] = sel.value;
-  if (sel.dataset.prop === 'Тип покрытия' && sel.value === 'Без покрытия') {
-    clearPaletteColor();
-    _selected['Цвет'] = 'без';
+
+  /* Непалубные товары: атрибуты варианта (Размер/Шлиц/Фасовка и т.п.) —
+     фиксированная связка одного SKU, а не независимые оси вроде Ширина×Длина
+     у досок. Меняем один — синхронизируем остальные с реально найденным
+     изданием (как уже делает свотч цвета для Тип покрытия чуть выше по файлу),
+     иначе несовместимая комбинация просто не найдёт edition и молча
+     откатится на _editions[0]. */
+  if (!_isBoard && _genericAttrKeys.indexOf(sel.dataset.prop) !== -1) {
+    var genMatch = _editions.find(function (e2) { return String(e2[sel.dataset.prop]) === sel.value; });
+    if (genMatch) {
+      root.querySelectorAll('.nx-p-select').forEach(function (otherSel) {
+        var k = otherSel.dataset.prop;
+        if (k !== sel.dataset.prop && _genericAttrKeys.indexOf(k) !== -1 && genMatch[k] !== undefined) {
+          _selected[k] = String(genMatch[k]);
+          otherSel.value = _selected[k];
+        }
+      });
+    }
+  }
+
+  if (sel.dataset.prop === 'Тип покрытия') {
+    if (sel.value === 'Без покрытия') {
+      clearPaletteColor();
+      _selected['Цвет'] = 'без';
+    } else if (_paletteColor && !nxPaletteFitsCoating(_paletteColor, sel.value)) {
+      clearPaletteColor();
+      showToast('Цвет из палитры сброшен — не подходит к покрытию «' + sel.value + '»');
+    }
   }
   updatePricesAndImage();
 });
@@ -805,12 +1451,24 @@ root.addEventListener('change', function (e) {
           return;
         }
         var colorName = [c.code, (c.name && c.name !== c.code) ? c.name : ''].filter(Boolean).join(' — ');
+        var coatingLabel = '';
+        if (_selected['Тип покрытия']) coatingLabel = String(_selected['Тип покрытия']);
+        else if (c.coating) coatingLabel = String(c.coating);
+        else {
+          try {
+            var rawCtx = sessionStorage.getItem('nx_palette_product');
+            var pctx = rawCtx ? JSON.parse(rawCtx) : null;
+            if (pctx && pctx.coating) coatingLabel = String(pctx.coating);
+          } catch (e) {}
+        }
+        var optionParts = ['Цвет: ' + colorName];
+        if (coatingLabel) optionParts.push('Покрытие: ' + coatingLabel);
         try {
           if (typeof tcart__addProduct === 'function') {
             /* Выкрас — ручная позиция 0 ₽ без складского uid (иначе NOT FOUND PRODUCTS IN STORE) */
-            var sampleItem = { name: 'Пробный выкрас — ' + colorName, price: 0, quantity: 1, amount: 0, img: c.img || '', uid: '306044934692', option: 'Цвет: ' + colorName };
+            var sampleItem = { name: 'Пробный выкрас — ' + colorName, price: 0, quantity: 1, amount: 0, img: c.img || '', uid: '306044934692', option: optionParts.join(', ') };
             console.log('nx: sample to cart', JSON.stringify(sampleItem));
-            tcart__addProduct(sampleItem);
+            tcart__addProduct(sampleItem, true);
           }
         } catch (e) { console.error('nx: sample error', e); }
       });
@@ -825,11 +1483,11 @@ root.addEventListener('change', function (e) {
       qtyUnits.addEventListener('click', function (e) {
         var btn = e.target.closest('button'); if (!btn) return;
         _qty = Math.max(1, _qty + parseInt(btn.dataset.d));
-        inpUnits.value = _qty; inpMeters.value = (_qty * _boardLen).toFixed(0);
+        inpUnits.value = _qty; if (inpMeters) inpMeters.value = (_qty * _boardLen).toFixed(0);
       });
       inpUnits.addEventListener('input', function () {
         _qty = Math.max(1, parseInt(this.value) || 1);
-        inpMeters.value = (_qty * _boardLen).toFixed(0);
+        if (inpMeters) inpMeters.value = (_qty * _boardLen).toFixed(0);
       });
     }
     if (qtyMeters) {
@@ -844,30 +1502,60 @@ root.addEventListener('change', function (e) {
       });
     }
 
+    /* Популярные товары — стрелки прокрутки */
+    root.addEventListener('click', function (e) {
+      var popGrid = document.getElementById('nx-pop-grid');
+      if (!popGrid) return;
+      if (e.target.closest('.nx-pop-prev')) {
+        var card = popGrid.querySelector('.nx-pop2');
+        popGrid.scrollBy({ left: -(card ? card.offsetWidth + 20 : 305), behavior: 'smooth' });
+      } else if (e.target.closest('.nx-pop-next')) {
+        var card = popGrid.querySelector('.nx-pop2');
+        popGrid.scrollBy({ left: card ? card.offsetWidth + 20 : 305, behavior: 'smooth' });
+      }
+    });
+
+    /* Популярные товары — кнопка «Купить» */
+    root.addEventListener('click', function (e) {
+      var btn = e.target.closest('.nx-pop2__buy');
+      if (!btn) return;
+      e.preventDefault();
+      var uid = btn.dataset.uid;
+      var prod = _allProducts.find(function (x) { return String(x.uid) === String(uid); });
+      if (!prod) return;
+      var ed0 = (prod.editions || [])[0] || {};
+      var img = popularCardImg(prod);
+      var item = {
+        name:     prod.title,
+        price:    parsePrice(ed0.price || prod.price),
+        quantity: 1,
+        amount:   parsePrice(ed0.price || prod.price),
+        img:      img,
+        uid:      String(ed0.uid || prod.uid),
+        option:   [(ed0['Цвет'] && ed0['Цвет'] !== 'без' ? 'Цвет: ' + ed0['Цвет'] : ''), (ed0['Покрытие'] ? 'Покрытие: ' + ed0['Покрытие'] : '')].filter(Boolean).join(', ')
+      };
+      try {
+        if (typeof tcart__addProduct === 'function') {
+          tcart__addProduct(item, true);
+          showToast('Добавлено в корзину: ' + prod.title);
+        }
+      } catch (ex) { console.error('nx: pop buy error', ex); }
+    });
+
     setTimeout(restoreColorFromPalette, 150);
   }
 
-  function injectPopularBlock() {
-    var nxRoot = document.getElementById('nx-prod-root');
-    if (!nxRoot || !nxRoot.parentNode) return;
-
-    function activate(rec) {
-      var snippet = rec.querySelector('.t-store__prod-snippet__container');
-      if (snippet) snippet.style.cssText = 'display:none!important';
-      rec.style.cssText = '';
-      nxRoot.parentNode.insertBefore(rec, nxRoot.nextSibling);
-      setTimeout(function () {
-        if (typeof window._nxProcessCards === 'function') window._nxProcessCards();
-      }, 400);
-    }
-
+  /* Нативный Tilda-блок «Популярные товары» (rec2362047083) на странице товара
+     дублирует один и тот же товар — заменён собственной сеткой renderPopularGrid()
+     с реальными разными товарами. Прячем нативный блок, чтобы не было дублей. */
+  function hideNativePopularBlock() {
+    function hide(rec) { rec.style.cssText = 'display:none!important'; }
     var existing = document.getElementById('rec2362047083');
-    if (existing) { activate(existing); return; }
-
+    if (existing) { hide(existing); return; }
     var n = 0;
     var iv = setInterval(function () {
       var rec = document.getElementById('rec2362047083');
-      if (rec) { clearInterval(iv); activate(rec); return; }
+      if (rec) { clearInterval(iv); hide(rec); return; }
       if (++n > 50) clearInterval(iv);
     }, 100);
   }
@@ -879,21 +1567,21 @@ root.addEventListener('change', function (e) {
     function revealOnFail() {
       document.documentElement.classList.remove('nx-tp');
     }
-    var attempts = 0;
-    var iv = setInterval(function () {
-      attempts++;
-      if ((window.tStoreOptionsList && window.tStoreOptionsList.length) || attempts > 30) {
-        clearInterval(iv);
-        loadProduct(uid).then(function (p) {
-          if (!p) { console.error('nx: product not found'); revealOnFail(); return; }
-          renderRoot(p);
-        }).catch(function (err) { console.error('nx: loadProduct error', err); revealOnFail(); });
-      }
-    }, 100);
+    loadProduct(uid).then(function (p) {
+      if (!p) { console.error('nx: product not found'); revealOnFail(); return; }
+      renderRoot(p);
+    }).catch(function (err) { console.error('nx: loadProduct error', err); revealOnFail(); });
   }
 
   /* Создать #nx-prod-root как можно раньше — чтобы не было пустоты пока грузится продукт.
-     Возвращает существующий или только что созданный корень (используется и в renderRoot). */
+     Возвращает существующий или только что созданный корень (используется и в renderRoot).
+
+     Tilda использует две разные структуры для /tproduct/ страниц:
+       A) Обычная:  <div id="allrecords"><div id="recXXX">(header)...
+       B) Новая:    <body><div class="t-zoomer__wrapper">...  (нет #allrecords!)
+     В случае B вставляем root первым ребёнком body. CSS (body > #nx-prod-root)
+     делает его position:fixed z-index:99999 — перекрывает zoomer независимо от
+     того, что с ним делает tilda-zoom-2.0.min.js. */
   function ensureProdRoot() {
     var root = document.getElementById('nx-prod-root');
     if (root) return root;
@@ -901,9 +1589,27 @@ root.addEventListener('change', function (e) {
     root.id = 'nx-prod-root';
     var allrec = document.getElementById('allrecords');
     if (allrec && allrec.children.length) {
+      /* Структура A: вставляем вторым ребёнком (первый — шапка) */
       allrec.insertBefore(root, allrec.children[1] || null);
     } else {
-      document.body.appendChild(root);
+      /* Структура B (t-zoomer): вставляем первым ребёнком body.
+         CSS body > #nx-prod-root покрывает весь вьюпорт поверх zoomer. */
+      document.body.insertBefore(root, document.body.firstChild || null);
+      /* Полифилл: на Structure B нет #allrecords вообще, а нативные Tilda-скрипты
+         (напр. tilda-widget-positions — подтверждено консольной ошибкой
+         "Cannot read properties of null (reading 'getAttribute')" на
+         document.getElementById("allrecords")) читают его безусловно и падают.
+         Пустой скрытый div с этим id не меняет их поведение (0 детей — как и
+         раньше), но не даёт им получить null и упасть — вероятная причина,
+         по которой на этой структуре не открывается попап корзины (скрипт,
+         инициализирующий попап, вероятно падает на том же самом allrecords
+         раньше, чем успевает отрисовать сам попап). */
+      if (!allrec) {
+        var stub = document.createElement('div');
+        stub.id = 'allrecords';
+        stub.style.cssText = 'display:none!important';
+        root.appendChild(stub);
+      }
     }
     return root;
   }
@@ -926,26 +1632,6 @@ root.addEventListener('change', function (e) {
   window.addEventListener('pageshow', function (e) {
     if (e.persisted) setTimeout(restoreColorFromPalette, 200);
   });
-})();
-
-/* ══ 4. Мобильное меню + deeplinks ══ */
-(function () {
-  function initMobileMenu() {
-    var btn = document.querySelector('.t-menu__link-item[href="#catalog"]');
-    if (!btn) return;
-    btn.addEventListener('click', function (e) {
-      var t = document.querySelector('#catalog, [data-catalog]');
-      if (t) { e.preventDefault(); t.scrollIntoView({ behavior: 'smooth' }); }
-    });
-  }
-  function initDeeplinks() {
-    var hash = location.hash;
-    if (!hash || hash.length < 2) return;
-    document.querySelectorAll('.nx-filter-chip[data-filter]').forEach(function (chip) {
-      if (chip.dataset.filter === hash.slice(1)) chip.click();
-    });
-  }
-  window.addEventListener('load', function () { setTimeout(function () { initMobileMenu(); initDeeplinks(); }, 500); });
 })();
 
 /* ══ 5. Перехват ошибки оформления → «Заявка отправлена» ══ */
@@ -1019,23 +1705,23 @@ root.addEventListener('change', function (e) {
     }
   });
 
-  /* document.body может ещё не существовать в момент запуска скрипта из <head> */
-  function startObs() {
-    if (document.body) {
-      _obs.observe(document.body, {
-        childList: true, subtree: true,
-        attributes: true, attributeFilter: ['style', 'class']
-      });
-    } else {
-      document.addEventListener('DOMContentLoaded', function () {
-        _obs.observe(document.body, {
-          childList: true, subtree: true,
-          attributes: true, attributeFilter: ['style', 'class']
-        });
-      });
-    }
+  /* Ошибка оформления появляется ТОЛЬКО после отправки формы заказа в корзине.
+     Поэтому вешаем наблюдатель ЛЕНИВО — на первый клик по корзине — и на
+     контейнер корзины (.t706), а не на весь body с attributes-слежением
+     (самый дорогой наблюдатель раньше висел на каждой странице). */
+  var _attached = false;
+  function attachObs() {
+    if (_attached) return;
+    _attached = true;
+    var host = document.querySelector('.t706') || document.body;
+    _obs.observe(host, {
+      childList: true, subtree: true,
+      attributes: true, attributeFilter: ['style', 'class']
+    });
   }
-  startObs();
+  document.addEventListener('click', function (e) {
+    if (e.target.closest('a[href="#opencart"], .t706__carticon, .t-menuwidgeticons__link_cart, .t706')) attachObs();
+  }, true);
 })();
 
 </script>
@@ -1094,5 +1780,33 @@ root.addEventListener('change', function (e) {
   } else {
     setTimeout(init, 500);
   }
+})();
+</script>
+
+<script>
+/* ══ Кликабельный баннер Telegram (блок T368) ══
+   Картинка banner_tg.png не имеет ссылки в стандартном блоке — оборачиваем её
+   в ссылку на канал. Привязка по имени файла, чтобы не задеть другие T368. */
+(function () {
+  var TG_URL = 'https://t.me/artdoska';
+  function linkTgBanner() {
+    var imgs = document.querySelectorAll('img.t368__img');
+    for (var i = 0; i < imgs.length; i++) {
+      var img = imgs[i];
+      if ((img.getAttribute('src') || '').indexOf('banner_tg') === -1) continue;
+      if (img.closest('a.nx-tg-link')) continue;
+      var a = document.createElement('a');
+      a.className = 'nx-tg-link';
+      a.href = TG_URL; a.target = '_blank'; a.rel = 'noopener';
+      a.style.cssText = 'display:block;cursor:pointer;';
+      img.parentNode.insertBefore(a, img);
+      a.appendChild(img);
+    }
+  }
+  if (document.readyState === 'loading')
+    document.addEventListener('DOMContentLoaded', linkTgBanner);
+  else linkTgBanner();
+  setTimeout(linkTgBanner, 600);
+  setTimeout(linkTgBanner, 1500);
 })();
 </script>
