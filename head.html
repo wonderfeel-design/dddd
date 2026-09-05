@@ -17,8 +17,14 @@
 <link rel="preconnect" href="https://static.tildacdn.one" crossorigin>
 
 <style>
-  .t-store__prod-snippet__container, .t-store__prod-snippet,
-  .t-catalog__prod-snippet__container, .t-catalog__prod-snippet { display: none !important; }
+  /* Раньше это скрывало сниппет товара ВСЕГДА, даже когда наш скрипт не
+     нашёл товар и revealOnFail() снимает nx-tp, пытаясь показать нативный
+     Tilda-виджет как страховку — виджет тоже оставался скрыт этим же
+     правилом, и вместо fallback получалась совсем пустая страница.
+     Привязано к .nx-tp: скрыто, пока рендерим свою карточку; снято —
+     нативный сниппет наконец виден. */
+  html.nx-tp .t-store__prod-snippet__container, html.nx-tp .t-store__prod-snippet,
+  html.nx-tp .t-catalog__prod-snippet__container, html.nx-tp .t-catalog__prod-snippet { display: none !important; }
   /* На страницах /tproduct/ скрываем Tilda-реки (кроме шапки, футера, корзины и
      нашего блока) до рендера. Раньше использовался позиционный :not(:first-child) —
      ломался, если шапка не оказывалась первым ребёнком #allrecords (шапка/футер
@@ -489,33 +495,51 @@ function nxParsePrice(n) { return parseFloat(String(n || 0).replace(/\s/g, '').r
      домен (store.tildaapi.<tld>). Без обработки этого товар «не находится»
      даже когда он реально есть и опубликован (подтверждено на живом
      сайте: ответ был буквально {"redirectto":"com"}). Повторяем запрос
-     на указанный домен один раз. */
-  function fetchProductsListText(tld) {
-    return fetch('https://store.tildaapi.' + tld + '/api/getproductslist/?storepartuid=' + STORE_UID + '&recid=' + CATALOG_REC)
+     на указанный домен один раз.
+     slice — опциональная пагинация: на разросшемся каталоге один запрос
+     может отдавать не весь список, а первую порцию плюс поле nextslice
+     для следующей. Без этого товары за пределами первой порции были
+     «не найдены» на своей странице. Само поле не подтверждено вживую (нет
+     доступа к API из песочницы), но безопасно: если nextslice в ответе
+     нет — цикл ниже останавливается сразу же, поведение как раньше. */
+  function fetchProductsListText(tld, slice) {
+    return fetch('https://store.tildaapi.' + tld + '/api/getproductslist/?storepartuid=' + STORE_UID + '&recid=' + CATALOG_REC + (slice ? '&slice=' + slice : ''))
       .then(function (r) { return r.text(); });
   }
 
-  function loadProduct(uid) {
-    function parseAndFind(txt) {
-      if (!txt || txt.indexOf('ERROR') === 0) {
-        console.warn('nx: store API error:', (txt || '').slice(0, 80));
-        return null;
-      }
-      var d;
-      try { d = JSON.parse(txt); } catch (e) { console.warn('nx: store API non-JSON response'); return null; }
-      return d;
+  function parseProductsJSON(txt) {
+    if (!txt || txt.indexOf('ERROR') === 0) {
+      console.warn('nx: store API error:', (txt || '').slice(0, 80));
+      return null;
     }
+    try { return JSON.parse(txt); } catch (e) { console.warn('nx: store API non-JSON response'); return null; }
+  }
+
+  function fetchAllSlices(tld, slice, acc) {
+    return fetchProductsListText(tld, slice).then(function (txt) {
+      var d = parseProductsJSON(txt);
+      if (!d) return acc;
+      var merged = acc.concat(d.products || []);
+      return d.nextslice ? fetchAllSlices(tld, d.nextslice, merged) : merged;
+    });
+  }
+
+  function loadProduct(uid) {
     return fetchProductsListText('one').then(function (txt) {
-      var d = parseAndFind(txt);
-      if (d && d.redirectto) {
-        return fetchProductsListText(d.redirectto).then(function (txt2) {
-          var d2 = parseAndFind(txt2);
-          _allProducts = (d2 && d2.products) || [];
-          return _allProducts.find(function (x) { return String(x.uid) === String(uid); }) || null;
-        });
-      }
-      _allProducts = (d && d.products) || [];
-      return _allProducts.find(function (x) { return String(x.uid) === String(uid); }) || null;
+      var d = parseProductsJSON(txt);
+      var afterRedirect = d && d.redirectto
+        ? fetchProductsListText(d.redirectto).then(function (txt2) {
+            var d2 = parseProductsJSON(txt2);
+            var first = (d2 && d2.products) || [];
+            return d2 && d2.nextslice ? fetchAllSlices(d.redirectto, d2.nextslice, first) : first;
+          })
+        : (d && d.nextslice
+            ? fetchAllSlices('one', d.nextslice, (d && d.products) || [])
+            : Promise.resolve((d && d.products) || []));
+      return afterRedirect.then(function (all) {
+        _allProducts = all;
+        return _allProducts.find(function (x) { return String(x.uid) === String(uid); }) || null;
+      });
     });
   }
 
