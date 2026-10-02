@@ -55,99 +55,6 @@ window.nxReachGoal = function (goal, params) {
     nxTrack('page_view', { utm_placement: ctx.utm_placement, utm_region: ctx.utm_region, page_type: pageType });
   } catch (e) {}
 })();
-
-/* ══ Сторож для диагностики «пустой карточки товара» ══
-   Живёт в ПЕРВОМ script-теге файла (этот участок уже подтверждён рабочим —
-   nxTrack отсюда же). Если по какой-то причине весь большой script-блок
-   ниже (со страницей товара, ensureProdRoot/boot) вообще не выполнится —
-   например, упадёт что-то ПЕРЕД ним в том же теге, — эта независимая
-   проверка всё равно появится на экране через 5 секунд и опишет, что
-   видно снаружи: дошло ли дело хотя бы до создания #nx-prod-root. Это
-   временная диагностика; можно убрать после того, как причина найдена. */
-(function () {
-  if (location.pathname.indexOf('/tproduct/') === -1) return;
-  setTimeout(function () {
-    try {
-      var hasRoot = !!document.getElementById('nx-prod-root');
-      var rendered = !!window._nxProdRendered;
-      if (hasRoot && rendered) return; /* всё в порядке, баннер не нужен */
-      var b = document.createElement('div');
-      b.id = 'nx-watchdog-banner';
-      b.style.cssText = 'position:fixed;bottom:0;left:0;right:0;z-index:2147483647;' +
-        'background:#1a1a1a;color:#0f0;padding:10px 16px;font:12px/1.5 monospace;white-space:pre-wrap;';
-      b.textContent = 'NX WATCHDOG t+5s: #nx-prod-root exists=' + hasRoot +
-        ', rendered=' + rendered +
-        ', nxTp=' + document.documentElement.classList.contains('nx-tp') +
-        ', readyState=' + document.readyState +
-        ' — if this is the ONLY banner showing, the main product-page script block never ran at all.';
-      (document.body || document.documentElement).appendChild(b);
-    } catch (e) {}
-  }, 5000);
-})();
-
-/* ══ Детектор «стирания» body ══
-   Рабочая гипотеза: страница сначала рендерится нормально (поэтому видны
-   наши console-ошибки от нативных Tilda-скриптов — они успевают сработать),
-   а ПОТОМ что-то (возможно, восстановление Tilda после своего же сбоя)
-   заменяет/стирает содержимое body — из-за чего ни баннер, ни #nx-prod-root
-   не доживают до момента, когда их проверяют. Если это произойдёт, пишем
-   находку в sessionStorage — она переживёт даже полную замену документа —
-   и показываем её через alert() при СЛЕДУЮЩЕЙ загрузке этой же страницы. */
-(function () {
-  if (location.pathname.indexOf('/tproduct/') === -1) return;
-  try {
-    var prev = sessionStorage.getItem('nx_wipe_debug');
-    if (prev) {
-      sessionStorage.removeItem('nx_wipe_debug');
-      setTimeout(function () { alert('NX WIPE DETECTOR (из предыдущей загрузки):\n\n' + prev); }, 300);
-    }
-  } catch (e) {}
-  if (!window.MutationObserver || !document.body) return;
-  var done = false;
-  var sawRoot = false;
-  function record(msg) {
-    if (done) return;
-    done = true;
-    try { sessionStorage.setItem('nx_wipe_debug', msg); } catch (e2) {}
-    try { mo.disconnect(); } catch (e3) {}
-  }
-  var mo = new MutationObserver(function (mutations) {
-    if (done) return;
-    try {
-      if (document.getElementById('nx-prod-root')) sawRoot = true;
-      /* Вариант 1: хирургическое удаление именно #nx-prod-root, пока
-         остальной body остаётся на месте (полный wipe-детектор ниже это
-         пропустит, т.к. body не стал маленьким). */
-      for (var i = 0; i < mutations.length; i++) {
-        var removed = mutations[i].removedNodes;
-        for (var j = 0; j < removed.length; j++) {
-          var n = removed[j];
-          if (n.nodeType === 1 && (n.id === 'nx-prod-root' || (n.querySelector && n.querySelector('#nx-prod-root')))) {
-            record('t=' + Date.now() + ' | #nx-prod-root ОСТРО УДАЛЁН из DOM (остальной body остался) | sawRootBefore=' + sawRoot +
-              ' | body.innerHTML.length now=' + (document.body.innerHTML || '').length +
-              ' | readyState=' + document.readyState);
-            return;
-          }
-        }
-      }
-      /* Вариант 2: полный wipe всего body. */
-      var html = document.body.innerHTML || '';
-      if (html.length < 80 || html.trim() === '{}') {
-        record('t=' + Date.now() + ' | ПОЛНЫЙ WIPE body | sawRootBefore=' + sawRoot +
-          ' | new body (first 150 chars)="' + html.slice(0, 150) + '"' +
-          ' | readyState=' + document.readyState);
-      }
-    } catch (e3) {}
-  });
-  mo.observe(document.body, { childList: true, subtree: true });
-  setTimeout(function () {
-    if (done) return;
-    /* Ни хирургического удаления, ни полного wipe не случилось за 15с —
-       но если #nx-prod-root так и не появился НИ РАЗУ, это другой случай
-       (он просто никогда не создавался), уже покрытый обычным watchdog. */
-    try { mo.disconnect(); } catch (e) {}
-  }, 15000);
-})();
 </script>
 
 <!-- ══ Web Vitals RUM: полевые данные реальных пользователей → GA4 ══ -->
@@ -1340,8 +1247,8 @@ if (firstEd && nxCoatKey(firstEd['Покрытие']) === nxCoatKey('Без по
 
             /* 3. Кнопка Купить */
             '<button class="nx-p-btn" id="nx-btn-buy">Купить</button>' +
-            /* Строка доверия (U-1) — текст предварительный, согласовать с клиентом */
-            '<div class="nx-p-trust-row"><!-- TODO: подтвердить точный текст с клиентом -->Самара и Тольятти, доставка от 1 дня</div>' +
+            /* Строка доверия (U-1). TODO: текст предварительный, подтвердить с клиентом. */
+            '<div class="nx-p-trust-row">Самара и Тольятти, доставка от 1 дня</div>' +
 
             /* 4. Селекты: для досок — Ширина/Длина/Тип покрытия; для прочих товаров —
                реальные атрибуты варианта (Размер/Шлиц/Фасовка и т.п.) из p.json_options */
@@ -1931,50 +1838,25 @@ root.addEventListener('change', function (e) {
     }, 100);
   }
 
-  /* ══ Видимый баннер ошибки (диагностика) ══
-     Если что-то в цепочке boot()/loadProduct()/renderRoot() падает, а
-     console.error по какой-то причине не долетает до видимой консоли
-     (например, если платформа перехватывает/глотает ошибки кастомного
-     кода), эта функция делает сбой видимым прямо на странице — красная
-     полоса сверху с текстом ошибки, без зависимости от DevTools. */
-  function nxShowDebugBanner(msg) {
-    try {
-      var b = document.getElementById('nx-debug-banner');
-      if (!b) {
-        b = document.createElement('div');
-        b.id = 'nx-debug-banner';
-        b.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:2147483647;' +
-          'background:#c0392b;color:#fff;padding:10px 16px;font:12px/1.5 monospace;' +
-          'white-space:pre-wrap;word-break:break-word;max-height:40vh;overflow:auto;';
-        (document.body || document.documentElement).appendChild(b);
-      }
-      b.textContent += (b.textContent ? '\n---\n' : '') + msg;
-    } catch (e) {}
-  }
-  /* Ловит вообще любую необработанную ошибку на странице /tproduct/ —
-     не только из нашего кода — пока идёт диагностика «пустой карточки». */
-  window.addEventListener('error', function (e) {
-    nxShowDebugBanner('JS ERROR: ' + e.message + ' @ ' + String(e.filename || '?').split('/').pop() + ':' + e.lineno);
-  });
-  window.addEventListener('unhandledrejection', function (e) {
-    nxShowDebugBanner('UNHANDLED PROMISE REJECTION: ' + (e.reason && e.reason.message || e.reason));
-  });
-
+  /* load-фолбэк проверяет .nx-p-inner в момент load, а boot() зовёт через
+     100мс — к тому времени первый рендер уже успевает пройти, и без этой
+     проверки boot() шёл второй раз: двойной рендер, двойные обработчики на
+     #nx-prod-root и двойные view_item/select_color. */
+  var _booting = false;
   function boot() {
+    if (_booting || document.querySelector('#nx-prod-root .nx-p-inner')) return;
     var m = location.pathname.match(/\/tproduct\/(\d+)/);
     if (!m) return;
     var uid = m[1];
+    _booting = true;
     function revealOnFail() {
       document.documentElement.classList.remove('nx-tp');
     }
     loadProduct(uid).then(function (p) {
-      if (!p) { console.error('nx: product not found'); nxShowDebugBanner('product not found for uid ' + uid); revealOnFail(); return; }
+      _booting = false;
+      if (!p) { console.error('nx: product not found'); revealOnFail(); return; }
       renderRoot(p);
-    }).catch(function (err) {
-      console.error('nx: loadProduct error', err);
-      nxShowDebugBanner('loadProduct/renderRoot error: ' + (err && (err.stack || err.message) || err));
-      revealOnFail();
-    });
+    }).catch(function (err) { _booting = false; console.error('nx: loadProduct error', err); revealOnFail(); });
   }
 
   /* Создать #nx-prod-root как можно раньше — чтобы не было пустоты пока грузится продукт.
@@ -2036,22 +1918,15 @@ root.addEventListener('change', function (e) {
     return root;
   }
 
-  /* Запускаем сразу на DOMContentLoaded — не ждём window.load. Обёрнуто в
-     try/catch с видимым баннером — если ensureProdRoot() бросает синхронно
-     (до того как boot() вообще успевает запуститься), это раньше приводило
-     к молча пустой странице без единой нашей ошибки в консоли. */
-  function nxBootSafely() {
-    try {
+  /* Запускаем сразу на DOMContentLoaded — не ждём window.load */
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function () {
       ensureProdRoot();
       setTimeout(boot, 50);
-    } catch (e) {
-      nxShowDebugBanner('ensureProdRoot/boot threw synchronously: ' + (e && (e.stack || e.message) || e));
-    }
-  }
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', nxBootSafely);
+    });
   } else {
-    nxBootSafely();
+    ensureProdRoot();
+    setTimeout(boot, 50);
   }
   /* Fallback: window.load на случай если DOMContentLoaded уже прошёл */
   window.addEventListener('load', function () {
