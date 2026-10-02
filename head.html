@@ -154,6 +154,11 @@ gtag('config', 'G-PBM1FQX6EK');
   html.nx-tp #allrecords { min-height: 100vh; min-height: 100dvh; display: flex; flex-direction: column; }
   html.nx-tp #nx-prod-root { flex: 1 1 auto; min-height: 100vh; min-height: 100dvh; }
   html.nx-tp #t-footer { margin-top: auto; }
+  /* CLS 0.947 в Lighthouse — целиком сдвиг #t-footer (и в старой, и в новой
+     версии). Пока карточка не отрисована, футера просто нет: появление
+     элемента сдвигом не считается, а после рендера он уже ниже экрана.
+     nx-tp-ready ставит renderRoot(); при ошибке nx-tp снимается целиком. */
+  html.nx-tp:not(.nx-tp-ready) #t-footer { display: none !important; }
 </style>
 
 <script>
@@ -901,6 +906,14 @@ function nxParsePrice(n) { return parseFloat(String(n || 0).replace(/\s/g, '').r
   function nxBg(src, w) {
     return 'background-image:url(' + nxImg(src, w) + ')" data-bg-full="' + src;
   }
+  /* og:image товарной страницы Tilda = первое фото товара. Оно есть в HTML
+     сразу, без ожидания Store API (~450 КБ JSON) — по нему грузим главное
+     фото заранее и показываем его прямо в каркасе. */
+  function nxOgImg() {
+    var m = document.querySelector('meta[property="og:image"]');
+    return m ? String(m.getAttribute('content') || '').replace(/"/g, '') : '';
+  }
+  function nxBase(u) { return String(u || '').split(/[?#]/)[0].split('/').pop(); }
   function nxSetMainImg(mi, original) {
     mi.setAttribute('data-full', original);
     mi.src = nxImg(original, NX_MAIN_W);
@@ -1321,7 +1334,17 @@ if (firstEd && nxCoatKey(firstEd['Покрытие']) === nxCoatKey('Без по
       '</div>';
 
     var root = ensureProdRoot();
+    var keepMi = document.getElementById('nx-mi');
     root.innerHTML = html;
+    /* Фото из og:image уже на экране в каркасе — переносим тот же <img>
+       в карточку, а не рисуем новый: иначе LCP засчитывается заново, по
+       времени рендера после ответа Store API. Только если это тот же файл. */
+    var freshMi = document.getElementById('nx-mi');
+    if (keepMi && freshMi && keepMi !== freshMi &&
+        nxBase(keepMi.getAttribute('data-full')) === nxBase(freshMi.getAttribute('data-full'))) {
+      keepMi.setAttribute('data-full', freshMi.getAttribute('data-full'));
+      freshMi.parentNode.replaceChild(keepMi, freshMi);
+    }
 
     /* Sticky-кнопка «Заказать» (U-1): появляется, когда основная кнопка
        #nx-btn-buy уходит за пределы экрана. Вынесена ЗА .nx-p-inner —
@@ -1393,6 +1416,7 @@ if (firstEd && nxCoatKey(firstEd['Покрытие']) === nxCoatKey('Без по
        native Tilda product widget (real title/image), which must never reappear
        next to our custom render. Only mark success for the 3s failsafe above. */
     window._nxProdRendered = true;
+    document.documentElement.classList.add('nx-tp-ready');
 
     try {
       nxTrack('view_item', {
@@ -1927,6 +1951,7 @@ root.addEventListener('change', function (e) {
     if (root) return root;
     root = document.createElement('div');
     root.id = 'nx-prod-root';
+    var og = nxOgImg();
     /* Каркас вместо пустого экрана, пока грузится товар: резервирует место
        под фото/заголовок/цену/кнопку, чтобы при появлении реального
        контента не было сдвига разметки (CLS). renderRoot() полностью
@@ -1935,7 +1960,9 @@ root.addEventListener('change', function (e) {
       '<div class="nx-p-skel-wrap nx-p-skeleton">' +
         '<div class="nx-p-layout">' +
           '<div class="nx-p-left">' +
-            '<div class="nx-p-gallery"><div class="nx-p-mainimg nx-p-skel-box"></div></div>' +
+            '<div class="nx-p-gallery"><div class="nx-p-mainimg nx-p-skel-box">' +
+              (og ? '<img id="nx-mi" src="' + nxImg(og, NX_MAIN_W) + '" data-full="' + og + '" alt="" loading="eager" fetchpriority="high" decoding="async">' : '') +
+            '</div></div>' +
           '</div>' +
           '<div class="nx-p-right">' +
             '<div class="nx-p-skel-bar nx-p-skel-title"></div>' +
@@ -2005,7 +2032,11 @@ root.addEventListener('change', function (e) {
   var _earlyLoad = null;
   (function () {
     var em = location.pathname.match(/\/tproduct\/(\d+)/);
-    if (em) { _earlyLoad = loadProduct(em[1]); _earlyLoad.catch(function () {}); }
+    if (em) {
+      var og = nxOgImg();
+      if (og) ensureMainImagePreload(nxImg(og, NX_MAIN_W));
+      _earlyLoad = loadProduct(em[1]); _earlyLoad.catch(function () {});
+    }
   })();
 
   /* Запускаем сразу на DOMContentLoaded — не ждём window.load */

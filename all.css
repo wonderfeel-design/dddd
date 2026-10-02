@@ -1702,7 +1702,10 @@ html body .nx-megamenu-wrap { padding-left: 20px !important; }
 
 @media (max-width: 640px) {
     #nx-prod-root { padding: 80px 0 60px; }
-    #nx-prod-root .nx-p-inner { padding: 0 16px; }
+    /* Каркас — те же отступы, что у карточки: фото из og:image в каркасе
+       должно быть того же размера, иначе Chrome засчитывает LCP заново
+       при рендере карточки. */
+    #nx-prod-root .nx-p-inner, #nx-prod-root .nx-p-skel-wrap { padding: 0 16px; }
     #nx-prod-root .nx-p-title { font-size: 18px; }
     /* U-1: крошки сворачиваются в одну строку — «Главная › текущая страница»,
        средний уровень (Каталог) прячем вместе с его разделителем. Структура
