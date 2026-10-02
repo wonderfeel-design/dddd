@@ -84,6 +84,44 @@ window.nxReachGoal = function (goal, params) {
     } catch (e) {}
   }, 5000);
 })();
+
+/* ══ Детектор «стирания» body ══
+   Рабочая гипотеза: страница сначала рендерится нормально (поэтому видны
+   наши console-ошибки от нативных Tilda-скриптов — они успевают сработать),
+   а ПОТОМ что-то (возможно, восстановление Tilda после своего же сбоя)
+   заменяет/стирает содержимое body — из-за чего ни баннер, ни #nx-prod-root
+   не доживают до момента, когда их проверяют. Если это произойдёт, пишем
+   находку в sessionStorage — она переживёт даже полную замену документа —
+   и показываем её через alert() при СЛЕДУЮЩЕЙ загрузке этой же страницы. */
+(function () {
+  if (location.pathname.indexOf('/tproduct/') === -1) return;
+  try {
+    var prev = sessionStorage.getItem('nx_wipe_debug');
+    if (prev) {
+      sessionStorage.removeItem('nx_wipe_debug');
+      setTimeout(function () { alert('NX WIPE DETECTOR (из предыдущей загрузки):\n\n' + prev); }, 300);
+    }
+  } catch (e) {}
+  if (!window.MutationObserver || !document.body) return;
+  var done = false;
+  var mo = new MutationObserver(function () {
+    if (done) return;
+    try {
+      var html = document.body.innerHTML || '';
+      var isWipe = html.length < 80 || html.trim() === '{}';
+      if (!isWipe) return;
+      done = true;
+      var msg = 't=' + Date.now() +
+        ' | had #nx-prod-root before wipe=' + !!document.getElementById('nx-prod-root') +
+        ' | new body (first 150 chars)="' + html.slice(0, 150) + '"' +
+        ' | readyState=' + document.readyState;
+      try { sessionStorage.setItem('nx_wipe_debug', msg); } catch (e2) {}
+      mo.disconnect();
+    } catch (e3) {}
+  });
+  mo.observe(document.body, { childList: true });
+  setTimeout(function () { try { mo.disconnect(); } catch (e) {} }, 15000);
+})();
 </script>
 
 <!-- ══ Web Vitals RUM: полевые данные реальных пользователей → GA4 ══ -->
