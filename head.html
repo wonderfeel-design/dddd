@@ -107,12 +107,16 @@ gtag('config', 'G-PBM1FQX6EK');
 })();
 </script>
 
-<link rel="preconnect" href="https://optim.tildacdn.com" crossorigin>
-<link rel="preconnect" href="https://static.tildacdn.com" crossorigin>
-<link rel="preconnect" href="https://static.tildacdn.one" crossorigin>
-<link rel="preconnect" href="https://store.tildaapi.one" crossorigin>
+<!-- Не больше 4 (рекомендация Lighthouse). store.tildaapi.com — запрос
+     Store API в критическом пути LCP (fetch = CORS → crossorigin).
+     static.tildacdn.com дважды: без crossorigin — для картинок/CSS/JS
+     (no-cors, LCP-фото), с crossorigin — для шрифтов (всегда CORS);
+     одно соединение не подходит другому типу запроса. optim — кандидат
+     от Lighthouse (~300 мс к LCP). .one-домены больше не запрашиваются. -->
 <link rel="preconnect" href="https://store.tildaapi.com" crossorigin>
-<link rel="preconnect" href="https://mc.yandex.ru" crossorigin>
+<link rel="preconnect" href="https://static.tildacdn.com">
+<link rel="preconnect" href="https://static.tildacdn.com" crossorigin>
+<link rel="preconnect" href="https://optim.tildacdn.com">
 
 <style>
   /* Раньше это скрывало сниппет товара ВСЕГДА, даже когда наш скрипт не
@@ -155,14 +159,18 @@ gtag('config', 'G-PBM1FQX6EK');
 <script>
 if (location.pathname.indexOf('/tproduct/') !== -1) {
   document.documentElement.classList.add('nx-tp');
-  /* Safety: if our custom render never completes within 3s (API error, JS
-     exception before the catch handler), reveal native recs so the page
-     isn't stuck blank. If render succeeded, window._nxProdRendered is true
-     and native recs (which hold the real product widget) must stay hidden —
-     removing nx-tp here would un-hide them and duplicate the title/image. */
-  setTimeout(function () {
-    if (!window._nxProdRendered) document.documentElement.classList.remove('nx-tp');
-  }, 3000);
+  /* Страховка — только на случай, если основной скрипт карточки вообще не
+     запустился (так и было, когда Tilda обрезала HEAD-код): тогда
+     #nx-prod-root не создаётся, и без снятия nx-tp страница пуста.
+     Раньше снимали nx-tp через 3с без рендера — на медленном мобильном
+     рендер позже 3с, поэтому нативные реки всплывали, футер прыгал вверх,
+     а потом карточка сталкивала всё вниз (CLS 1.0 в Lighthouse). Ошибки
+     самого рендера/API обрабатывает revealOnFail() в boot(). */
+  window.addEventListener('load', function () {
+    setTimeout(function () {
+      if (!document.getElementById('nx-prod-root')) document.documentElement.classList.remove('nx-tp');
+    }, 1500);
+  });
 }
 </script>
 
@@ -692,7 +700,7 @@ function nxParsePrice(n) { return parseFloat(String(n || 0).replace(/\s/g, '').r
     if (cached) {
       _allProducts = cached;
       var found = _allProducts.find(function (x) { return String(x.uid) === String(uid); });
-      if (found) return Promise.resolve(found);
+      if (found) { ensureMainImagePreload(popularCardImg(found)); return Promise.resolve(found); }
       /* товара нет в кэше (напр. добавлен позже публикации кэша) — идём за свежим списком */
     }
     /* Начинаем сразу с .com: .one на живом сайте всегда отвечает
@@ -709,7 +717,14 @@ function nxParsePrice(n) { return parseFloat(String(n || 0).replace(/\s/g, '').r
       function find() {
         return acc.find(function (x) { return String(x.uid) === String(uid); }) || null;
       }
-      function settle(p) { if (!settled) { settled = true; resolve(p); } }
+      /* Главное фото (LCP) начинает грузиться сразу, как только известен
+         его URL, — не дожидаясь DOMContentLoaded и сборки карточки. */
+      function settle(p) {
+        if (settled) return;
+        settled = true;
+        if (p) ensureMainImagePreload(popularCardImg(p));
+        resolve(p);
+      }
       function step(tld, slice) {
         return fetchProductsListText(tld, slice).then(function (txt) {
           var d = parseProductsJSON(txt);
@@ -1866,7 +1881,9 @@ root.addEventListener('change', function (e) {
     function revealOnFail() {
       document.documentElement.classList.remove('nx-tp');
     }
-    loadProduct(uid).then(function (p) {
+    var req = _earlyLoad || loadProduct(uid);
+    _earlyLoad = null;
+    req.then(function (p) {
       _booting = false;
       if (!p) { console.error('nx: product not found'); revealOnFail(); return; }
       renderRoot(p);
@@ -1939,6 +1956,17 @@ root.addEventListener('change', function (e) {
     }
     return root;
   }
+
+  /* Запрос Store API стартует прямо сейчас, пока разбирается <head>, а не
+     после DOMContentLoaded (который ждёт весь render-blocking CSS/JS Tilda —
+     в Lighthouse это давало ~4.7с «задержки загрузки» LCP-фото). boot()
+     подхватит уже летящий запрос. Пустой catch — чтобы ранний отказ не
+     сыпал «Uncaught (in promise)» до того, как boot() повесит обработчик. */
+  var _earlyLoad = null;
+  (function () {
+    var em = location.pathname.match(/\/tproduct\/(\d+)/);
+    if (em) { _earlyLoad = loadProduct(em[1]); _earlyLoad.catch(function () {}); }
+  })();
 
   /* Запускаем сразу на DOMContentLoaded — не ждём window.load */
   if (document.readyState === 'loading') {
