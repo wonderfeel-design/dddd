@@ -5,19 +5,31 @@
         m[i].l=1*new Date();
         for (var j = 0; j < document.scripts.length; j++) {if (document.scripts[j].src === r) { return; }}
         k=e.createElement(t),a=e.getElementsByTagName(t)[0],k.async=1,k.src=r,a.parentNode.insertBefore(k,a)
-    })(window, document,'script','https://mc.yandex.ru/metrika/tag.js?id=109995897', 'ym');
+    })(window, document,'script','https://mc.yandex.ru/metrika/tag.js?id=112962377', 'ym');
 
-    ym(109995897, 'init', {ssr:true, webvisor:true, clickmap:true, ecommerce:"dataLayer", referrer: document.referrer, url: location.href, accurateTrackBounce:true, trackLinks:true});
+    ym(112962377, 'init', {ssr:true, webvisor:true, clickmap:true, ecommerce:"dataLayer", referrer: document.referrer, url: location.href, accurateTrackBounce:true, trackLinks:true});
 </script>
-<noscript><div><img src="https://mc.yandex.ru/watch/109995897" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
+<noscript><div><img src="https://mc.yandex.ru/watch/112962377" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
 <!-- /Yandex.Metrika counter -->
 
+<meta name="google-site-verification" content="lpsXtyCAetn0eNk6PiUudKLHtZM6E20F7V7aCx7Xhbo" />
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-PBM1FQX6EK"></script>
+
 <script>
-/* ══ 0. Аналитика: единая точка отправки событий ══
-   GA4 Measurement ID/GTM-контейнер сайта нам не известен, поэтому события
-   шлём ОБОИМИ способами сразу: прямой gtag(), если он где-то уже подключён
-   (нативная интеграция Tilda), и dataLayer.push (подхватит GTM, если стоит
-   он). Ничего не ломается, если ни то ни другое не подключено — try/catch. */
+/* ══ 0. Аналитика ══
+   GA4 (G-PBM1FQX6EK) подключён здесь же. nxTrack шлёт событие и в gtag,
+   и в dataLayer (на случай GTM); Метрика дублирует ключевые цели. */
+window.dataLayer = window.dataLayer || [];
+function gtag() { dataLayer.push(arguments); }
+gtag('js', new Date());
+
+/* Тип страницы — по URL: в HEAD #allrecords ещё не существует, и проверка
+   по нему относила каталог к 'other'. */
+window.nxPageType = function () {
+  var p = location.pathname;
+  return p.indexOf('/tproduct/') !== -1 ? 'product' : (p.indexOf('/catalog') === 0 ? 'catalog' : 'other');
+};
+
 window.nxTrack = function (name, params) {
   try {
     params = params || {};
@@ -29,14 +41,14 @@ window.nxTrack = function (name, params) {
 /* Дублируем ключевые события целью в Метрике (счётчик уже известен) —
    чтобы Директ мог оптимизироваться по конверсиям. */
 window.nxReachGoal = function (goal, params) {
-  try { if (typeof ym === 'function') ym(109995897, 'reachGoal', goal, params); } catch (e) {}
+  try { if (typeof ym === 'function') ym(112962377, 'reachGoal', goal, params); } catch (e) {}
 };
 
-/* UTM-параметры utm_placement/utm_region не читаются нативно GA4 — берём их
-   сами из URL и кладём в sessionStorage, чтобы они дожили до событий,
-   срабатывающих позже (напр. добавление в корзину), когда самого URL уже
-   может не быть под рукой (переход в поп-ап корзины ничего не меняет в URL,
-   но на будущее — безопаснее не зависеть от этого). */
+/* utm_placement/utm_region GA4 сам не читает — берём из URL (и из
+   sessionStorage для следующих страниц сессии) и задаём через
+   gtag('set') ДО config, чтобы их получил автоматический page_view и все
+   последующие события. Отдельный page_view не шлём — он задвоил бы
+   просмотры в GA4. */
 (function () {
   try {
     var qs = new URLSearchParams(location.search);
@@ -50,11 +62,10 @@ window.nxReachGoal = function (goal, params) {
       var stored = sessionStorage.getItem('nx_utm_ctx');
       if (stored) ctx = JSON.parse(stored);
     }
-    var pageType = location.pathname.indexOf('/tproduct/') !== -1 ? 'product'
-                 : (document.getElementById('allrecords') ? 'catalog' : 'other');
-    nxTrack('page_view', { utm_placement: ctx.utm_placement, utm_region: ctx.utm_region, page_type: pageType });
+    gtag('set', { utm_placement: ctx.utm_placement, utm_region: ctx.utm_region, page_type: nxPageType() });
   } catch (e) {}
 })();
+gtag('config', 'G-PBM1FQX6EK');
 </script>
 
 <!-- ══ Web Vitals RUM: полевые данные реальных пользователей → GA4 ══ -->
@@ -62,8 +73,7 @@ window.nxReachGoal = function (goal, params) {
 <script defer>
 (function () {
   function pageType() {
-    return location.pathname.indexOf('/tproduct/') !== -1 ? 'product'
-         : (document.getElementById('allrecords') ? 'catalog' : 'other');
+    return nxPageType();
   }
   function report(metric) {
     try {
@@ -205,8 +215,7 @@ if (location.pathname.indexOf('/tproduct/') !== -1) {
 (function () {
   if (!window.MutationObserver) return;
   function pageType() {
-    return location.pathname.indexOf('/tproduct/') !== -1 ? 'product'
-         : (document.getElementById('allrecords') ? 'catalog' : 'other');
+    return nxPageType();
   }
   function isVisible(el) {
     var st = window.getComputedStyle(el);
@@ -658,15 +667,6 @@ function nxParsePrice(n) { return parseFloat(String(n || 0).replace(/\s/g, '').r
     try { return JSON.parse(txt); } catch (e) { console.warn('nx: store API non-JSON response'); return null; }
   }
 
-  function fetchAllSlices(tld, slice, acc) {
-    return fetchProductsListText(tld, slice).then(function (txt) {
-      var d = parseProductsJSON(txt);
-      if (!d) return acc;
-      var merged = acc.concat(d.products || []);
-      return d.nextslice ? fetchAllSlices(tld, d.nextslice, merged) : merged;
-    });
-  }
-
   /* Кэш ответа Store API в sessionStorage: переход между товарами и возврат
      из палитры не должны заново дёргать весь каталог каждый раз — только
      раз в CACHE_TTL. try/catch — приватный режим Safari/WebView может
@@ -695,21 +695,35 @@ function nxParsePrice(n) { return parseFloat(String(n || 0).replace(/\s/g, '').r
       if (found) return Promise.resolve(found);
       /* товара нет в кэше (напр. добавлен позже публикации кэша) — идём за свежим списком */
     }
-    return fetchProductsListText('one').then(function (txt) {
-      var d = parseProductsJSON(txt);
-      var afterRedirect = d && d.redirectto
-        ? fetchProductsListText(d.redirectto).then(function (txt2) {
-            var d2 = parseProductsJSON(txt2);
-            var first = (d2 && d2.products) || [];
-            return d2 && d2.nextslice ? fetchAllSlices(d.redirectto, d2.nextslice, first) : first;
-          })
-        : (d && d.nextslice
-            ? fetchAllSlices('one', d.nextslice, (d && d.products) || [])
-            : Promise.resolve((d && d.products) || []));
-      return afterRedirect.then(function (all) {
-        _allProducts = all;
-        writeProductsCache(all);
-        return _allProducts.find(function (x) { return String(x.uid) === String(uid); }) || null;
+    /* Начинаем сразу с .com: .one на живом сайте всегда отвечает
+       {"redirectto":"com"} — это был лишний последовательный запрос на
+       каждый просмотр. redirectto всё равно обрабатывается, если сменится.
+       Каталог отдаётся порциями (slice/nextslice) по 36 товаров, ~450 КБ
+       каждая; раньше все порции качались последовательно ДО рендера, даже
+       если товар был в первой. Теперь отдаём товар, как только он найден,
+       а остальные порции догружаем в фоне — для кэша (пишем только полный
+       список, иначе кэш «терял» бы товары из недокачанных порций). */
+    return new Promise(function (resolve, reject) {
+      var acc = [];
+      var settled = false;
+      function find() {
+        return acc.find(function (x) { return String(x.uid) === String(uid); }) || null;
+      }
+      function settle(p) { if (!settled) { settled = true; resolve(p); } }
+      function step(tld, slice) {
+        return fetchProductsListText(tld, slice).then(function (txt) {
+          var d = parseProductsJSON(txt);
+          if (d && d.redirectto && !slice) return step(d.redirectto, null);
+          if (d && d.products) { acc = acc.concat(d.products); _allProducts = acc; }
+          var p = find();
+          if (p) settle(p);
+          if (d && d.nextslice) return step(tld, d.nextslice);
+          if (acc.length) writeProductsCache(acc);
+          settle(find());
+        });
+      }
+      step('com', null).catch(function (err) {
+        if (!settled) { settled = true; reject(err); }
       });
     });
   }
@@ -1802,7 +1816,7 @@ root.addEventListener('change', function (e) {
         option:   [(ed0['Цвет'] && ed0['Цвет'] !== 'без' ? 'Цвет: ' + ed0['Цвет'] : ''), (ed0['Покрытие'] ? 'Покрытие: ' + ed0['Покрытие'] : '')].filter(Boolean).join(', ')
       };
       try {
-        var pt = location.pathname.indexOf('/tproduct/') !== -1 ? 'product' : (document.getElementById('allrecords') ? 'catalog' : 'other');
+        var pt = nxPageType();
         nxTrack('click_order', { item_name: item.name, item_id: item.uid, button_position: 'grid', page_type: pt });
       } catch (exo) {}
       try {
