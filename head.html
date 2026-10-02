@@ -700,7 +700,7 @@ function nxParsePrice(n) { return parseFloat(String(n || 0).replace(/\s/g, '').r
     if (cached) {
       _allProducts = cached;
       var found = _allProducts.find(function (x) { return String(x.uid) === String(uid); });
-      if (found) { ensureMainImagePreload(popularCardImg(found)); return Promise.resolve(found); }
+      if (found) { ensureMainImagePreload(nxImg(popularCardImg(found), NX_MAIN_W)); return Promise.resolve(found); }
       /* товара нет в кэше (напр. добавлен позже публикации кэша) — идём за свежим списком */
     }
     /* Начинаем сразу с .com: .one на живом сайте всегда отвечает
@@ -722,7 +722,7 @@ function nxParsePrice(n) { return parseFloat(String(n || 0).replace(/\s/g, '').r
       function settle(p) {
         if (settled) return;
         settled = true;
-        if (p) ensureMainImagePreload(popularCardImg(p));
+        if (p) ensureMainImagePreload(nxImg(popularCardImg(p), NX_MAIN_W));
         resolve(p);
       }
       function step(tld, slice) {
@@ -816,7 +816,7 @@ function nxParsePrice(n) { return parseFloat(String(n || 0).replace(/\s/g, '').r
       var hex = colorMap[colorVal] || '';
       var active = _selected['Цвет'] === colorVal ? ' nx-p-color-btn--active' : '';
       var innerStyle = e.img
-        ? ' style="background-image:url(' + e.img + ');background-size:cover;background-position:center;"'
+        ? ' style="background-size:cover;background-position:center;' + nxBg(e.img, 100) + '"'
         : (hex ? ' style="background:' + hex + '"' : '');
       return '<button class="nx-p-color-btn' + active + '" data-color="' + colorVal + '" title="' + colorVal + '"><div class="nx-p-color-inner"' + innerStyle + '></div></button>';
     }).join('');
@@ -884,15 +884,37 @@ function nxParsePrice(n) { return parseFloat(String(n || 0).replace(/\s/g, '').r
     return '<div class="nx-p-selects">' + selects.join('') + '</div>';
   }
 
+  /* Ресайз через CDN Tilda (optim.tildacdn.com, тот же формат, что у её
+     lazyload): оригиналы в галерее — 1680×1680 (120–220 КБ), а показываются
+     миниатюрами 98px; на мобильном они в первом экране, грузятся сразу и
+     отбирали канал у главного фото (Lighthouse: −1.36 МБ). Оригинал
+     хранится в data-full: если ресайз почему-то не отдастся, обработчик
+     ошибок ниже подставит оригинал — картинка не пропадёт. */
+  var NX_MAIN_W = 1000, NX_THUMB_W = 200;
+  function nxImg(src, w) {
+    var m = /^https?:\/\/static\.tildacdn\.(?:com|one)\/((?:tild|stor)[^\/]+)\/([^\/?#]+)$/.exec(String(src || ''));
+    return m ? 'https://optim.tildacdn.com/' + m[1] + '/-/resize/' + w + 'x/-/format/webp/' + m[2] : src;
+  }
+  /* То же для фонов (кружки цветов ~40px, карточки «Популярные»): у фона нет
+     onerror, поэтому оригинал кладём в data-bg-full, а обработчик ошибок
+     при первом же отказе optim возвращает оригиналы всем таким фонам. */
+  function nxBg(src, w) {
+    return 'background-image:url(' + nxImg(src, w) + ')" data-bg-full="' + src;
+  }
+  function nxSetMainImg(mi, original) {
+    mi.setAttribute('data-full', original);
+    mi.src = nxImg(original, NX_MAIN_W);
+  }
+
   function renderGallery(gallery) {
     var imgs = gallery.map(function (g) { return g.img || g; });
     var firstImg = imgs[0] || '';
     var thumbs = imgs.map(function (src, i) {
       return '<div class="nx-p-thumb' + (i === 0 ? ' nx-p-thumb--active' : '') +
-        '" data-idx="' + i + '"><img src="' + src + '" alt="" loading="lazy" fetchpriority="low" decoding="async"></div>';
+        '" data-idx="' + i + '"><img src="' + nxImg(src, NX_THUMB_W) + '" data-full="' + src + '" alt="" loading="lazy" fetchpriority="low" decoding="async"></div>';
     }).join('');
     return '<div class="nx-p-gallery">' +
-      '<div class="nx-p-mainimg"><img id="nx-mi" src="' + firstImg + '" alt="" loading="eager" fetchpriority="high" decoding="async"></div>' +
+      '<div class="nx-p-mainimg"><img id="nx-mi" src="' + nxImg(firstImg, NX_MAIN_W) + '" data-full="' + firstImg + '" alt="" loading="eager" fetchpriority="high" decoding="async"></div>' +
       '<div class="nx-p-thumbs">' + thumbs + '</div>' +
       '</div>';
   }
@@ -1003,7 +1025,7 @@ function nxParsePrice(n) { return parseFloat(String(n || 0).replace(/\s/g, '').r
       }
       return '<div class="nx-pop2">' +
         '<a class="nx-pop2__media" href="/tproduct/' + prod.uid + '">' +
-          '<div class="nx-pop2__img" style="background-image:url(' + img + ')">' +
+          '<div class="nx-pop2__img" style="' + nxBg(img, 400) + '">' +
             (badge ? '<div class="nx-cat-badge">' + badge + '</div>' : '') +
           '</div>' +
         '</a>' +
@@ -1242,7 +1264,7 @@ if (firstEd && nxCoatKey(firstEd['Покрытие']) === nxCoatKey('Без по
       var g0 = gallery[0];
       firstImg = (g0 && g0.img) ? g0.img : g0;
     }
-    ensureMainImagePreload(firstImg);
+    ensureMainImagePreload(nxImg(firstImg, NX_MAIN_W));
 
     var html =
       '<div class="nx-p-inner">' +
@@ -1381,7 +1403,7 @@ if (firstEd && nxCoatKey(firstEd['Покрытие']) === nxCoatKey('Без по
 
   function updatePricesAndImage() {
     var ed = getEd();
-    if (!_paletteColor && ed && ed.img) { var mi = document.getElementById('nx-mi'); if (mi) mi.src = ed.img; }
+    if (!_paletteColor && ed && ed.img) { var mi = document.getElementById('nx-mi'); if (mi) nxSetMainImg(mi, ed.img); }
     var pricesEl = document.getElementById('nx-prices');
     if (pricesEl) pricesEl.innerHTML = renderPrices(ed);
     updateColors();
@@ -1612,7 +1634,8 @@ if (firstEd && nxCoatKey(firstEd['Покрытие']) === nxCoatKey('Без по
       root.querySelectorAll('.nx-p-thumb').forEach(function (t) { t.classList.remove('nx-p-thumb--active'); });
       thumb.classList.add('nx-p-thumb--active');
       var mi = document.getElementById('nx-mi');
-      if (mi) mi.src = thumb.querySelector('img').src;
+      var ti = thumb.querySelector('img');
+      if (mi && ti) nxSetMainImg(mi, ti.getAttribute('data-full') || ti.src);
     });
 
     root.addEventListener('click', function (e) {
@@ -1962,6 +1985,23 @@ root.addEventListener('change', function (e) {
      в Lighthouse это давало ~4.7с «задержки загрузки» LCP-фото). boot()
      подхватит уже летящий запрос. Пустой catch — чтобы ранний отказ не
      сыпал «Uncaught (in promise)» до того, как boot() повесит обработчик. */
+  /* Если уменьшенная копия с optim.tildacdn.com не загрузилась — сразу
+     подставляем оригинал из data-full (error не всплывает, ловим в capture). */
+  document.addEventListener('error', function (e) {
+    var t = e.target;
+    if (t && t.tagName === 'IMG') {
+      var full = t.getAttribute('data-full');
+      if (full && t.src !== full) {
+        t.src = full;
+        var bgs = document.querySelectorAll('[data-bg-full]');
+        for (var i = 0; i < bgs.length; i++) {
+          bgs[i].style.backgroundImage = 'url(' + bgs[i].getAttribute('data-bg-full') + ')';
+          bgs[i].removeAttribute('data-bg-full');
+        }
+      }
+    }
+  }, true);
+
   var _earlyLoad = null;
   (function () {
     var em = location.pathname.match(/\/tproduct\/(\d+)/);
