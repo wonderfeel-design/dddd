@@ -55,6 +55,35 @@ window.nxReachGoal = function (goal, params) {
     nxTrack('page_view', { utm_placement: ctx.utm_placement, utm_region: ctx.utm_region, page_type: pageType });
   } catch (e) {}
 })();
+
+/* ══ Сторож для диагностики «пустой карточки товара» ══
+   Живёт в ПЕРВОМ script-теге файла (этот участок уже подтверждён рабочим —
+   nxTrack отсюда же). Если по какой-то причине весь большой script-блок
+   ниже (со страницей товара, ensureProdRoot/boot) вообще не выполнится —
+   например, упадёт что-то ПЕРЕД ним в том же теге, — эта независимая
+   проверка всё равно появится на экране через 5 секунд и опишет, что
+   видно снаружи: дошло ли дело хотя бы до создания #nx-prod-root. Это
+   временная диагностика; можно убрать после того, как причина найдена. */
+(function () {
+  if (location.pathname.indexOf('/tproduct/') === -1) return;
+  setTimeout(function () {
+    try {
+      var hasRoot = !!document.getElementById('nx-prod-root');
+      var rendered = !!window._nxProdRendered;
+      if (hasRoot && rendered) return; /* всё в порядке, баннер не нужен */
+      var b = document.createElement('div');
+      b.id = 'nx-watchdog-banner';
+      b.style.cssText = 'position:fixed;bottom:0;left:0;right:0;z-index:2147483647;' +
+        'background:#1a1a1a;color:#0f0;padding:10px 16px;font:12px/1.5 monospace;white-space:pre-wrap;';
+      b.textContent = 'NX WATCHDOG t+5s: #nx-prod-root exists=' + hasRoot +
+        ', rendered=' + rendered +
+        ', nxTp=' + document.documentElement.classList.contains('nx-tp') +
+        ', readyState=' + document.readyState +
+        ' — if this is the ONLY banner showing, the main product-page script block never ran at all.';
+      (document.body || document.documentElement).appendChild(b);
+    } catch (e) {}
+  }, 5000);
+})();
 </script>
 
 <!-- ══ Web Vitals RUM: полевые данные реальных пользователей → GA4 ══ -->
@@ -1838,6 +1867,35 @@ root.addEventListener('change', function (e) {
     }, 100);
   }
 
+  /* ══ Видимый баннер ошибки (диагностика) ══
+     Если что-то в цепочке boot()/loadProduct()/renderRoot() падает, а
+     console.error по какой-то причине не долетает до видимой консоли
+     (например, если платформа перехватывает/глотает ошибки кастомного
+     кода), эта функция делает сбой видимым прямо на странице — красная
+     полоса сверху с текстом ошибки, без зависимости от DevTools. */
+  function nxShowDebugBanner(msg) {
+    try {
+      var b = document.getElementById('nx-debug-banner');
+      if (!b) {
+        b = document.createElement('div');
+        b.id = 'nx-debug-banner';
+        b.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:2147483647;' +
+          'background:#c0392b;color:#fff;padding:10px 16px;font:12px/1.5 monospace;' +
+          'white-space:pre-wrap;word-break:break-word;max-height:40vh;overflow:auto;';
+        (document.body || document.documentElement).appendChild(b);
+      }
+      b.textContent += (b.textContent ? '\n---\n' : '') + msg;
+    } catch (e) {}
+  }
+  /* Ловит вообще любую необработанную ошибку на странице /tproduct/ —
+     не только из нашего кода — пока идёт диагностика «пустой карточки». */
+  window.addEventListener('error', function (e) {
+    nxShowDebugBanner('JS ERROR: ' + e.message + ' @ ' + String(e.filename || '?').split('/').pop() + ':' + e.lineno);
+  });
+  window.addEventListener('unhandledrejection', function (e) {
+    nxShowDebugBanner('UNHANDLED PROMISE REJECTION: ' + (e.reason && e.reason.message || e.reason));
+  });
+
   function boot() {
     var m = location.pathname.match(/\/tproduct\/(\d+)/);
     if (!m) return;
@@ -1846,9 +1904,13 @@ root.addEventListener('change', function (e) {
       document.documentElement.classList.remove('nx-tp');
     }
     loadProduct(uid).then(function (p) {
-      if (!p) { console.error('nx: product not found'); revealOnFail(); return; }
+      if (!p) { console.error('nx: product not found'); nxShowDebugBanner('product not found for uid ' + uid); revealOnFail(); return; }
       renderRoot(p);
-    }).catch(function (err) { console.error('nx: loadProduct error', err); revealOnFail(); });
+    }).catch(function (err) {
+      console.error('nx: loadProduct error', err);
+      nxShowDebugBanner('loadProduct/renderRoot error: ' + (err && (err.stack || err.message) || err));
+      revealOnFail();
+    });
   }
 
   /* Создать #nx-prod-root как можно раньше — чтобы не было пустоты пока грузится продукт.
@@ -1910,15 +1972,22 @@ root.addEventListener('change', function (e) {
     return root;
   }
 
-  /* Запускаем сразу на DOMContentLoaded — не ждём window.load */
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', function () {
+  /* Запускаем сразу на DOMContentLoaded — не ждём window.load. Обёрнуто в
+     try/catch с видимым баннером — если ensureProdRoot() бросает синхронно
+     (до того как boot() вообще успевает запуститься), это раньше приводило
+     к молча пустой странице без единой нашей ошибки в консоли. */
+  function nxBootSafely() {
+    try {
       ensureProdRoot();
       setTimeout(boot, 50);
-    });
+    } catch (e) {
+      nxShowDebugBanner('ensureProdRoot/boot threw synchronously: ' + (e && (e.stack || e.message) || e));
+    }
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', nxBootSafely);
   } else {
-    ensureProdRoot();
-    setTimeout(boot, 50);
+    nxBootSafely();
   }
   /* Fallback: window.load на случай если DOMContentLoaded уже прошёл */
   window.addEventListener('load', function () {
