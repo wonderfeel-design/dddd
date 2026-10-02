@@ -71,7 +71,7 @@
     right: max(0px, calc((100vw - 1200px) / 2));
     border: 1px solid #ddd; border-top: none; background: #fff;
     box-shadow: 0 8px 28px rgba(0,0,0,.13); z-index: 50;
-    max-height: calc(100vh - 120px); overflow-y: auto;
+    max-height: calc(100vh - 120px); max-height: calc(100dvh - 120px); overflow-y: auto;
   }
   .artm-panel.open { display: flex; }
 
@@ -112,24 +112,24 @@
 
   /* ── SEGMENTS (ромбы) ── */
   .artm-seg {
-    position: absolute; inset: 0; cursor: pointer; z-index: 1; display: block;
+    position: absolute; top: 0; right: 0; bottom: 0; left: 0; inset: 0; cursor: pointer; z-index: 1; display: block;
     text-decoration: none; transition: clip-path .28s ease;
   }
   .artm-seg:hover { z-index: 2; }
   .artm-seg-bg {
-    position: absolute; inset: 0; background-size: cover; background-position: center;
+    position: absolute; top: 0; right: 0; bottom: 0; left: 0; inset: 0; background-size: cover; background-position: center;
     filter: brightness(.72); transition: filter .25s, transform .3s;
   }
   .artm-seg:hover .artm-seg-bg { filter: brightness(.95); transform: scale(1.05); }
   .artm-seg-tint {
-    position: absolute; inset: 0; background: rgba(76,158,36,.0);
+    position: absolute; top: 0; right: 0; bottom: 0; left: 0; inset: 0; background: rgba(76,158,36,.0);
     opacity: 0; pointer-events: none; transition: opacity .25s;
   }
   .artm-seg:hover .artm-seg-tint { opacity: 1; }
   /* Тёмный градиент снизу — читаемость подписи поверх светлых фото
      (то же самое уже есть на мобильной сетке, .artm-mob-card-grad). */
   .artm-seg-grad {
-    position: absolute; inset: 0; pointer-events: none;
+    position: absolute; top: 0; right: 0; bottom: 0; left: 0; inset: 0; pointer-events: none;
     background: linear-gradient(to top, rgba(0,0,0,.65) 0%, rgba(0,0,0,0) 60%);
   }
   .artm-seg-label {
@@ -144,7 +144,7 @@
     transition: font-weight .15s, color .15s, left .28s ease, width .28s ease;
   }
   .artm-seg:hover .artm-seg-label { color: #fff; font-weight: 700; }
-  .artm-svg-lines { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 3; }
+  .artm-svg-lines { position: absolute; top: 0; right: 0; bottom: 0; left: 0; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 3; }
 
   /* ── MOBILE: фото-сетка категорий (лента) ── */
   .artm-mobg { display: none; }
@@ -165,10 +165,10 @@
     clip-path: none; grid-column: 1 / -1;
   }
   .artm-mob-card-bg {
-    position: absolute; inset: 0; background-size: cover; background-position: center; filter: brightness(.72);
+    position: absolute; top: 0; right: 0; bottom: 0; left: 0; inset: 0; background-size: cover; background-position: center; filter: brightness(.72);
   }
   .artm-mob-card-grad {
-    position: absolute; inset: 0; background: linear-gradient(to top, rgba(0,0,0,.6) 0%, transparent 62%);
+    position: absolute; top: 0; right: 0; bottom: 0; left: 0; inset: 0; background: linear-gradient(to top, rgba(0,0,0,.6) 0%, transparent 62%);
   }
   .artm-mob-card-label {
     position: absolute; bottom: 6px; left: 15px; right: 12px;

@@ -61,6 +61,7 @@ html {
 }
 #allrecords {
     min-height: 100vh;
+    min-height: 100dvh;
     display: flex;
     flex-direction: column;
     position: relative;
@@ -144,6 +145,7 @@ html #allrecords {
 .t-catalog__card__imgwrapper,
 .t-store__card__imgwrapper {
     background: #F7F7F7 !important;
+    aspect-ratio: 1 / 1;
 }
 
 .t-catalog__card__wrap_txt-and-btns,
@@ -746,6 +748,14 @@ html.nx-pal-hasctx #rec2362172923 {
     background: #F5F5F5 !important;
     padding: 7px 12px !important;
 }
+/* iOS увеличивает масштаб страницы при фокусе, если шрифт поля < 16px (B-1).
+   Кнопку сортировки (.t-catalog__filter__sort-btn) не трогаем — это не
+   текстовое поле, зума не вызывает. */
+.t-catalog__filter__sort select,
+.t-catalog__filter__search input,
+[class*="catalog__filter__search"] input {
+    font-size: 16px !important;
+}
 [class*="catalog__filter__search"] input::placeholder { color: #BBBBBB !important; }
 
 /* Пагинация */
@@ -830,8 +840,8 @@ html.nx-pal-hasctx #rec2362172923 {
 .nx-popular-arrows { display: flex !important; align-items: center !important; gap: 8px !important; }
 .nx-arrow-btn,
 .t-carousel__btn {
-    width: 40px !important;
-    height: 40px !important;
+    width: 44px !important; /* U-1: минимум 44×44 для области нажатия */
+    height: 44px !important;
     border-radius: 50% !important;
     background: #ffffff !important;
     border: 1px solid #E0E0E0 !important;
@@ -921,6 +931,7 @@ html.nx-pal-hasctx #rec2362172923 {
     width: 100%;
     flex: 1 1 auto;
     min-height: 100vh;
+    min-height: 100dvh;
     overflow: hidden;
     padding: 120px 0 80px;
     font-family: var(--nx-font);
@@ -959,7 +970,7 @@ body > #nx-prod-root ~ *,
 /* Мобильная: шапка + меню выше, поэтому контент товара заезжал под меню —
    отступ = высота фикс-шапки (--nx-header-h) + меню(~56) + запас(24) */
 @media (max-width: 640px) {
-  #nx-prod-root { padding-top: calc(var(--nx-header-h, 96px) + 80px) !important; }
+  #nx-prod-root { padding-top: calc(var(--nx-header-h, 80px) + 80px) !important; }
 }
 #nx-prod-root .nx-p-inner { max-width: 1200px; margin: 0 auto; padding: 0 20px; }
 
@@ -1004,6 +1015,27 @@ body > #nx-prod-root ~ *,
 #nx-prod-root .nx-p-mainimg { flex: 0 0 330px; width: 330px; height: 330px; border-radius: 8px; overflow: hidden; background: #f5f5f5; }
 #nx-prod-root .nx-p-mainimg img { width: 100%; height: 100%; object-fit: cover; transition: opacity .2s; }
 
+/* Каркас (скелетон) карточки товара на время загрузки Store API (P-1/P-3):
+   переиспользует размеры реальных .nx-p-mainimg/.nx-p-layout/.nx-p-right,
+   поэтому подмена на настоящий контент не сдвигает макет (CLS). */
+.nx-p-skel-wrap { max-width: 1200px; margin: 0 auto; padding: 0 20px; }
+.nx-p-skel-box,
+.nx-p-skel-bar {
+    background: linear-gradient(100deg, #eee 30%, #f5f5f5 50%, #eee 70%);
+    background-size: 200% 100%;
+    animation: nxSkelShimmer 1.4s ease-in-out infinite;
+    border-radius: 8px;
+}
+.nx-p-skel-bar { height: 16px; margin-bottom: 14px; }
+.nx-p-skel-title { width: 85%; height: 22px; }
+.nx-p-skel-title--short { width: 55%; }
+.nx-p-skel-price { width: 40%; height: 32px; margin-top: 8px; }
+.nx-p-skel-btn { width: 220px; height: 48px; margin-top: 24px; }
+@keyframes nxSkelShimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
 /* Текст */
 /* Единый заголовок над обеими колонками */
 #nx-prod-root .nx-p-title { font-size: 26px; font-weight: 800; text-transform: uppercase; letter-spacing: .5px; line-height: 1.2; color: #111; margin-bottom: 20px; }
@@ -1044,7 +1076,7 @@ body > #nx-prod-root ~ *,
 #nx-prod-root .nx-p-qty-lbl { font-size: 12px; color: #888; white-space: nowrap; }
 #nx-prod-root .nx-p-qty-link { display: flex; justify-content: center; align-items: center; padding-bottom: 12px; color: #bbb; font-size: 18px; }
 #nx-prod-root .nx-p-qty { display: flex; align-items: center; width: 100%; border: 1.5px solid #ddd; border-radius: 8px; overflow: hidden; height: 50px; }
-#nx-prod-root .nx-p-qty button { flex: 0 0 40px; height: 100%; border: none; background: #F1F1FF; font-size: 18px; cursor: pointer; color: #444; transition: background .1s; }
+#nx-prod-root .nx-p-qty button { flex: 0 0 44px; height: 100%; border: none; background: #F1F1FF; font-size: 18px; cursor: pointer; color: #444; transition: background .1s; }
 #nx-prod-root .nx-p-qty button:hover { background: #f5f5f5; }
 #nx-prod-root .nx-p-qty input { flex: 1; width: auto; min-width: 0; height: 100%; border: none; text-align: center; font-size: 16px; font-weight: 600; background: #F1F1FF; outline: none; }
 
@@ -1080,6 +1112,47 @@ body > #nx-prod-root ~ *,
     background-repeat: no-repeat;
     background-size: contain;
 }
+
+/* Строка доверия под кнопкой «Купить» (U-1) */
+#nx-prod-root .nx-p-trust-row {
+    font-size: 13px;
+    color: var(--nx-muted, #444);
+    margin-top: 10px;
+}
+
+/* Sticky-кнопка «Заказать» на мобильном (U-1): скрыта по умолчанию,
+   появляется через IntersectionObserver, когда основная кнопка уходит
+   за пределы экрана. padding-bottom учитывает «ушко» iPhone (B-1). */
+.nx-sticky-buy {
+    display: none;
+    position: fixed;
+    left: 0; right: 0; bottom: 0;
+    z-index: 100000;
+    gap: 10px;
+    align-items: center;
+    padding: 10px 16px calc(10px + env(safe-area-inset-bottom));
+    background: #fff;
+    box-shadow: 0 -4px 16px rgba(0,0,0,.10);
+    transform: translateY(100%);
+    transition: transform .25s ease;
+}
+@media (max-width: 768px) {
+    .nx-sticky-buy--show { display: flex; transform: translateY(0); }
+}
+.nx-sticky-buy .nx-p-btn {
+    flex: 1 1 auto;
+    min-height: 48px;
+    width: auto;
+}
+.nx-sticky-buy__call {
+    flex: 0 0 48px;
+    width: 48px; height: 48px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 50%;
+    background: var(--nx-green-bg, #E8F5E2);
+    color: var(--nx-green, #4C9E24);
+}
+
 #nx-btn-sample {
   transition: background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease; background-image: none !important;
 }
@@ -1125,7 +1198,7 @@ body > #nx-prod-root ~ *,
     border: 1px solid #ddd;
     border-radius: 8px;
     background: #f5f5f5;
-    font-size: 14px;
+    font-size: 16px; /* B-1: <16px вызывает зум при фокусе на iOS */
     color: #222;
     font-family: var(--nx-font);
     appearance: none;
@@ -1595,8 +1668,9 @@ html body .nx-megamenu-wrap { padding-left: 20px !important; }
     #nx-prod-root .nx-p-left,
     #nx-prod-root .nx-p-gallery { display: contents !important; }
     /* Ширина фото динамическая (100%) — квадрат держим через aspect-ratio,
-       а не фикс. высоту из десктопного правила. */
-    #nx-prod-root .nx-p-mainimg { order: 1; width: 100% !important; height: auto !important; aspect-ratio: 1 / 1 !important; }
+       а не фикс. высоту из десктопного правила. max-height — U-1: фото не
+       должно съедать больше 45% вьюпорта на первом экране. */
+    #nx-prod-root .nx-p-mainimg { order: 1; width: 100% !important; height: auto !important; aspect-ratio: 1 / 1 !important; max-height: 45vh; }
     /* Миниатюры — горизонтальной лентой ПОД главным фото */
     #nx-prod-root .nx-p-thumbs {
         order: 2; flex-direction: row !important; flex: none !important;
@@ -1606,7 +1680,11 @@ html body .nx-megamenu-wrap { padding-left: 20px !important; }
     #nx-prod-root .nx-p-right { order: 3; }
     #nx-prod-root .nx-p-chars { order: 4; }
     #nx-prod-root .nx-p-thumb { flex-shrink: 0 !important; width: 60px !important; height: 60px !important; }
-    #nx-prod-root .nx-p-title { font-size: 20px; }
+    /* U-1: H1 не длиннее 2 строк на первом экране */
+    #nx-prod-root .nx-p-title {
+        font-size: 20px;
+        display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden;
+    }
     #nx-prod-root .nx-p-pop__grid { grid-template-columns: repeat(2, 1fr); }
     /* Цены на мобайле — 2 колонки с узким средним столбцом, на всю ширину.
        Селекты (.nx-p-selects) — флекс, переносится сам по себе, отдельных
@@ -1619,9 +1697,20 @@ html body .nx-megamenu-wrap { padding-left: 20px !important; }
     #nx-prod-root { padding: 80px 0 60px; }
     #nx-prod-root .nx-p-inner { padding: 0 16px; }
     #nx-prod-root .nx-p-title { font-size: 18px; }
+    /* U-1: крошки сворачиваются в одну строку — «Главная › текущая страница»,
+       средний уровень (Каталог) прячем вместе с его разделителем. Структура
+       рынка нав: a(Главная) span.sep a(Каталог) span.sep span.cur(текущая) —
+       nth-child(3)/(4) — это именно они. */
+    #nx-prod-root .nx-p-bc { flex-wrap: nowrap; overflow: hidden; }
+    #nx-prod-root .nx-p-bc > a:nth-child(3),
+    #nx-prod-root .nx-p-bc > span:nth-child(4) { display: none; }
+    #nx-prod-root .nx-p-bc__cur {
+        display: inline-block; max-width: 70vw;
+        overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
     #nx-prod-root .nx-p-select-wrap { max-width: 100% !important; min-width: 0; }
     #nx-prod-root .nx-p-pop__grid { grid-template-columns: 1fr; }
-    #nx-prod-root .nx-p-color-btn { width: 42px; height: 42px; }
+    #nx-prod-root .nx-p-color-btn { width: 44px; height: 44px; } /* U-1: минимум 44×44 */
     #nx-prod-root .nx-p-color-inner { width: 30px; height: 30px; }
 }
 
@@ -1671,6 +1760,7 @@ html body .nx-megamenu-wrap { padding-left: 20px !important; }
 .nx-p-color-swatch {
    /* display: none;*/
     position: absolute;
+    top: 0; right: 0; bottom: 0; left: 0; /* fallback: Safari < 14.5 не знает inset */
     inset: 0;
     border-radius: 8px;
     display: flex;
@@ -1682,6 +1772,7 @@ html body .nx-megamenu-wrap { padding-left: 20px !important; }
 }
 .nx-p-color-swatch__name {
     background: rgba(255,255,255,.88);
+    -webkit-backdrop-filter: blur(4px);
     backdrop-filter: blur(4px);
     border-radius: 6px;
     padding: 6px 12px;

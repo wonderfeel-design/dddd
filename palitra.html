@@ -17,7 +17,7 @@
   </div>
 </div>
 
-<div id="nx-pal-popup" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.55);align-items:center;justify-content:center;">
+<div id="nx-pal-popup" style="display:none;position:fixed;top:0;right:0;bottom:0;left:0;inset:0;z-index:9999;background:rgba(0,0,0,.55);align-items:center;justify-content:center;">
   <div class="nx-pal-popup__inner">
 
     <button class="nx-pal-popup__close" id="nx-pal-close" title="Закрыть">×</button>
@@ -69,14 +69,14 @@
   border-radius: 12px;
   /* desktop: bar's top is hidden under the fixed header+nav → clear it ровно
      на высоту шапки+меню (измеряется скриптом), без лишнего пустого места */
-  margin: calc(var(--nx-header-h, 86px) + 48px) auto 16px;
+  margin: calc(var(--nx-header-h, 80px) + 48px) auto 16px;
   max-width: 1200px;               /* стандартная сетка Tilda (12 колонок) */
   box-sizing: border-box;
   font-family: 'GothamPro','Gotham Pro',sans-serif;
 }
 /* mobile: шапка+меню ФИКСИРОВАНЫ и перекрывают — минимальный зазор */
 @media (max-width: 980px) {
-  .nx-pal-ctx__inner { margin-top: calc(var(--nx-header-h, 96px) + 8px) !important; }
+  .nx-pal-ctx__inner { margin-top: calc(var(--nx-header-h, 80px) + 8px) !important; }
 }
 .nx-pal-ctx__label {
   font-size: 11px;
@@ -430,12 +430,29 @@ body.nx-palitra .t-catalog__parts-text-title {
   /* ══ 0. Класс на body для CSS-скопинга ══ */
   document.body.classList.add('nx-palitra');
 
+  /* ══ 0a0. Контекст товара и обратная ссылка: URL-параметры (nxback/nxctx)
+     в приоритете перед sessionStorage — переживают приватный режим Safari
+     и встроенный браузер WebView, где sessionStorage бывает недоступен
+     (B-1). Общие хелперы для всех мест файла, где нужен этот контекст. */
+  function nxGetBackUrl() {
+    try {
+      var u = new URLSearchParams(location.search).get('nxback');
+      if (u) return u;
+    } catch (e) {}
+    try { return sessionStorage.getItem('nx_palette_back') || ''; } catch (e) { return ''; }
+  }
+  function nxGetProductCtx() {
+    try {
+      var raw = new URLSearchParams(location.search).get('nxctx');
+      if (raw) return JSON.parse(raw);
+    } catch (e) {}
+    try { return JSON.parse(sessionStorage.getItem('nx_palette_product') || 'null'); } catch (e) { return null; }
+  }
+
   /* ══ 0a. Контекстная панель товара ══ */
   (function () {
-    var backUrl = '';
-    var productCtx = null;
-    try { backUrl     = sessionStorage.getItem('nx_palette_back') || ''; } catch (e) {}
-    try { productCtx  = JSON.parse(sessionStorage.getItem('nx_palette_product') || 'null'); } catch (e) {}
+    var backUrl    = nxGetBackUrl();
+    var productCtx = nxGetProductCtx();
     if (!backUrl) return;
 
     var ctx     = document.getElementById('nx-pal-ctx');
@@ -529,8 +546,7 @@ body.nx-palitra .t-catalog__parts-text-title {
      При переходе с карточки товара показываем подходящие палитры,
      остальные — выключаем; по клику на выключенную выводим сообщение. */
   (function () {
-    var pc = null;
-    try { pc = JSON.parse(sessionStorage.getItem('nx_palette_product') || 'null'); } catch (e) {}
+    var pc = nxGetProductCtx();
     var coating = (pc && pc.coating ? String(pc.coating) : '').toLowerCase().trim();
 
     var OPAQUE = ['ral', 'vinha', 'puutalot', 'deco'];   /* Укрывная */
@@ -1070,8 +1086,7 @@ body.nx-palitra .t-catalog__parts-text-title {
     return null; /* нет ограничения */
   }
   function nxColorFitsCoating(data) {
-    var pc = null;
-    try { pc = JSON.parse(sessionStorage.getItem('nx_palette_product') || 'null'); } catch (e) {}
+    var pc = nxGetProductCtx();
     var allowed = nxCoatingAllowedBrands(pc && pc.coating);
     if (!allowed) return true;                       /* покрытия нет/без ограничения */
     var brand = brandOf((data.name || '') + ' ' + (data.code || ''));
@@ -1103,7 +1118,7 @@ body.nx-palitra .t-catalog__parts-text-title {
     preview.appendChild(sw);
 
     /* Блок «Выбрать для товара» — только при возврате на карточку */
-    var hasBack = !!sessionStorage.getItem('nx_palette_back');
+    var hasBack = !!nxGetBackUrl();
     pickWrap.style.display = hasBack ? '' : 'none';
 
     /* Заполняем контекст товара внутри попапа */
@@ -1111,8 +1126,7 @@ body.nx-palitra .t-catalog__parts-text-title {
       var popupCtx      = document.getElementById('nx-popup-ctx');
       var popupCtxName  = document.getElementById('nx-popup-ctx-name');
       var popupCtxCoat  = document.getElementById('nx-popup-ctx-coat');
-      var productCtx = null;
-      try { productCtx = JSON.parse(sessionStorage.getItem('nx_palette_product') || 'null'); } catch (e) {}
+      var productCtx = nxGetProductCtx();
       if (popupCtx && productCtx && productCtx.name) {
         if (popupCtxName) popupCtxName.textContent = productCtx.name;
         if (popupCtxCoat) popupCtxCoat.textContent = productCtx.coating ? 'Покрытие: ' + productCtx.coating : '';
@@ -1167,13 +1181,24 @@ body.nx-palitra .t-catalog__parts-text-title {
     if (!_current) return;
     if (pickBtn.disabled || !nxColorFitsCoating(_current)) return;  /* несовместимый цвет не выбираем */
     try { sessionStorage.setItem('nx_palette_color', JSON.stringify(_current)); } catch (e) {}
+    /* Зеркалим выбранный цвет в URL возврата — переживает приватный режим
+       Safari/WebView, где sessionStorage недоступен (B-1). history.back()
+       остаётся запасным вариантом, если обратный адрес неизвестен. */
+    var backUrl = nxGetBackUrl();
+    if (backUrl) {
+      try {
+        var u = new URL(backUrl, location.href);
+        u.searchParams.set('nxcolor', JSON.stringify(_current));
+        window.location.href = u.toString();
+        return;
+      } catch (e) {}
+    }
     history.back();
   });
 
   orderBtn.addEventListener('click', function () {
     if (!_current) return;
-    var productCtx = null;
-    try { productCtx = JSON.parse(sessionStorage.getItem('nx_palette_product') || 'null'); } catch (e) {}
+    var productCtx = nxGetProductCtx();
     var coatingLabel = '';
     if (productCtx && productCtx.coating) coatingLabel = String(productCtx.coating);
     else if (_current.coating) coatingLabel = String(_current.coating);

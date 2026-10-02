@@ -12,9 +12,97 @@
 <noscript><div><img src="https://mc.yandex.ru/watch/109995897" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
 <!-- /Yandex.Metrika counter -->
 
+<script>
+/* ══ 0. Аналитика: единая точка отправки событий ══
+   GA4 Measurement ID/GTM-контейнер сайта нам не известен, поэтому события
+   шлём ОБОИМИ способами сразу: прямой gtag(), если он где-то уже подключён
+   (нативная интеграция Tilda), и dataLayer.push (подхватит GTM, если стоит
+   он). Ничего не ломается, если ни то ни другое не подключено — try/catch. */
+window.nxTrack = function (name, params) {
+  try {
+    params = params || {};
+    if (typeof gtag === 'function') gtag('event', name, params);
+    window.dataLayer = window.dataLayer || [];
+    dataLayer.push(Object.assign({ event: name }, params));
+  } catch (e) {}
+};
+/* Дублируем ключевые события целью в Метрике (счётчик уже известен) —
+   чтобы Директ мог оптимизироваться по конверсиям. */
+window.nxReachGoal = function (goal, params) {
+  try { if (typeof ym === 'function') ym(109995897, 'reachGoal', goal, params); } catch (e) {}
+};
+
+/* UTM-параметры utm_placement/utm_region не читаются нативно GA4 — берём их
+   сами из URL и кладём в sessionStorage, чтобы они дожили до событий,
+   срабатывающих позже (напр. добавление в корзину), когда самого URL уже
+   может не быть под рукой (переход в поп-ап корзины ничего не меняет в URL,
+   но на будущее — безопаснее не зависеть от этого). */
+(function () {
+  try {
+    var qs = new URLSearchParams(location.search);
+    var ctx = {
+      utm_placement: qs.get('utm_placement') || '',
+      utm_region:    qs.get('utm_region') || ''
+    };
+    if (ctx.utm_placement || ctx.utm_region) {
+      sessionStorage.setItem('nx_utm_ctx', JSON.stringify(ctx));
+    } else {
+      var stored = sessionStorage.getItem('nx_utm_ctx');
+      if (stored) ctx = JSON.parse(stored);
+    }
+    var pageType = location.pathname.indexOf('/tproduct/') !== -1 ? 'product'
+                 : (document.getElementById('allrecords') ? 'catalog' : 'other');
+    nxTrack('page_view', { utm_placement: ctx.utm_placement, utm_region: ctx.utm_region, page_type: pageType });
+  } catch (e) {}
+})();
+</script>
+
+<!-- ══ Web Vitals RUM: полевые данные реальных пользователей → GA4 ══ -->
+<script src="https://unpkg.com/web-vitals@4/dist/web-vitals.attribution.iife.js" defer></script>
+<script defer>
+(function () {
+  function pageType() {
+    return location.pathname.indexOf('/tproduct/') !== -1 ? 'product'
+         : (document.getElementById('allrecords') ? 'catalog' : 'other');
+  }
+  function report(metric) {
+    try {
+      nxTrack('web_vitals', {
+        metric_name:   metric.name,
+        metric_value:  Math.round(metric.name === 'CLS' ? metric.value * 1000 : metric.value),
+        metric_rating: metric.rating,
+        debug_target:  (metric.attribution && metric.attribution.element) || '',
+        page_type:     pageType()
+      });
+    } catch (e) {}
+  }
+  function start() {
+    try {
+      if (!window.webVitals) return;
+      webVitals.onCLS(report);
+      webVitals.onLCP(report);
+      webVitals.onINP(report);
+      webVitals.onTTFB(report);
+    } catch (e) {}
+  }
+  if (window.webVitals) start();
+  else {
+    var tries = 0;
+    var iv = setInterval(function () {
+      tries++;
+      if (window.webVitals) { clearInterval(iv); start(); }
+      else if (tries > 100) clearInterval(iv); /* ~10s — библиотека не загрузилась, сдаёмся молча */
+    }, 100);
+  }
+})();
+</script>
+
 <link rel="preconnect" href="https://optim.tildacdn.com" crossorigin>
 <link rel="preconnect" href="https://static.tildacdn.com" crossorigin>
 <link rel="preconnect" href="https://static.tildacdn.one" crossorigin>
+<link rel="preconnect" href="https://store.tildaapi.one" crossorigin>
+<link rel="preconnect" href="https://store.tildaapi.com" crossorigin>
+<link rel="preconnect" href="https://mc.yandex.ru" crossorigin>
 
 <style>
   /* Раньше это скрывало сниппет товара ВСЕГДА, даже когда наш скрипт не
@@ -49,8 +137,8 @@
      без дублирования браузер на долю секунды рисует нативную раскладку
      (футер сразу под шапкой, его тёмный фон виден), а затем перескакивает
      на исправленную — это и есть «футер мелькает и пропадает». */
-  html.nx-tp #allrecords { min-height: 100vh; display: flex; flex-direction: column; }
-  html.nx-tp #nx-prod-root { flex: 1 1 auto; min-height: 100vh; }
+  html.nx-tp #allrecords { min-height: 100vh; min-height: 100dvh; display: flex; flex-direction: column; }
+  html.nx-tp #nx-prod-root { flex: 1 1 auto; min-height: 100vh; min-height: 100dvh; }
   html.nx-tp #t-footer { margin-top: auto; }
 </style>
 
@@ -102,6 +190,53 @@ if (location.pathname.indexOf('/tproduct/') !== -1) {
   }
   document.addEventListener('click', function (e) {
     if (e.target.closest('a[href="#opencart"], .t706__carticon, .t-menuwidgeticons__link_cart')) attach();
+  }, true);
+})();
+</script>
+
+<script>
+/* ══ generate_lead: успешная отправка формы (A-2) ══
+   GA4 сейчас не получает ни одного события успешной отправки формы — Enhanced
+   Measurement автоматически шлёт только form_start, а Tilda отправляет формы
+   через AJAX без смены страницы — GA4 не видит факта успеха. Наблюдатель
+   вешается ЛЕНИВО — только после реальной отправки конкретной формы (submit),
+   и только на неё, а не на весь body (тот же принцип, что уже выше для
+   ошибки заказа). Успех у Tilda — появление блока .t-form__successbox. */
+(function () {
+  if (!window.MutationObserver) return;
+  function pageType() {
+    return location.pathname.indexOf('/tproduct/') !== -1 ? 'product'
+         : (document.getElementById('allrecords') ? 'catalog' : 'other');
+  }
+  function isVisible(el) {
+    var st = window.getComputedStyle(el);
+    return st.display !== 'none' && st.visibility !== 'hidden';
+  }
+  document.addEventListener('submit', function (e) {
+    var form = e.target;
+    if (!form || form.tagName !== 'FORM') return;
+    var formName = form.getAttribute('name') || form.id || 'form';
+    var host = form.closest('[id^="rec"]') || form.parentElement || document.body;
+    var done = false;
+    function finish(box) {
+      if (done) return;
+      done = true;
+      try { obs.disconnect(); } catch (ex) {}
+      try {
+        nxTrack('generate_lead', { form_name: formName, page_type: pageType() });
+        nxReachGoal('generate_lead');
+      } catch (ex2) {}
+    }
+    function scan() {
+      var box = host.querySelector('.t-form__successbox, [class*="successbox"]');
+      if (box && isVisible(box)) finish(box);
+    }
+    var obs = new MutationObserver(scan);
+    obs.observe(host, { childList: true, subtree: true, attributes: true, attributeFilter: ['style', 'class'] });
+    scan();
+    /* Предохранитель: если успех не пришёл за 8с — скорее всего ошибка
+       валидации, а не успешная отправка; дальше не следим. */
+    setTimeout(function () { try { obs.disconnect(); } catch (ex) {} }, 8000);
   }, true);
 })();
 </script>
@@ -502,8 +637,12 @@ function nxParsePrice(n) { return parseFloat(String(n || 0).replace(/\s/g, '').r
      «не найдены» на своей странице. Само поле не подтверждено вживую (нет
      доступа к API из песочницы), но безопасно: если nextslice в ответе
      нет — цикл ниже останавливается сразу же, поведение как раньше. */
-  function fetchProductsListText(tld, slice) {
-    return fetch('https://store.tildaapi.' + tld + '/api/getproductslist/?storepartuid=' + STORE_UID + '&recid=' + CATALOG_REC + (slice ? '&slice=' + slice : ''))
+  function fetchProductsListText(tld, slice, uid) {
+    /* uid — опциональный спекулятивный фильтр по товару: если Store API его
+       поддерживает, сервер сразу отдаст один товар вместо всего каталога
+       (меньше трафика, быстрее LCP). Не подтверждено вживую — безопасно:
+       неизвестный параметр API просто игнорирует, ответ как раньше. */
+    return fetch('https://store.tildaapi.' + tld + '/api/getproductslist/?storepartuid=' + STORE_UID + '&recid=' + CATALOG_REC + (slice ? '&slice=' + slice : '') + (uid ? '&uid=' + encodeURIComponent(uid) : ''))
       .then(function (r) { return r.text(); });
   }
 
@@ -524,11 +663,38 @@ function nxParsePrice(n) { return parseFloat(String(n || 0).replace(/\s/g, '').r
     });
   }
 
+  /* Кэш ответа Store API в sessionStorage: переход между товарами и возврат
+     из палитры не должны заново дёргать весь каталог каждый раз — только
+     раз в CACHE_TTL. try/catch — приватный режим Safari/WebView может
+     бросать на доступе к sessionStorage, тогда просто не кэшируем. */
+  var PRODUCTS_CACHE_KEY = 'nx_products_cache_v1';
+  var PRODUCTS_CACHE_TTL = 12 * 60 * 1000;
+
+  function readProductsCache() {
+    try {
+      var raw = sessionStorage.getItem(PRODUCTS_CACHE_KEY);
+      if (!raw) return null;
+      var obj = JSON.parse(raw);
+      if (!obj || !obj.ts || (Date.now() - obj.ts) > PRODUCTS_CACHE_TTL || !obj.data) return null;
+      return obj.data;
+    } catch (e) { return null; }
+  }
+  function writeProductsCache(data) {
+    try { sessionStorage.setItem(PRODUCTS_CACHE_KEY, JSON.stringify({ ts: Date.now(), data: data })); } catch (e) {}
+  }
+
   function loadProduct(uid) {
-    return fetchProductsListText('one').then(function (txt) {
+    var cached = readProductsCache();
+    if (cached) {
+      _allProducts = cached;
+      var found = _allProducts.find(function (x) { return String(x.uid) === String(uid); });
+      if (found) return Promise.resolve(found);
+      /* товара нет в кэше (напр. добавлен позже публикации кэша) — идём за свежим списком */
+    }
+    return fetchProductsListText('one', null, uid).then(function (txt) {
       var d = parseProductsJSON(txt);
       var afterRedirect = d && d.redirectto
-        ? fetchProductsListText(d.redirectto).then(function (txt2) {
+        ? fetchProductsListText(d.redirectto, null, uid).then(function (txt2) {
             var d2 = parseProductsJSON(txt2);
             var first = (d2 && d2.products) || [];
             return d2 && d2.nextslice ? fetchAllSlices(d.redirectto, d2.nextslice, first) : first;
@@ -538,6 +704,7 @@ function nxParsePrice(n) { return parseFloat(String(n || 0).replace(/\s/g, '').r
             : Promise.resolve((d && d.products) || []));
       return afterRedirect.then(function (all) {
         _allProducts = all;
+        writeProductsCache(all);
         return _allProducts.find(function (x) { return String(x.uid) === String(uid); }) || null;
       });
     });
@@ -689,10 +856,10 @@ function nxParsePrice(n) { return parseFloat(String(n || 0).replace(/\s/g, '').r
     var firstImg = imgs[0] || '';
     var thumbs = imgs.map(function (src, i) {
       return '<div class="nx-p-thumb' + (i === 0 ? ' nx-p-thumb--active' : '') +
-        '" data-idx="' + i + '"><img src="' + src + '" alt="" loading="lazy" fetchpriority="low"></div>';
+        '" data-idx="' + i + '"><img src="' + src + '" alt="" loading="lazy" fetchpriority="low" decoding="async"></div>';
     }).join('');
     return '<div class="nx-p-gallery">' +
-      '<div class="nx-p-mainimg"><img id="nx-mi" src="' + firstImg + '" alt="" loading="eager" fetchpriority="high"></div>' +
+      '<div class="nx-p-mainimg"><img id="nx-mi" src="' + firstImg + '" alt="" loading="eager" fetchpriority="high" decoding="async"></div>' +
       '<div class="nx-p-thumbs">' + thumbs + '</div>' +
       '</div>';
   }
@@ -840,9 +1007,18 @@ function nxParsePrice(n) { return parseFloat(String(n || 0).replace(/\s/g, '').r
     '</div>';
   }
 
-function addToCart() {
+function addToCart(buttonPosition) {
   if (!_p) return;
+  buttonPosition = (typeof buttonPosition === 'string' && buttonPosition) || 'main';
   var ed = getEd();
+  try {
+    nxTrack('click_order', {
+      item_name: _p.title || '',
+      item_id: String((ed && ed.uid) || _p.uid || ''),
+      button_position: buttonPosition,
+      page_type: 'product'
+    });
+  } catch (ex0) {}
 
   /* Страховка: палитровый цвет не должен уйти в корзину с несовместимым
      покрытием (например, Valtti-цвет при «Укрывной»). Если рассинхрон —
@@ -949,6 +1125,13 @@ var item = {
         }
       } catch (e2) { console.error('nx: re-add error', e2); }
       showToast('Добавлено в корзину: ' + _p.title);
+      try {
+        nxTrack('add_to_cart', {
+          items: [{ item_id: item.uid, item_name: item.name, price: item.price, quantity: item.quantity }],
+          value: item.amount,
+          currency: 'RUB'
+        });
+      } catch (ex1) {}
     } catch (e) {
       if (retries > 0) { setTimeout(function () { doAdd(retries - 1); }, 300); return; }
       console.error('nx: addToCart error', e);
@@ -1060,6 +1243,8 @@ if (firstEd && nxCoatKey(firstEd['Покрытие']) === nxCoatKey('Без по
 
             /* 3. Кнопка Купить */
             '<button class="nx-p-btn" id="nx-btn-buy">Купить</button>' +
+            /* Строка доверия (U-1) — текст предварительный, согласовать с клиентом */
+            '<div class="nx-p-trust-row"><!-- TODO: подтвердить точный текст с клиентом -->Самара и Тольятти, доставка от 1 дня</div>' +
 
             /* 4. Селекты: для досок — Ширина/Длина/Тип покрытия; для прочих товаров —
                реальные атрибуты варианта (Размер/Шлиц/Фасовка и т.п.) из p.json_options */
@@ -1082,6 +1267,28 @@ if (firstEd && nxCoatKey(firstEd['Покрытие']) === nxCoatKey('Без по
 
     var root = ensureProdRoot();
     root.innerHTML = html;
+
+    /* Sticky-кнопка «Заказать» (U-1): появляется, когда основная кнопка
+       #nx-btn-buy уходит за пределы экрана. Вынесена ЗА .nx-p-inner —
+       position:fixed относительно вьюпорта, а не узкой колонки контента. */
+    root.insertAdjacentHTML('beforeend',
+      '<div class="nx-sticky-buy" id="nx-sticky-buy">' +
+        '<button class="nx-p-btn" id="nx-btn-buy-sticky">Заказать</button>' +
+        '<a href="#" class="nx-sticky-buy__call" id="nx-sticky-call" aria-label="Позвонить" style="display:none"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.7 3.6.7.6 0 1 .4 1 1V20c0 .6-.4 1-1 1C10.6 21 3 13.4 3 4c0-.6.4-1 1-1h3.3c.6 0 1 .4 1 1 0 1.3.2 2.5.7 3.6.1.4 0 .8-.2 1L6.6 10.8z" fill="currentColor"/></svg></a>' +
+      '</div>'
+    );
+    /* Номер телефона не хранится ни в одном из этих файлов (нативный
+       Tilda-блок шапки/футера) — переиспользуем первую существующую
+       tel:-ссылку на странице, а не угадываем номер. Если такой нет,
+       иконка звонка остаётся скрытой (display:none по умолчанию выше). */
+    (function () {
+      var existingTel = document.querySelector('a[href^="tel:"]:not(#nx-sticky-call)');
+      var callIcon = document.getElementById('nx-sticky-call');
+      if (existingTel && callIcon) {
+        callIcon.href = existingTel.getAttribute('href');
+        callIcon.style.display = '';
+      }
+    })();
 
     /* Скрыть нативный Tilda-блок снипета (и его rec), не трогая наш root */
     var SNIPPET_SELS2 = [
@@ -1131,6 +1338,12 @@ if (firstEd && nxCoatKey(firstEd['Покрытие']) === nxCoatKey('Без по
        native Tilda product widget (real title/image), which must never reappear
        next to our custom render. Only mark success for the 3s failsafe above. */
     window._nxProdRendered = true;
+
+    try {
+      nxTrack('view_item', {
+        items: [{ item_id: String(p.uid || ''), item_name: p.title || '', price: parsePrice(p.price) || 0 }]
+      });
+    } catch (ex) {}
   }
 
   function updatePricesAndImage() {
@@ -1209,14 +1422,40 @@ if (firstEd && nxCoatKey(firstEd['Покрытие']) === nxCoatKey('Без по
     });
   }
 
+  /* Цвет из палитры: сначала URL-параметр nxcolor (переживает приватный
+     режим Safari/WebView, где sessionStorage бывает недоступен — B-1),
+     иначе sessionStorage как раньше. */
+  function readPaletteColorRaw() {
+    try {
+      var urlVal = new URLSearchParams(location.search).get('nxcolor');
+      if (urlVal) return { raw: urlVal, fromUrl: true };
+    } catch (e) {}
+    try { return { raw: sessionStorage.getItem('nx_palette_color'), fromUrl: false }; }
+    catch (e) { return { raw: null, fromUrl: false }; }
+  }
+
   function restoreColorFromPalette() {
-    var raw = sessionStorage.getItem('nx_palette_color');
+    var res = readPaletteColorRaw();
+    var raw = res.raw, fromUrl = res.fromUrl;
     if (!raw) return;
     try {
       var c = JSON.parse(raw);
       if (!c || !c.code) return;
       applyColorFromPalette(c);
       showColorTag(c);
+      /* Параметр одноразовый — убираем из адреса, иначе он «прилипнет» к
+         истории/закладке и переприменится при повторном открытии. Трекаем
+         select_color только в этой, URL-ветке: она срабатывает ровно один
+         раз на реальный выбор цвета в палитре, а не на каждый повторный
+         boot()/pageshow со старым значением в sessionStorage. */
+      if (fromUrl) {
+        try { nxTrack('select_color', { color_code: c.code || '', color_source: 'palette' }); } catch (ex3) {}
+        try {
+          var cleanUrl = new URL(location.href);
+          cleanUrl.searchParams.delete('nxcolor');
+          history.replaceState(null, '', cleanUrl.toString());
+        } catch (e2) {}
+      }
     } catch (e) {}
   }
 
@@ -1312,13 +1551,20 @@ if (firstEd && nxCoatKey(firstEd['Покрытие']) === nxCoatKey('Без по
         e.preventDefault();
         showPaletteTooltip(palBtn);
       } else {
+        var backCtx = { name: _p ? _p.title : '', coating: _selected['Тип покрытия'] || '' };
         try {
           sessionStorage.setItem('nx_palette_back', location.href);
-          sessionStorage.setItem('nx_palette_product', JSON.stringify({
-            name:    _p ? _p.title : '',
-            coating: _selected['Тип покрытия'] || ''
-          }));
+          sessionStorage.setItem('nx_palette_product', JSON.stringify(backCtx));
         } catch (ex) {}
+        /* Зеркалим то же самое в URL параметрами перехода — переживает
+           приватный режим Safari и WebView, где sessionStorage бывает
+           недоступен (B-1). Меняем href синхронно до перехода по ссылке. */
+        try {
+          var u = new URL(palBtn.href, location.href);
+          u.searchParams.set('nxback', location.href);
+          u.searchParams.set('nxctx', JSON.stringify(backCtx));
+          palBtn.href = u.toString();
+        } catch (ex2) {}
       }
     });
 
@@ -1375,7 +1621,11 @@ if (!matchedEd) {
     if (coatingSel) coatingSel.value = matchedEd['Покрытие'];
   }
 }
-      updatePricesAndImage();
+      /* Активный класс свотча уже применён синхронно выше (клик должен
+         отозваться мгновенно) — пересчёт цены и подмену фото откладываем
+         на следующий кадр, чтобы не задерживать визуальный отклик (INP). */
+      requestAnimationFrame(function () { updatePricesAndImage(); });
+      try { nxTrack('select_color', { color_code: btn.dataset.color || '', color_source: 'popular' }); } catch (ex) {}
 
       /* Свотч ведёт себя как палитра: чип #nx-color-tag + подпись на превью.
          _paletteColor НЕ ставим — это готовое издание, а не кастомный замес. */
@@ -1425,12 +1675,25 @@ root.addEventListener('change', function (e) {
       showToast('Цвет из палитры сброшен — не подходит к покрытию «' + sel.value + '»');
     }
   }
-  updatePricesAndImage();
+  requestAnimationFrame(function () { updatePricesAndImage(); });
 });
     
 
     var buyBtn = document.getElementById('nx-btn-buy');
-    if (buyBtn) buyBtn.addEventListener('click', addToCart);
+    if (buyBtn) buyBtn.addEventListener('click', function () { addToCart('main'); });
+
+    /* Sticky-кнопка «Заказать» (U-1): видна, когда основная #nx-btn-buy не
+       попадает в вьюпорт. Тот же addToCart() — click_order/add_to_cart
+       срабатывают одинаково независимо от того, какая кнопка нажата. */
+    var stickyBuy  = document.getElementById('nx-sticky-buy');
+    var stickyBtn  = document.getElementById('nx-btn-buy-sticky');
+    if (stickyBtn) stickyBtn.addEventListener('click', function () { addToCart('sticky'); });
+    if (buyBtn && stickyBuy && window.IntersectionObserver) {
+      new IntersectionObserver(function (entries) {
+        var visible = entries[0] && entries[0].isIntersecting;
+        stickyBuy.classList.toggle('nx-sticky-buy--show', !visible);
+      }, { threshold: 0 }).observe(buyBtn);
+    }
 
     var sampleBtn = document.getElementById('nx-btn-sample');
     if (sampleBtn) {
@@ -1439,7 +1702,7 @@ root.addEventListener('change', function (e) {
            затем цвет из палитры (sessionStorage). Так кнопка работает без перехода в палитру. */
         var c = (_paletteColor && _paletteColor.code) ? _paletteColor : null;
         if (!c) {
-          var raw = sessionStorage.getItem('nx_palette_color');
+          var raw = readPaletteColorRaw().raw;
           try { c = raw ? JSON.parse(raw) : null; } catch (e) {}
         }
         if (!c || !c.code) {
@@ -1535,9 +1798,20 @@ root.addEventListener('change', function (e) {
         option:   [(ed0['Цвет'] && ed0['Цвет'] !== 'без' ? 'Цвет: ' + ed0['Цвет'] : ''), (ed0['Покрытие'] ? 'Покрытие: ' + ed0['Покрытие'] : '')].filter(Boolean).join(', ')
       };
       try {
+        var pt = location.pathname.indexOf('/tproduct/') !== -1 ? 'product' : (document.getElementById('allrecords') ? 'catalog' : 'other');
+        nxTrack('click_order', { item_name: item.name, item_id: item.uid, button_position: 'grid', page_type: pt });
+      } catch (exo) {}
+      try {
         if (typeof tcart__addProduct === 'function') {
           tcart__addProduct(item, true);
           showToast('Добавлено в корзину: ' + prod.title);
+          try {
+            nxTrack('add_to_cart', {
+              items: [{ item_id: item.uid, item_name: item.name, price: item.price, quantity: item.quantity }],
+              value: item.amount,
+              currency: 'RUB'
+            });
+          } catch (exa) {}
         }
       } catch (ex) { console.error('nx: pop buy error', ex); }
     });
@@ -1587,6 +1861,24 @@ root.addEventListener('change', function (e) {
     if (root) return root;
     root = document.createElement('div');
     root.id = 'nx-prod-root';
+    /* Каркас вместо пустого экрана, пока грузится товар: резервирует место
+       под фото/заголовок/цену/кнопку, чтобы при появлении реального
+       контента не было сдвига разметки (CLS). renderRoot() полностью
+       перезапишет root.innerHTML настоящей карточкой. */
+    root.innerHTML =
+      '<div class="nx-p-skel-wrap nx-p-skeleton">' +
+        '<div class="nx-p-layout">' +
+          '<div class="nx-p-left">' +
+            '<div class="nx-p-gallery"><div class="nx-p-mainimg nx-p-skel-box"></div></div>' +
+          '</div>' +
+          '<div class="nx-p-right">' +
+            '<div class="nx-p-skel-bar nx-p-skel-title"></div>' +
+            '<div class="nx-p-skel-bar nx-p-skel-title nx-p-skel-title--short"></div>' +
+            '<div class="nx-p-skel-bar nx-p-skel-price"></div>' +
+            '<div class="nx-p-skel-bar nx-p-skel-btn"></div>' +
+          '</div>' +
+        '</div>' +
+      '</div>';
     var allrec = document.getElementById('allrecords');
     if (allrec && allrec.children.length) {
       /* Структура A: вставляем вторым ребёнком (первый — шапка) */
@@ -1630,8 +1922,35 @@ root.addEventListener('change', function (e) {
   });
 
   window.addEventListener('pageshow', function (e) {
-    if (e.persisted) setTimeout(restoreColorFromPalette, 200);
+    if (!e.persisted) return;
+    setTimeout(restoreColorFromPalette, 200);
+    /* bfcache восстанавливает страницу без повторного запуска скриптов (B-1):
+       если корень товара всё ещё показывает скелетон (не успел дорендериться
+       до ухода со страницы — редкий, но возможный момент) — перезапускаем. */
+    if (!document.querySelector('#nx-prod-root .nx-p-inner')) setTimeout(boot, 50);
+    /* Количество в иконке корзины может быть устаревшим на restored-странице
+       (добавление в другой вкладке/после ухода). */
+    try { if (typeof tcart__reDrawCartIcon === 'function') tcart__reDrawCartIcon(); } catch (ex) {}
   });
+})();
+
+/* ══ begin_checkout (A-2, лучший доступный сигнал) ══
+   У Tilda нет отдельного колбэка «открыта форма оформления» — используем
+   клик по иконке/ссылке корзины как приближение (корзина = форма заказа
+   на этом сайте). Фактическая отправка перехватывается ниже (purchase). */
+(function () {
+  document.addEventListener('click', function (e) {
+    if (!e.target.closest('a[href="#opencart"], .t706__carticon, .t-menuwidgeticons__link_cart')) return;
+    try {
+      var items = (window.tcart && window.tcart.products) || [];
+      var value = items.reduce(function (s, p) { return s + (parseFloat(p.amount) || (parseFloat(p.price) || 0) * (parseFloat(p.quantity) || 1)); }, 0);
+      nxTrack('begin_checkout', {
+        items: items.map(function (p) { return { item_id: String(p.uid || ''), item_name: p.name || '', price: parseFloat(p.price) || 0, quantity: parseFloat(p.quantity) || 1 }; }),
+        value: value,
+        currency: 'RUB'
+      });
+    } catch (ex) {}
+  }, true);
 })();
 
 /* ══ 5. Перехват ошибки оформления → «Заявка отправлена» ══ */
@@ -1644,6 +1963,23 @@ root.addEventListener('change', function (e) {
     if (_handled) return;
     _handled = true;
     try { if (_obs) _obs.disconnect(); } catch (e) {}
+
+    /* purchase (A-2): единственный доступный в этом коде сигнал «заказ
+       отправлен» — тот же, на котором строится страховочное сообщение
+       «Заявка отправлена» ниже. Если Tilda когда-нибудь вернёт настоящий
+       успех вместо этой ошибки, это событие перестанет срабатывать —
+       риск зафиксирован в плане, нужна проверка на живом сайте. */
+    try {
+      var _items = (window.tcart && window.tcart.products) || [];
+      var _value = _items.reduce(function (s, p) { return s + (parseFloat(p.amount) || (parseFloat(p.price) || 0) * (parseFloat(p.quantity) || 1)); }, 0);
+      nxTrack('purchase', {
+        transaction_id: 'nx-' + Date.now(),
+        items: _items.map(function (p) { return { item_id: String(p.uid || ''), item_name: p.name || '', price: parseFloat(p.price) || 0, quantity: parseFloat(p.quantity) || 1 }; }),
+        value: _value,
+        currency: 'RUB'
+      });
+      nxReachGoal('purchase', { value: _value });
+    } catch (exPurchase) {}
 
     errEl.style.cssText = 'display:none!important';
 
@@ -1808,5 +2144,46 @@ root.addEventListener('change', function (e) {
   else linkTgBanner();
   setTimeout(linkTgBanner, 600);
   setTimeout(linkTgBanner, 1500);
+})();
+</script>
+
+<script>
+/* ══ Телефон/мессенджеры: делегированный клик на весь документ (B-1, A-2) ══
+   Ссылок tel:/wa.me/t.me в самих этих 5 файлах почти нет — они либо
+   нативные Tilda-блоки (шапка/футер), либо как выше — Telegram-баннер,
+   добавляемый прямо в DOM другим скриптом. Слушатель на document — а не на
+   конкретный узел — не зависит от того, когда и куда Tilda вставит эти
+   ссылки, и не требует правки при появлении новых. */
+(function () {
+  'use strict';
+  function linkPosition(a) {
+    if (a.closest('.nx-menu, .t-menu, [class*="t-header"]')) return 'header';
+    if (a.closest('#nx-prod-root, [class*="t-store__product"]')) return 'product';
+    if (a.closest('#t-footer, [id^="rec"][class*="footer"]')) return 'footer';
+    if (a.closest('.nx-sticky-buy')) return 'sticky';
+    return 'other';
+  }
+  document.addEventListener('click', function (e) {
+    var a = e.target.closest('a[href]');
+    if (!a) return;
+    var href = a.getAttribute('href') || '';
+    if (/^tel:/i.test(href)) {
+      nxTrack('click_call', { link_position: linkPosition(a) });
+      nxReachGoal('click_call');
+    } else if (/wa\.me|whatsapp\.com/i.test(href)) {
+      nxTrack('click_messenger', { messenger: 'whatsapp', link_position: linkPosition(a) });
+      nxReachGoal('click_messenger');
+    } else if (/t\.me\//i.test(href)) {
+      nxTrack('click_messenger', { messenger: 'telegram', link_position: linkPosition(a) });
+      nxReachGoal('click_messenger');
+    } else if (/vk\.com\//i.test(href)) {
+      nxTrack('click_messenger', { messenger: 'vk', link_position: linkPosition(a) });
+      nxReachGoal('click_messenger');
+    }
+  }, true);
+  /* TODO click_delivery (A-2): нет ни одного блока/ссылки «Доставка» ни в
+     одном из версионированных файлов — вероятно нативный Tilda-блок вне
+     репозитория. Как только будет известен реальный класс/id — добавить
+     сюда ветку по тому же паттерну (nxTrack('click_delivery', {link_position})). */
 })();
 </script>
