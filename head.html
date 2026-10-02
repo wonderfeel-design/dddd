@@ -637,12 +637,16 @@ function nxParsePrice(n) { return parseFloat(String(n || 0).replace(/\s/g, '').r
      «не найдены» на своей странице. Само поле не подтверждено вживую (нет
      доступа к API из песочницы), но безопасно: если nextslice в ответе
      нет — цикл ниже останавливается сразу же, поведение как раньше. */
-  function fetchProductsListText(tld, slice, uid) {
-    /* uid — опциональный спекулятивный фильтр по товару: если Store API его
-       поддерживает, сервер сразу отдаст один товар вместо всего каталога
-       (меньше трафика, быстрее LCP). Не подтверждено вживую — безопасно:
-       неизвестный параметр API просто игнорирует, ответ как раньше. */
-    return fetch('https://store.tildaapi.' + tld + '/api/getproductslist/?storepartuid=' + STORE_UID + '&recid=' + CATALOG_REC + (slice ? '&slice=' + slice : '') + (uid ? '&uid=' + encodeURIComponent(uid) : ''))
+  function fetchProductsListText(tld, slice) {
+    /* Спекулятивный uid-фильтр здесь был и его убрали: в отличие от
+       nextslice (безопасен — используется только если поле уже есть в
+       ОТВЕТЕ, сам запрос не меняет), добавление &uid=... меняет сам ЗАПРОС
+       к непроверенному вживую Store API — если сервер не умеет/иначе
+       трактует этот параметр, он может вернуть пустой/иной список, что
+       полностью ломает страницу товара. Подтверждено на живом сайте
+       («ничего не грузится» после публикации). Не возвращать без
+       проверки на реальном API. */
+    return fetch('https://store.tildaapi.' + tld + '/api/getproductslist/?storepartuid=' + STORE_UID + '&recid=' + CATALOG_REC + (slice ? '&slice=' + slice : ''))
       .then(function (r) { return r.text(); });
   }
 
@@ -667,7 +671,7 @@ function nxParsePrice(n) { return parseFloat(String(n || 0).replace(/\s/g, '').r
      из палитры не должны заново дёргать весь каталог каждый раз — только
      раз в CACHE_TTL. try/catch — приватный режим Safari/WebView может
      бросать на доступе к sessionStorage, тогда просто не кэшируем. */
-  var PRODUCTS_CACHE_KEY = 'nx_products_cache_v1';
+  var PRODUCTS_CACHE_KEY = 'nx_products_cache_v2'; /* v2: v1 could hold a response poisoned by the reverted uid param */
   var PRODUCTS_CACHE_TTL = 12 * 60 * 1000;
 
   function readProductsCache() {
@@ -691,10 +695,10 @@ function nxParsePrice(n) { return parseFloat(String(n || 0).replace(/\s/g, '').r
       if (found) return Promise.resolve(found);
       /* товара нет в кэше (напр. добавлен позже публикации кэша) — идём за свежим списком */
     }
-    return fetchProductsListText('one', null, uid).then(function (txt) {
+    return fetchProductsListText('one').then(function (txt) {
       var d = parseProductsJSON(txt);
       var afterRedirect = d && d.redirectto
-        ? fetchProductsListText(d.redirectto, null, uid).then(function (txt2) {
+        ? fetchProductsListText(d.redirectto).then(function (txt2) {
             var d2 = parseProductsJSON(txt2);
             var first = (d2 && d2.products) || [];
             return d2 && d2.nextslice ? fetchAllSlices(d.redirectto, d2.nextslice, first) : first;

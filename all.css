@@ -145,7 +145,14 @@ html #allrecords {
 .t-catalog__card__imgwrapper,
 .t-store__card__imgwrapper {
     background: #F7F7F7 !important;
-    aspect-ratio: 1 / 1;
+    /* aspect-ratio:1/1 was tried here (P-3 CLS) and reverted: without an
+       explicit width it let the wrapper size itself from the <img>'s large
+       intrinsic dimensions, and because these cards are flex items with the
+       default min-width:auto, that oversized content-min overrode the
+       pinned .t-catalog__card width — broke the grid (one huge card) and
+       the Популярные товары carousel (cards blown out tall). Do not re-add
+       without also fixing width on the wrapper and overflow/object-fit on
+       the <img> itself, verified against the real live markup. */
 }
 
 .t-catalog__card__wrap_txt-and-btns,
