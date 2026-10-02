@@ -104,23 +104,49 @@ window.nxReachGoal = function (goal, params) {
   } catch (e) {}
   if (!window.MutationObserver || !document.body) return;
   var done = false;
-  var mo = new MutationObserver(function () {
+  var sawRoot = false;
+  function record(msg) {
+    if (done) return;
+    done = true;
+    try { sessionStorage.setItem('nx_wipe_debug', msg); } catch (e2) {}
+    try { mo.disconnect(); } catch (e3) {}
+  }
+  var mo = new MutationObserver(function (mutations) {
     if (done) return;
     try {
+      if (document.getElementById('nx-prod-root')) sawRoot = true;
+      /* Вариант 1: хирургическое удаление именно #nx-prod-root, пока
+         остальной body остаётся на месте (полный wipe-детектор ниже это
+         пропустит, т.к. body не стал маленьким). */
+      for (var i = 0; i < mutations.length; i++) {
+        var removed = mutations[i].removedNodes;
+        for (var j = 0; j < removed.length; j++) {
+          var n = removed[j];
+          if (n.nodeType === 1 && (n.id === 'nx-prod-root' || (n.querySelector && n.querySelector('#nx-prod-root')))) {
+            record('t=' + Date.now() + ' | #nx-prod-root ОСТРО УДАЛЁН из DOM (остальной body остался) | sawRootBefore=' + sawRoot +
+              ' | body.innerHTML.length now=' + (document.body.innerHTML || '').length +
+              ' | readyState=' + document.readyState);
+            return;
+          }
+        }
+      }
+      /* Вариант 2: полный wipe всего body. */
       var html = document.body.innerHTML || '';
-      var isWipe = html.length < 80 || html.trim() === '{}';
-      if (!isWipe) return;
-      done = true;
-      var msg = 't=' + Date.now() +
-        ' | had #nx-prod-root before wipe=' + !!document.getElementById('nx-prod-root') +
-        ' | new body (first 150 chars)="' + html.slice(0, 150) + '"' +
-        ' | readyState=' + document.readyState;
-      try { sessionStorage.setItem('nx_wipe_debug', msg); } catch (e2) {}
-      mo.disconnect();
+      if (html.length < 80 || html.trim() === '{}') {
+        record('t=' + Date.now() + ' | ПОЛНЫЙ WIPE body | sawRootBefore=' + sawRoot +
+          ' | new body (first 150 chars)="' + html.slice(0, 150) + '"' +
+          ' | readyState=' + document.readyState);
+      }
     } catch (e3) {}
   });
-  mo.observe(document.body, { childList: true });
-  setTimeout(function () { try { mo.disconnect(); } catch (e) {} }, 15000);
+  mo.observe(document.body, { childList: true, subtree: true });
+  setTimeout(function () {
+    if (done) return;
+    /* Ни хирургического удаления, ни полного wipe не случилось за 15с —
+       но если #nx-prod-root так и не появился НИ РАЗУ, это другой случай
+       (он просто никогда не создавался), уже покрытый обычным watchdog. */
+    try { mo.disconnect(); } catch (e) {}
+  }, 15000);
 })();
 </script>
 
