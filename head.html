@@ -1893,8 +1893,16 @@ root.addEventListener('change', function (e) {
       '</div>';
     var allrec = document.getElementById('allrecords');
     if (allrec && allrec.children.length) {
-      /* Структура A: вставляем вторым ребёнком (первый — шапка) */
-      allrec.insertBefore(root, allrec.children[1] || null);
+      /* Структура A: вставляем ПОСЛЕ всей шапки. Шапка может быть из двух
+         реков — нативное меню Tilda + наша полоса каталога (.nx-menu с
+         мегаменю); вставка просто вторым ребёнком ставила карточку между
+         ними и уносила полосу каталога вниз, к футеру. */
+      var anchor = allrec.children[0];
+      for (var hi = 0; hi < Math.min(allrec.children.length, 5); hi++) {
+        var hc = allrec.children[hi];
+        if (hc.querySelector('.nx-menu, [class*="t-menu"], [class*="t-header"]')) anchor = hc;
+      }
+      allrec.insertBefore(root, anchor.nextSibling);
     } else {
       /* Структура B (t-zoomer): вставляем первым ребёнком body.
          CSS body > #nx-prod-root покрывает весь вьюпорт поверх zoomer. */
