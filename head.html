@@ -159,6 +159,12 @@ gtag('config', 'G-PBM1FQX6EK');
      элемента сдвигом не считается, а после рендера он уже ниже экрана.
      nx-tp-ready ставит renderRoot(); при ошибке nx-tp снимается целиком. */
   html.nx-tp:not(.nx-tp-ready) #t-footer { display: none !important; }
+  /* ?native=1: Тильда строит сниппет скриптом после первой отрисовки —
+     всё, что ниже (футер, «Популярные»), сдвигалось (CLS 0.84). Прячем
+     до готовности сниппета; :has отдельным правилом, чтобы старые
+     браузеры не выкинули и правило футера. */
+  html.nx-native:not(.nx-native-ready) #t-footer { display: none !important; }
+  html.nx-native:not(.nx-native-ready) [id^="rec"]:has(.t-catalog__prod-snippet__container) ~ [id^="rec"] { display: none !important; }
 </style>
 
 <script>
@@ -177,6 +183,14 @@ window.nxNative = (function () {
    места), грузится только в режиме ?native=1. Коммит зафиксирован в
    адресе: обновили native-card.js → поменять хеш здесь. */
 if (window.nxNative && location.pathname.indexOf('/tproduct/') !== -1) {
+  var nxDe = document.documentElement, nxT = 0;
+  nxDe.classList.add('nx-native');
+  var nxIv = setInterval(function () {
+    if (document.querySelector('.t-catalog__prod-popup__info .js-product-name') || ++nxT > 80) {
+      clearInterval(nxIv);
+      setTimeout(function () { nxDe.classList.add('nx-native-ready'); }, 300);
+    }
+  }, 100);
   var nxNs = document.createElement('script');
   nxNs.src = 'https://cdn.jsdelivr.net/gh/wonderfeel-design/dddd@e69df1f9be64/native-card.js';
   document.head.appendChild(nxNs);
