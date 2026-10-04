@@ -24,7 +24,8 @@
     if (sqmOpt) sqmOpt.style.display = 'none';
     var priceWrap = q('.js-catalog-price-wrapper', info);
     var sqmEl = document.createElement('div');
-    sqmEl.style.cssText = 'width:100%;font-size:15px;color:#555;margin-top:4px';
+    sqmEl.className = 't-descr t-descr_xs';
+    sqmEl.style.cssText = 'width:100%;color:#555;margin-top:4px';
     if (priceWrap) priceWrap.appendChild(sqmEl);
     function showSqm() {
       var v = sqmSel ? parseFloat(sqmSel.value) : 0;
@@ -45,8 +46,16 @@
       }
     }
 
-    var btnTxt = q('.js-catalog-prod-popup-buy-btn-txt', info);
-    if (btnTxt && /buy now/i.test(btnTxt.textContent)) btnTxt.textContent = 'Купить';
+    /* Тильда переписывает надпись при смене варианта и в закреплённой
+       панели на мобильном — правим все кнопки и следим за ними. */
+    function fixBtn() {
+      var b = document.querySelectorAll('.js-catalog-prod-popup-buy-btn-txt, a[href="#order"] .t-btnflex__text');
+      for (var i = 0; i < b.length; i++) if (/buy now/i.test(b[i].textContent)) b[i].textContent = 'Купить';
+    }
+    fixBtn();
+    if (window.MutationObserver) {
+      new MutationObserver(fixBtn).observe(document.body, { childList: true, subtree: true, characterData: true });
+    }
 
     /* Погонные метры: длина доски из «ДxШxВ: 6000x96x13 мм» или из названия */
     var dims = (q('.js-catalog-prod-dimensions', info) || {}).textContent || '';
@@ -56,7 +65,8 @@
     var qtyInp = q('.t-catalog__prod__quantity-input', info);
     if (len >= 1 && qtyInp) {
       var box = document.createElement('div');
-      box.style.cssText = 'display:flex;align-items:center;gap:8px;margin:8px 0;font-size:14px;color:#555';
+      box.className = 't-descr t-descr_xs';
+      box.style.cssText = 'display:flex;align-items:center;gap:8px;margin:8px 0;color:#555';
       box.innerHTML = 'Погонные метры: <input type="number" min="' + len + '" step="' + len +
         '" style="width:90px;font-size:16px;padding:6px 8px;border:1px solid #ccc;border-radius:6px">';
       var mInp = q('input', box);
@@ -74,7 +84,8 @@
     }
 
     var trust = document.createElement('div');
-    trust.className = 'nx-p-trust-row';
+    trust.className = 'nx-p-trust-row t-descr t-descr_xs';
+    trust.style.cssText = 'margin:12px 0;font-weight:500';
     trust.textContent = 'Самара и Тольятти, доставка от 1 дня';
     var btnWrap = q('.t-catalog__prod-popup__btn-wrapper', info);
     if (btnWrap) btnWrap.parentNode.insertBefore(trust, btnWrap.nextSibling);
