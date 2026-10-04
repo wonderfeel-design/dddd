@@ -173,6 +173,14 @@ window.nxNative = (function () {
     return sessionStorage.getItem('nx_native') === '1';
   } catch (e) { return q === '1'; }
 })();
+/* Правки родной карточки — отдельный файл из репозитория (в HEAD нет
+   места), грузится только в режиме ?native=1. Коммит зафиксирован в
+   адресе: обновили native-card.js → поменять хеш здесь. */
+if (window.nxNative && location.pathname.indexOf('/tproduct/') !== -1) {
+  var nxNs = document.createElement('script');
+  nxNs.src = 'https://cdn.jsdelivr.net/gh/wonderfeel-design/dddd@9e04774a3d67/native-card.js';
+  document.head.appendChild(nxNs);
+}
 if (location.pathname.indexOf('/tproduct/') !== -1 && !window.nxNative) {
   document.documentElement.classList.add('nx-tp');
   /* Страховка — только на случай, если основной скрипт карточки вообще не
@@ -2394,3 +2402,4 @@ root.addEventListener('change', function (e) {
      сюда ветку по тому же паттерну (nxTrack('click_delivery', {link_position})). */
 })();
 </script>
+
