@@ -43,6 +43,8 @@ const MAX_CHARS = 52000;
     .replace(/\n\s*\n+/g, '\n')
     .trim() + '\n';
 
+  content = `<meta name="nx-build" content="${new Date().toISOString().slice(0, 16)}Z">\n` + content;
+
   if (content.length > MAX_CHARS) {
     console.error(`head.min.html would be ${content.length} chars, over the ${MAX_CHARS} budget ` +
       `(Tilda truncates the HEAD field at ~56,000). Not written. Move code out of head.html.`);
