@@ -737,7 +737,12 @@ function nxParsePrice(n) { return parseFloat(String(n || 0).replace(/\s/g, '').r
           if (d && d.products) { acc = acc.concat(d.products); _allProducts = acc; }
           var p = find();
           if (p) settle(p);
-          if (d && d.nextslice) return step(tld, d.nextslice);
+          /* Товар уже найден — остальные порции нужны только для кеша:
+             докачиваем после window.load, а не наперегонки с главным фото. */
+          if (d && d.nextslice) {
+            if (!settled) return step(tld, d.nextslice);
+            return nxAfterLoad().then(function () { return step(tld, d.nextslice); });
+          }
           if (acc.length) writeProductsCache(acc);
           settle(find());
         });
@@ -745,6 +750,14 @@ function nxParsePrice(n) { return parseFloat(String(n || 0).replace(/\s/g, '').r
       step('com', null).catch(function (err) {
         if (!settled) { settled = true; reject(err); }
       });
+    });
+  }
+
+  function nxAfterLoad() {
+    return new Promise(function (resolve) {
+      function later() { setTimeout(resolve, 1000); }
+      if (document.readyState === 'complete') later();
+      else window.addEventListener('load', later);
     });
   }
 
@@ -895,7 +908,43 @@ function nxParsePrice(n) { return parseFloat(String(n || 0).replace(/\s/g, '').r
      отбирали канал у главного фото (Lighthouse: −1.36 МБ). Оригинал
      хранится в data-full: если ресайз почему-то не отдастся, обработчик
      ошибок ниже подставит оригинал — картинка не пропадёт. */
-  var NX_MAIN_W = 1000, NX_THUMB_W = 200;
+  /* Ширина главного фото — по экрану: на мобильном оно во всю ширину
+     (минус 32px отступов), на десктопе 330px; × плотность пикселей и
+     округление вверх до 480/720/1080, чтобы не плодить вариантов в кеше CDN.
+     Moto G (412px, ×1.75) → 720, iPhone (390px, ×3) → 1080, десктоп → 480/720. */
+  var NX_MAIN_W = (function () {
+    var vw = document.documentElement.clientWidth || window.innerWidth || 400;
+    var need = (vw <= 640 ? vw - 32 : 330) * (window.devicePixelRatio || 1);
+    return need <= 480 ? 480 : need <= 720 ? 720 : 1080;
+  })();
+  var NX_THUMB_W = 200;
+  /* Миниатюры, кружки цветов и «Популярные» не нужны для первого экрана, но
+     качались одновременно с главным фото и отбирали у него канал (LCP).
+     Пока главное фото не загрузилось — только data-src/data-bg, потом
+     nxLoadDeferred() подставляет настоящие адреса. */
+  var _nxDeferDone = false;
+  function nxLoadDeferred() {
+    _nxDeferDone = true;
+    var els = document.querySelectorAll('[data-src], [data-bg]');
+    for (var i = 0; i < els.length; i++) {
+      var el = els[i];
+      if (el.hasAttribute('data-src')) {
+        el.src = el.getAttribute('data-src');
+        el.removeAttribute('data-src');
+      } else {
+        el.style.backgroundImage = 'url(' + el.getAttribute('data-bg') + ')';
+        el.removeAttribute('data-bg');
+      }
+    }
+  }
+  function nxDeferUntilMainImg() {
+    var mi = document.getElementById('nx-mi'), fired = false;
+    function go() { if (!fired) { fired = true; nxLoadDeferred(); } }
+    if (!mi || (mi.complete && mi.naturalWidth)) return go();
+    mi.addEventListener('load', go);
+    mi.addEventListener('error', go);
+    setTimeout(go, 4000);
+  }
   function nxImg(src, w) {
     var m = /^https?:\/\/static\.tildacdn\.(?:com|one)\/((?:tild|stor)[^\/]+)\/([^\/?#]+)$/.exec(String(src || ''));
     return m ? 'https://optim.tildacdn.com/' + m[1] + '/-/resize/' + w + 'x/-/format/webp/' + m[2] : src;
@@ -904,7 +953,8 @@ function nxParsePrice(n) { return parseFloat(String(n || 0).replace(/\s/g, '').r
      onerror, поэтому оригинал кладём в data-bg-full, а обработчик ошибок
      при первом же отказе optim возвращает оригиналы всем таким фонам. */
   function nxBg(src, w) {
-    return 'background-image:url(' + nxImg(src, w) + ')" data-bg-full="' + src;
+    return (_nxDeferDone ? 'background-image:url(' + nxImg(src, w) + ')"' : '" data-bg="' + nxImg(src, w) + '"') +
+      ' data-bg-full="' + src;
   }
   /* og:image товарной страницы Tilda = первое фото товара. Оно есть в HTML
      сразу, без ожидания Store API (~450 КБ JSON) — по нему грузим главное
@@ -924,7 +974,7 @@ function nxParsePrice(n) { return parseFloat(String(n || 0).replace(/\s/g, '').r
     var firstImg = imgs[0] || '';
     var thumbs = imgs.map(function (src, i) {
       return '<div class="nx-p-thumb' + (i === 0 ? ' nx-p-thumb--active' : '') +
-        '" data-idx="' + i + '"><img src="' + nxImg(src, NX_THUMB_W) + '" data-full="' + src + '" alt="" loading="lazy" fetchpriority="low" decoding="async"></div>';
+        '" data-idx="' + i + '"><img data-src="' + nxImg(src, NX_THUMB_W) + '" data-full="' + src + '" alt="" loading="lazy" fetchpriority="low" decoding="async"></div>';
     }).join('');
     return '<div class="nx-p-gallery">' +
       '<div class="nx-p-mainimg"><img id="nx-mi" src="' + nxImg(firstImg, NX_MAIN_W) + '" data-full="' + firstImg + '" alt="" loading="eager" fetchpriority="high" decoding="async"></div>' +
@@ -1417,6 +1467,7 @@ if (firstEd && nxCoatKey(firstEd['Покрытие']) === nxCoatKey('Без по
        next to our custom render. Only mark success for the 3s failsafe above. */
     window._nxProdRendered = true;
     document.documentElement.classList.add('nx-tp-ready');
+    nxDeferUntilMainImg();
 
     try {
       nxTrack('view_item', {
@@ -2024,6 +2075,11 @@ root.addEventListener('change', function (e) {
         for (var i = 0; i < bgs.length; i++) {
           bgs[i].style.backgroundImage = 'url(' + bgs[i].getAttribute('data-bg-full') + ')';
           bgs[i].removeAttribute('data-bg-full');
+          bgs[i].removeAttribute('data-bg');
+        }
+        var lazy = document.querySelectorAll('img[data-src][data-full]');
+        for (var j = 0; j < lazy.length; j++) {
+          lazy[j].setAttribute('data-src', lazy[j].getAttribute('data-full'));
         }
       }
     }
