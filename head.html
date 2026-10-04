@@ -162,7 +162,18 @@ gtag('config', 'G-PBM1FQX6EK');
 </style>
 
 <script>
-if (location.pathname.indexOf('/tproduct/') !== -1) {
+/* Тест нативной карточки: ?native=1 — не рисуем свою карточку, остаётся
+   сниппет Тильды. Запоминается на сессию (переход между товарами),
+   ?native=0 — вернуть обычный режим. */
+window.nxNative = (function () {
+  var q = (location.search.match(/[?&]native=([01])/) || [])[1];
+  try {
+    if (q === '1') sessionStorage.setItem('nx_native', '1');
+    if (q === '0') sessionStorage.removeItem('nx_native');
+    return sessionStorage.getItem('nx_native') === '1';
+  } catch (e) { return q === '1'; }
+})();
+if (location.pathname.indexOf('/tproduct/') !== -1 && !window.nxNative) {
   document.documentElement.classList.add('nx-tp');
   /* Страховка — только на случай, если основной скрипт карточки вообще не
      запустился (так и было, когда Tilda обрезала HEAD-код): тогда
@@ -607,7 +618,7 @@ function nxParsePrice(n) { return parseFloat(String(n || 0).replace(/\s/g, '').r
 
 /* ══ 3. Страница товара /tproduct/ ══ */
 (function () {
-  if (location.pathname.indexOf('/tproduct/') === -1) return;
+  if (location.pathname.indexOf('/tproduct/') === -1 || window.nxNative) return;
 
   var STORE_UID   = '650833272852';
   var CATALOG_REC = '2362174763';
@@ -1218,7 +1229,6 @@ var item = {
   uid:      String(ed && ed.uid ? ed.uid : _p.uid),
   sku:      (ed && ed.sku) || (_p.sku) || ''
 };
-  console.log('nx: item to cart', JSON.stringify(item));
   var added = false;
   function doAdd(retries) {
     try {
@@ -1241,7 +1251,6 @@ var item = {
             if (typeof tcart__saveLocalObj === 'function') tcart__saveLocalObj();
             if (typeof tcart__reDrawCartIcon === 'function') tcart__reDrawCartIcon();
             if (typeof tcart__reDrawProducts === 'function') tcart__reDrawProducts();
-            console.log('nx: re-added dropped item', item.uid);
           }
         }
       } catch (e2) { console.error('nx: re-add error', e2); }
@@ -1737,16 +1746,6 @@ var scopedEditions = curEdCoating
   ? _editions.filter(function (e) { return nxCoatKey(e['Покрытие']) === nxCoatKey(curEdCoating); })
   : _editions.filter(function (e) { return nxCoatKey(e['Покрытие']) !== nxCoatKey('Без покрытия'); });
 var matchedEd = scopedEditions.find(function(e) { return String(e['Цвет']) === btn.dataset.color; });
-/* Временная диагностика — почему клик по свотчу иногда переключает
-   покрытие, хотя тот же свотч уже был активен под текущим покрытием.
-   Убрать после того, как разберёмся. */
-console.log('nx: swatch click debug', JSON.stringify({
-  clickedColor: btn.dataset.color,
-  selectedCoating: _selected['Тип покрытия'],
-  curEdCoating: curEdCoating,
-  foundInScope: !!matchedEd,
-  scopedEditions: scopedEditions.map(function (e) { return { Цвет: e['Цвет'], Покрытие: e['Покрытие'] }; })
-}));
 if (!matchedEd) {
   matchedEd = _editions.find(function(e) { return String(e['Цвет']) === btn.dataset.color; });
   if (matchedEd && matchedEd['Покрытие']) {
@@ -1864,7 +1863,6 @@ root.addEventListener('change', function (e) {
           if (typeof tcart__addProduct === 'function') {
             /* Выкрас — ручная позиция 0 ₽ без складского uid (иначе NOT FOUND PRODUCTS IN STORE) */
             var sampleItem = { name: 'Пробный выкрас — ' + colorName, price: 0, quantity: 1, amount: 0, img: c.img || '', uid: '306044934692', option: optionParts.join(', ') };
-            console.log('nx: sample to cart', JSON.stringify(sampleItem));
             tcart__addProduct(sampleItem, true);
           }
         } catch (e) { console.error('nx: sample error', e); }
