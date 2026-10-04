@@ -1019,6 +1019,9 @@ function nxParsePrice(n) { return parseFloat(String(n || 0).replace(/\s/g, '').r
       ln.rel = 'preload';
       ln.as = 'image';
       ln.fetchPriority = 'high';
+      /* href до вставки в DOM — иначе Chrome пишет «<link rel=preload> has
+         an invalid href value» про пустую ссылку. */
+      ln.href = safeSrc;
       head.appendChild(ln);
     }
     if (ln.href !== safeSrc) ln.href = safeSrc;
@@ -2090,8 +2093,25 @@ root.addEventListener('change', function (e) {
     var em = location.pathname.match(/\/tproduct\/(\d+)/);
     if (em) {
       var og = nxOgImg();
-      if (og) ensureMainImagePreload(nxImg(og, NX_MAIN_W));
-      _earlyLoad = loadProduct(em[1]); _earlyLoad.catch(function () {});
+      if (og && !readProductsCache()) {
+        /* HEAD-код Тильда ставит в конец <head>, после всех своих
+           блокирующих CSS/JS, — раньше этой точки ничего не запустить.
+           Дальше канал делят фото (~40 КБ) и список товаров (~86 КБ):
+           сначала фото — оно и есть LCP и уже стоит в каркасе по og:image,
+           а название/цена дорисуются следом. Ждём не дольше 2.5 с. */
+        var ogSrc = nxImg(og, NX_MAIN_W);
+        ensureMainImagePreload(ogSrc);
+        _earlyLoad = new Promise(function (resolve) {
+          var im = new Image();
+          im.onload = im.onerror = resolve;
+          im.src = ogSrc;
+          setTimeout(resolve, 2500);
+        }).then(function () { return loadProduct(em[1]); });
+      } else {
+        if (og) ensureMainImagePreload(nxImg(og, NX_MAIN_W));
+        _earlyLoad = loadProduct(em[1]);
+      }
+      _earlyLoad.catch(function () {});
     }
   })();
 
