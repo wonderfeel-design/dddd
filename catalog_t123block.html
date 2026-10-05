@@ -1,0 +1,295 @@
+<style>
+/* ==========================================================================
+   1. ОБЩИЕ СТИЛИ И БЛОКИРОВКА СТАРЫХ ДАННЫХ
+   ========================================================================== */
+/* Изначально скрываем заголовки, чтобы избежать мигания при сборке скрипта */
+#rec2915491401 .t026__title,
+#rec2915491401 .t026__descr,
+.js-block-header {
+    display: none;
+}
+
+/* Изначально скрываем контент поп-апа товара, чтобы он не прыгал при загрузке */
+.t-popup .t-store__product,
+.t-popup .js-product-controls {
+    opacity: 0 !important;
+}
+
+/* Проявляем контент товара, когда лоадер выключен */
+body.seo-popup-ready .t-popup .t-store__product,
+body.seo-popup-ready .t-popup .js-product-controls {
+    opacity: 1 !important;
+    transition: opacity 0.4s ease-in-out !important;
+}
+
+/* ==========================================================================
+   2. ЕДИНЫЙ ПОЛНОЭКРАННЫЙ КОНТЕЙНЕР ЛОАДЕРА (Ваш градиент)
+   ========================================================================== */
+.seo-combined-loader {
+    display: flex !important;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    z-index: 9999999 !important; /* Максимальный приоритет, перекрывает поп-апы */
+    justify-content: center;
+    align-items: center;
+    opacity: 1;
+    transition: opacity 0.4s ease-in-out;
+    background: linear-gradient(180deg, rgba(235, 245, 226, 0) 0%, #EBF5E2 65%, rgba(235, 245, 226, 0) 100%) !important;
+    pointer-events: all !important;
+}
+
+/* Скрытие лоадера по классам готовности */
+body.seo-catalog-loaded .seo-combined-loader:not(.popup-loading-active) {
+    opacity: 0 !important;
+    pointer-events: none !important;
+}
+
+/* ==========================================================================
+   3. ГЕОМЕТРИЯ ФИРМЕННЫХ ПОЛОС
+   ========================================================================== */
+.seo-skeleton-inner {
+    position: relative !important;
+    display: flex !important;
+    width: 18vw !important;
+    height: 20.7vw !important;
+    justify-content: space-between;
+    align-items: flex-start;
+    flex-direction: row;
+}
+
+.skeleton-line {
+    width: 18% !important;
+    height: 75% !important;
+    background-color: rgba(76, 158, 36, 0.5) !important; /* Полупрозрачный зеленый 50% */
+    border-radius: 2px;
+    position: relative !important;
+    transform: skewX(-34deg) !important;
+    transform-origin: top left !important;
+
+    background-image: linear-gradient(
+        135deg,
+        rgba(255, 255, 255, 0) 0%,
+        rgba(255, 255, 255, 0.4) 50%,
+        rgba(255, 255, 255, 0) 100%
+    );
+    background-size: 100% 150px;
+    background-repeat: no-repeat;
+    animation: shimmerVertical 1.5s infinite linear;
+}
+
+/* Каскадная лесенка по вашим точным параметрам */
+.line-p1 { margin-top: 0% !important; margin-left: 0% !important;}
+.line-p2 { margin-top: 24% !important; margin-left: -8% !important;}
+.line-p3 { margin-top: 48% !important; margin-left: -16% !important;}
+
+@keyframes shimmerVertical {
+    0% { background-position: 0 -150px; }
+    100% { background-position: 0 calc(150px + 100%); }
+}
+
+/* ==========================================================================
+   4. ВВОДНЫЙ SEO-ТЕКСТ НА МОБИЛЬНОМ (U-2): сворачиваем до 2 строк + «Читать
+   далее», чтобы текст не занимал весь первый экран над сеткой товаров.
+   ========================================================================== */
+@media (max-width: 768px) {
+    #rec2915491401 .t026__descr {
+        display: -webkit-box;
+        -webkit-box-orient: vertical;
+        -webkit-line-clamp: 2;
+        overflow: hidden;
+    }
+    #rec2915491401 .t026__descr.nx-descr--expanded {
+        display: block;
+        -webkit-line-clamp: unset;
+        overflow: visible;
+    }
+    .nx-descr-toggle {
+        display: inline-block;
+        margin-top: 6px;
+        color: #4C9E24;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        text-decoration: underline;
+    }
+}
+</style>
+
+<!-- Единая разметка лоадера в HTML -->
+<div id="globalSeoLoader" class="seo-combined-loader">
+    <div class="seo-skeleton-inner">
+        <div class="skeleton-line line-p1"></div>
+        <div class="skeleton-line line-p2"></div>
+        <div class="skeleton-line line-p3"></div>
+    </div>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    var loader = document.getElementById('globalSeoLoader');
+    var defaultH1Text = '';
+    var defaultDescrText = '';
+
+    // Пытаемся сохранить дефолтные тексты
+    var initialH1 = document.querySelector('#rec2915491401 .t026__title');
+    var initialDescr = document.querySelector('#rec2915491401 .t026__descr');
+    if (initialH1) defaultH1Text = initialH1.textContent.trim();
+    if (initialDescr) defaultDescrText = initialDescr.innerHTML.trim();
+
+    // ПРЕДОХРАНИТЕЛЬ: Гарантированно скрываем лоадер каталога через 3.5 секунды при любых сбоях
+    var fallbackTimeout = setTimeout(function() {
+        document.body.classList.add('seo-catalog-loaded');
+        if (loader) loader.classList.remove('popup-loading-active');
+    }, 3500);
+
+    // U-2: «Читать далее» для свёрнутого на мобильном вводного текста —
+    // показывается только если текст реально не влезает в 2 строки.
+    function ensureDescrToggle(mainDescr) {
+        if (!mainDescr || window.innerWidth > 768) return;
+        requestAnimationFrame(function () {
+            var toggle = mainDescr.parentNode ? mainDescr.parentNode.querySelector('.nx-descr-toggle') : null;
+            var isClamped = mainDescr.scrollHeight > mainDescr.clientHeight + 2;
+            if (!isClamped) {
+                if (toggle) toggle.remove();
+                return;
+            }
+            if (toggle) return;
+            toggle = document.createElement('span');
+            toggle.className = 'nx-descr-toggle';
+            toggle.textContent = 'Читать далее';
+            toggle.addEventListener('click', function () {
+                var expanded = mainDescr.classList.toggle('nx-descr--expanded');
+                toggle.textContent = expanded ? 'Свернуть' : 'Читать далее';
+            });
+            mainDescr.parentNode.insertBefore(toggle, mainDescr.nextSibling);
+        });
+    }
+
+    // --- ЛОГИКА 1. ДИНАМИЧЕСКИЙ СЕО ЗАГОЛОВОК КАТАЛОГА ---
+    function syncContent() {
+        // Ищем элементы каждый раз, так как Тильда подгружает каталог аяксом
+        var catalogTitle = document.querySelector('.js-block-header-title');
+        var catalogDescr = document.querySelector('.js-block-header-descr');
+        var mainH1 = document.querySelector('#rec2915491401 .t026__title');
+        var mainDescr = document.querySelector('#rec2915491401 .t026__descr');
+        var blockT026 = document.querySelector('#rec2915491401');
+
+        if (!catalogTitle) return false; // Нет заголовка - ждем
+
+        var rawTitle = catalogTitle.textContent.trim();
+        var newDescr = catalogDescr ? catalogDescr.innerHTML.trim() : '';
+        if (!rawTitle) return false;
+
+        var newTitle = rawTitle;
+
+        if (rawTitle.toLowerCase().includes('все')) {
+            newTitle = defaultH1Text;
+            newDescr = defaultDescrText;
+        } else {
+            var parentCatText = '';
+            var breadcrumbs = document.querySelectorAll('.js-store-parts-path-lnk, .t-store__filter__path-link');
+            if (breadcrumbs.length > 1) {
+                parentCatText = ' ' + breadcrumbs[breadcrumbs.length - 2].textContent.trim().toLowerCase();
+            } else {
+                var activeParent = document.querySelector('.js-store-parts-lnk_active, .t-store__filter__item_active');
+                if (activeParent && activeParent.closest('.js-store-parts-parent')) {
+                    var parentNode = activeParent.closest('.js-store-parts-parent').querySelector('.js-store-parts-parent-lnk');
+                    if (parentNode) parentCatText = ' ' + parentNode.textContent.trim().toLowerCase();
+                }
+            }
+            newTitle = rawTitle + parentCatText + ' от производителя материалов из дерева по выгодным ценам из Самары АРТДОСКА';
+        }
+
+        if (blockT026) {
+            if (mainH1) mainH1.style.setProperty('display', 'block', 'important');
+            if (mainDescr) mainDescr.style.setProperty('display', 'block', 'important');
+            blockT026.style.setProperty('display', 'block', 'important');
+        }
+
+        if (mainH1 && mainH1.textContent.trim() !== newTitle) mainH1.textContent = newTitle;
+        if (mainDescr && newDescr && mainDescr.innerHTML.trim() !== newDescr) mainDescr.innerHTML = newDescr;
+        if (mainDescr) ensureDescrToggle(mainDescr);
+
+        return true;
+    }
+
+    // Таймер первичной загрузки каталога
+    var catalogInterval = setInterval(function() {
+        var hasProducts = document.querySelectorAll('.t-store__card, .js-product, .t-store__grid-cont').length > 0;
+        // Для прямых ссылок на товар (где нет сетки каталога) сразу разрешаем скрытие лоадера
+        var isDirectProductPage = window.location.href.indexOf('/tproduct/') !== -1;
+
+        var isSynced = syncContent();
+
+        if ((isSynced && hasProducts) || isDirectProductPage) {
+            clearInterval(catalogInterval);
+            document.body.classList.add('seo-catalog-loaded');
+            // Если каталог загрузился штатно, отменяем предохранитель
+            clearTimeout(fallbackTimeout);
+        }
+    }, 50);
+
+    // Observer на изменение заголовков каталога
+    setTimeout(function() {
+        var catalogTitleNode = document.querySelector('.js-block-header-title');
+        if (catalogTitleNode) {
+            new MutationObserver(syncContent).observe(catalogTitleNode, { childList: true, characterData: true, subtree: true });
+        }
+    }, 1000);
+
+
+    // --- ЛОГИКА 2. ПЕРЕХВАТ И ОТСЛЕЖИВАНИЕ ПОП-АПА ТОВАРА ---
+    var productInterval;
+    var popupFallback;
+
+    document.addEventListener('click', function(e) {
+        var productClick = e.target.closest('.js-store-prod-lnk, .t-store__card__imgwrap, .t-store__card__textwrapper');
+
+        if (productClick) {
+            document.body.classList.remove('seo-popup-ready');
+            if (loader) loader.classList.add('popup-loading-active');
+
+            clearInterval(productInterval);
+            clearTimeout(popupFallback);
+
+            // Предохранитель для поп-апа: скрываем лоадер через 2 секунды максимум
+            popupFallback = setTimeout(function() {
+                clearInterval(productInterval);
+                if (loader) loader.classList.remove('popup-loading-active');
+                document.body.classList.add('seo-popup-ready');
+            }, 2000);
+
+            productInterval = setInterval(function() {
+                var popup = document.querySelector('.t-popup_show');
+                if (popup) {
+                    var hasPrice = popup.querySelector('.js-product-price, .t-store__product__price') !== null;
+                    var hasTitle = popup.querySelector('.js-product-title, .t-store__product__title') !== null;
+                    var hasGallery = popup.querySelector('.t-slds__items-wrapper, .t-store__product__gallery') !== null;
+
+                    // Убрана искусственная задержка (timeCheck), лоадер исчезает сразу по готовности элементов
+                    if (hasPrice && hasTitle && hasGallery) {
+                        clearInterval(productInterval);
+                        clearTimeout(popupFallback);
+                        if (loader) loader.classList.remove('popup-loading-active');
+                        document.body.classList.add('seo-popup-ready');
+                    }
+                }
+            }, 50);
+        }
+    });
+
+    // Обработчик закрытия всплывающего окна товара
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('.t-popup__close, .t-popup__container')) {
+            setTimeout(function() {
+                if (!document.querySelector('.t-popup_show')) {
+                    document.body.classList.remove('seo-popup-ready');
+                }
+            }, 300);
+        }
+    });
+});
+</script>
